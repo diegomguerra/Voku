@@ -61,7 +61,7 @@ Auth trigger: on_auth_user_created → insere em public.users
 
 ## Pendências imediatas
 1. Desativar site builder do GoDaddy (intercepta voku.one)
-2. Verificar domínio ola@voku.one no Resend (DNS: MX, SPF, DKIM)
+2. ~~Verificar domínio ola@voku.one no Resend~~ ✅ Verificado
 3. Conectar dashboards a dados reais do Supabase
 
 ## Regras de trabalho
