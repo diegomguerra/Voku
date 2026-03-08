@@ -1,6 +1,6 @@
 "use client";
-import VokuOps from "./ops";
+import OpsDashboard from "./ops";
 
 export default function DashboardOpsPage() {
-  return <VokuOps />;
+  return <OpsDashboard />;
 }

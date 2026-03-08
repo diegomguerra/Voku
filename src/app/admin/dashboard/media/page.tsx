@@ -1,6 +1,6 @@
 "use client";
-import VokuMedia from "../media";
+import MediaDashboard from "../media";
 
 export default function DashboardMediaPage() {
-  return <VokuMedia />;
+  return <MediaDashboard />;
 }
