@@ -1,233 +1,95 @@
-// @ts-nocheck
+"use client";
 import { useState } from "react";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
-
-const C = {
-  bg: "#080808",
-  s1: "#0E0E0E",
-  s2: "#141414",
-  s3: "#1A1A1A",
-  border: "#1F1F1F",
-  border2: "#2A2A2A",
-  accent: "#E9F59E",
-  accentDim: "#B8C478",
-  text: "#EFEFEB",
-  muted: "#555",
-  muted2: "#777",
-  green: "#4ADE80",
-  red: "#F87171",
-  blue: "#60A5FA",
-  purple: "#A78BFA",
-  orange: "#FB923C",
+const T = {
+  sand:"#FAF8F3",white:"#FFFFFF",ink:"#111111",inkSub:"#3D3D3D",inkMid:"#6B6B6B",inkFaint:"#A0A0A0",
+  lime:"#C8F135",border:"#E8E5DE",borderMd:"#D1CCBF",
+  green:"#166534",greenBg:"#DCFCE7",teal:"#0D7A6E",tealBg:"#E6F5F3",
+  amber:"#B45309",amberBg:"#FEF3C7",red:"#991B1B",blue:"#1D4ED8",
 };
-
-const revenueData = [
-  { month: "Set", usd: 194, brl: 994 },
-  { month: "Out", usd: 388, brl: 1988 },
-  { month: "Nov", usd: 582, brl: 2982 },
-  { month: "Dez", usd: 970, brl: 4970 },
-  { month: "Jan", usd: 1358, brl: 6958 },
-  { month: "Fev", usd: 1940, brl: 9940 },
-  { month: "Mar", usd: 2522, brl: 12908 },
-];
-
-const funnelData = [
-  { stage: "Visitantes", value: 1240, pct: 100 },
-  { stage: "Cadastros", value: 186, pct: 15 },
-  { stage: "Briefings", value: 93, pct: 7.5 },
-  { stage: "Pagamentos", value: 42, pct: 3.4 },
-  { stage: "Entregas", value: 41, pct: 3.3 },
-];
-
-const productMix = [
-  { name: "Landing Page Copy", value: 18, color: C.accent },
-  { name: "Pacote de Posts", value: 14, color: C.purple },
-  { name: "Sequência E-mails", value: 10, color: C.blue },
-];
-
-const recentOrders = [
-  { id: "#0041", client: "Eduardo M.", product: "Landing Page Copy", status: "entregue", value: "$97", time: "18h", flag: "🇧🇷" },
-  { id: "#0040", client: "Carolina R.", product: "Pacote de Posts", status: "em produção", value: "$147", time: "6h", flag: "🇲🇽" },
-  { id: "#0039", client: "James K.", product: "Seq. E-mails", status: "entregue", value: "$127", time: "31h", flag: "🇺🇸" },
-  { id: "#0038", client: "Ana L.", product: "Landing Page Copy", status: "entregue", value: "R$497", time: "22h", flag: "🇧🇷" },
-  { id: "#0037", client: "Miguel F.", product: "Pacote de Posts", status: "briefing", value: "$147", time: "—", flag: "🇦🇷" },
-];
-
-const statusColor = { "entregue": C.green, "em produção": C.accent, "briefing": C.orange };
-
-const Stat = ({ label, value, sub, color, delta }: { label: string; value: string; sub?: string; color?: string; delta?: number }) => (
-  <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 24px" }}>
-    <div style={{ fontSize: 10, letterSpacing: "0.12em", color: C.muted, marginBottom: 10 }}>{label}</div>
-    <div style={{ fontSize: 28, fontWeight: 700, color: color || C.text, fontFamily: "'DM Mono', monospace", lineHeight: 1 }}>{value}</div>
-    {sub && <div style={{ fontSize: 11, color: C.muted2, marginTop: 6 }}>{sub}</div>}
-    {delta && (
-      <div style={{ fontSize: 11, color: delta > 0 ? C.green : C.red, marginTop: 6 }}>
-        {delta > 0 ? "↑" : "↓"} {Math.abs(delta)}% vs mês anterior
+const revenueData=[{month:"Set",usd:194,brl:994},{month:"Out",usd:388,brl:1988},{month:"Nov",usd:582,brl:2982},{month:"Dez",usd:970,brl:4970},{month:"Jan",usd:1358,brl:6958},{month:"Fev",usd:1940,brl:9940},{month:"Mar",usd:2522,brl:12908}];
+const funnelData=[{stage:"Visitantes",value:1240,pct:100},{stage:"Cadastros",value:186,pct:15},{stage:"Briefings",value:93,pct:7.5},{stage:"Pagamentos",value:42,pct:3.4},{stage:"Entregas",value:41,pct:3.3}];
+const productMix=[{name:"Landing Page Copy",value:18,color:"#111111"},{name:"Pacote de Posts",value:14,color:"#0D7A6E"},{name:"Sequência E-mails",value:10,color:"#1D4ED8"}];
+const recentOrders=[{id:"#0041",client:"Eduardo M.",product:"Landing Page Copy",status:"entregue",value:"$97",time:"18h",flag:"🇧🇷"},{id:"#0040",client:"Carolina R.",product:"Pacote de Posts",status:"em produção",value:"$147",time:"6h",flag:"🇲🇽"},{id:"#0039",client:"James K.",product:"Seq. E-mails",status:"entregue",value:"$127",time:"31h",flag:"🇺🇸"},{id:"#0038",client:"Ana L.",product:"Landing Page Copy",status:"entregue",value:"R$497",time:"22h",flag:"🇧🇷"},{id:"#0037",client:"Miguel F.",product:"Pacote de Posts",status:"briefing",value:"$147",time:"—",flag:"🇦🇷"}];
+const STATUS:Record<string,{color:string;bg:string}>={"entregue":{color:"#166534",bg:"#DCFCE7"},"em produção":{color:"#0D7A6E",bg:"#E6F5F3"},"briefing":{color:"#B45309",bg:"#FEF3C7"}};
+function Card({children,style={}}:any){return <div style={{background:T.white,border:`1px solid ${T.border}`,borderRadius:14,padding:"24px",boxShadow:"0 2px 8px rgba(0,0,0,0.04)",...style}}>{children}</div>}
+function CardTitle({children}:any){return <div style={{fontSize:15,fontWeight:700,color:T.ink,marginBottom:20}}>{children}</div>}
+function StatCard({label,value,sub,delta}:any){return(<Card><div style={{fontSize:11,fontWeight:600,color:T.inkFaint,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>{label}</div><div style={{fontSize:34,fontWeight:800,color:T.ink,lineHeight:1,marginBottom:6}}>{value}</div>{sub&&<div style={{fontSize:13,color:T.inkMid}}>{sub}</div>}{delta!==undefined&&<div style={{fontSize:12,fontWeight:600,color:delta>0?T.green:T.red,marginTop:8}}>{delta>0?"↑":"↓"} {Math.abs(delta)}% vs mês anterior</div>}</Card>)}
+function TT({active,payload,label}:any){if(!active||!payload?.length)return null;return(<div style={{background:T.white,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",fontSize:13,boxShadow:"0 4px 16px rgba(0,0,0,0.1)"}}><div style={{color:T.inkMid,marginBottom:4,fontWeight:600}}>{label}</div>{payload.map((p:any,i:number)=><div key={i} style={{color:T.ink,fontWeight:700}}>{p.name==="usd"?"USD $":"BRL R$"}{p.value.toLocaleString()}</div>)}</div>)}
+export default function OpsDashboard(){
+  const [currency,setCurrency]=useState<"usd"|"brl">("usd");
+  return(<div style={{background:T.sand,minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+    <div style={{background:T.white,borderBottom:`1px solid ${T.border}`,padding:"0 40px",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
+      <div style={{display:"flex",alignItems:"center",gap:16}}>
+        <div style={{background:T.ink,color:T.lime,fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:20,padding:"4px 14px",borderRadius:6}}>Voku</div>
+        <span style={{color:T.borderMd,fontSize:20}}>|</span>
+        <span style={{fontSize:15,fontWeight:700,color:T.inkSub}}>Dashboard Operacional</span>
+        <a href="/admin/dashboard/media" style={{fontSize:13,color:T.teal,fontWeight:600,textDecoration:"none",marginLeft:8}}>→ Mídia</a>
       </div>
-    )}
-  </div>
-);
-
-const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: any[]; label?: string }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: C.s3, border: `1px solid ${C.border2}`, borderRadius: 6, padding: "10px 14px", fontSize: 12, color: C.text }}>
-      <div style={{ color: C.muted, marginBottom: 4 }}>{label}</div>
-      {payload.map((p, i) => (
-        <div key={i} style={{ color: p.color }}>{p.name}: {p.name === "usd" ? "$" : "R$"}{p.value.toLocaleString()}</div>
-      ))}
+      <div style={{display:"flex",gap:4,background:T.sand,border:`1px solid ${T.border}`,borderRadius:8,padding:4}}>
+        {(["usd","brl"] as const).map(c=><button key={c} onClick={()=>setCurrency(c)} style={{background:currency===c?T.ink:"transparent",color:currency===c?T.lime:T.inkMid,border:"none",borderRadius:6,padding:"6px 18px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{c.toUpperCase()}</button>)}
+      </div>
     </div>
-  );
-};
-
-export default function VokuOps() {
-  const [tab, setTab] = useState("overview");
-  const [currency, setCurrency] = useState("usd");
-
-  const tabs = ["overview", "pedidos", "funil", "clientes"];
-
-  return (
-    <div style={{ background: C.bg, minHeight: "100vh", color: C.text, fontFamily: "'IBM Plex Mono', monospace" }}>
-      {/* Top bar */}
-      <div style={{ borderBottom: `1px solid ${C.border}`, padding: "16px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <span style={{ color: C.accent, fontWeight: 700, fontSize: 16 }}>✦ VOKU</span>
-          <span style={{ color: C.muted, fontSize: 10, letterSpacing: "0.15em" }}>OPERATIONS</span>
-          <div style={{ display: "flex", gap: 2, marginLeft: 12 }}>
-            {tabs.map(t => (
-              <button key={t} onClick={() => setTab(t)} style={{
-                background: tab === t ? C.accent + "18" : "transparent",
-                border: `1px solid ${tab === t ? C.accent + "44" : "transparent"}`,
-                color: tab === t ? C.accent : C.muted,
-                borderRadius: 5, padding: "5px 14px", fontSize: 10,
-                letterSpacing: "0.1em", cursor: "pointer", textTransform: "uppercase"
-              }}>{t}</button>
-            ))}
-          </div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ display: "flex", gap: 2 }}>
-            {["usd", "brl"].map(c => (
-              <button key={c} onClick={() => setCurrency(c)} style={{
-                background: currency === c ? C.accent : "transparent",
-                color: currency === c ? C.bg : C.muted,
-                border: `1px solid ${currency === c ? C.accent : C.border}`,
-                borderRadius: 4, padding: "4px 10px", fontSize: 10,
-                cursor: "pointer", fontWeight: 700, letterSpacing: "0.08em"
-              }}>{c.toUpperCase()}</button>
-            ))}
-          </div>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.green, boxShadow: `0 0 8px ${C.green}` }} />
-          <span style={{ fontSize: 10, color: C.muted }}>ao vivo</span>
-        </div>
+    <div style={{padding:"32px 40px",maxWidth:1200,margin:"0 auto"}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:16,marginBottom:24}}>
+        <StatCard label="Receita do Mês" value={currency==="usd"?"$2.522":"R$12.908"} sub="Março 2026" delta={30}/>
+        <StatCard label="Pedidos" value="42" sub="este mês" delta={18}/>
+        <StatCard label="Ticket Médio" value={currency==="usd"?"$120":"R$614"} delta={5}/>
+        <StatCard label="Tempo de Entrega" value="22h" sub="média atual" delta={-8}/>
       </div>
-
-      <div style={{ padding: "28px 32px", maxWidth: 1200, margin: "0 auto" }}>
-
-        {/* KPI Row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
-          <Stat label="RECEITA DO MÊS" value={currency === "usd" ? "$2.522" : "R$12.908"} sub="março 2026" color={C.accent} delta={30} />
-          <Stat label="PEDIDOS ATIVOS" value="42" sub="3 em produção agora" delta={18} />
-          <Stat label="TICKET MÉDIO" value={currency === "usd" ? "$124" : "R$634"} sub="todos os produtos" delta={7} />
-          <Stat label="TEMPO MÉDIO ENTREGA" value="28h" sub="meta: 36h" color={C.green} delta={-12} />
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-          <Stat label="TOTAL CLIENTES" value="87" sub="23 recorrentes" delta={22} />
-          <Stat label="TAXA DE RECOMPRA" value="26%" sub="meta: 35%" color={C.purple} delta={4} />
-        </div>
-
-        {/* Revenue chart + Product mix */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, marginBottom: 24 }}>
-          <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 24px" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: C.muted, marginBottom: 16 }}>RECEITA — ÚLTIMOS 7 MESES</div>
-            <ResponsiveContainer width="100%" height={180}>
-              <LineChart data={revenueData}>
-                <XAxis dataKey="month" tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: C.muted, fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line type="monotone" dataKey={currency} stroke={C.accent} strokeWidth={2} dot={{ fill: C.accent, r: 3 }} name={currency} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 24px" }}>
-            <div style={{ fontSize: 10, letterSpacing: "0.12em", color: C.muted, marginBottom: 16 }}>MIX DE PRODUTOS</div>
-            <ResponsiveContainer width="100%" height={120}>
-              <PieChart>
-                <Pie data={productMix} cx="50%" cy="50%" innerRadius={35} outerRadius={55} dataKey="value" paddingAngle={3}>
-                  {productMix.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div style={{ marginTop: 12 }}>
-              {productMix.map((p, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, fontSize: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: 2, background: p.color, flexShrink: 0 }} />
-                  <span style={{ color: C.muted2, flex: 1 }}>{p.name}</span>
-                  <span style={{ color: C.text, fontWeight: 700 }}>{p.value}</span>
-                </div>
-              ))}
+      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:16,marginBottom:24}}>
+        <Card>
+          <CardTitle>Receita mensal ({currency.toUpperCase()})</CardTitle>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={revenueData}>
+              <XAxis dataKey="month" tick={{fontSize:13,fill:T.inkMid}} axisLine={false} tickLine={false}/>
+              <YAxis tick={{fontSize:12,fill:T.inkMid}} axisLine={false} tickLine={false}/>
+              <Tooltip content={<TT/>}/>
+              <Line type="monotone" dataKey={currency} stroke={T.ink} strokeWidth={3} dot={{fill:T.lime,strokeWidth:0,r:5}}/>
+            </LineChart>
+          </ResponsiveContainer>
+        </Card>
+        <Card>
+          <CardTitle>Funil de conversão</CardTitle>
+          {funnelData.map((item,i)=>(<div key={i} style={{marginBottom:14}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+              <span style={{fontSize:13,fontWeight:600,color:T.inkSub}}>{item.stage}</span>
+              <span style={{fontSize:13,fontWeight:800,color:T.ink}}>{item.value.toLocaleString()}</span>
             </div>
-          </div>
-        </div>
-
-        {/* Funil */}
-        <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "20px 24px", marginBottom: 24 }}>
-          <div style={{ fontSize: 10, letterSpacing: "0.12em", color: C.muted, marginBottom: 16 }}>FUNIL DE CONVERSÃO</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {funnelData.map((f, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                <div style={{ width: 120, fontSize: 11, color: C.muted2 }}>{f.stage}</div>
-                <div style={{ flex: 1, background: C.s3, borderRadius: 3, height: 20, overflow: "hidden" }}>
-                  <div style={{
-                    width: `${f.pct}%`, height: "100%",
-                    background: `linear-gradient(to right, ${C.accent}88, ${C.accent})`,
-                    borderRadius: 3, transition: "width 0.5s ease"
-                  }} />
-                </div>
-                <div style={{ width: 50, fontSize: 11, color: C.text, textAlign: "right", fontWeight: 700 }}>{f.value.toLocaleString()}</div>
-                <div style={{ width: 40, fontSize: 10, color: C.accentDim, textAlign: "right" }}>{f.pct}%</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Recent Orders */}
-        <div style={{ background: C.s2, border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden" }}>
-          <div style={{ padding: "16px 24px", borderBottom: `1px solid ${C.border}`, fontSize: 10, letterSpacing: "0.12em", color: C.muted }}>
-            PEDIDOS RECENTES
-          </div>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                {["ID", "CLIENTE", "PRODUTO", "VALOR", "TEMPO", "STATUS"].map(h => (
-                  <th key={h} style={{ padding: "10px 20px", textAlign: "left", fontSize: 9, letterSpacing: "0.12em", color: C.muted, fontWeight: 600 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map((o, i) => (
-                <tr key={i} style={{ borderBottom: i < recentOrders.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                  <td style={{ padding: "12px 20px", fontSize: 11, color: C.muted2 }}>{o.id}</td>
-                  <td style={{ padding: "12px 20px", fontSize: 11, color: C.text }}>{o.flag} {o.client}</td>
-                  <td style={{ padding: "12px 20px", fontSize: 11, color: C.muted2 }}>{o.product}</td>
-                  <td style={{ padding: "12px 20px", fontSize: 11, color: C.accent, fontWeight: 700 }}>{o.value}</td>
-                  <td style={{ padding: "12px 20px", fontSize: 11, color: C.muted2 }}>{o.time}</td>
-                  <td style={{ padding: "12px 20px" }}>
-                    <span style={{
-                      fontSize: 9, letterSpacing: "0.08em", fontWeight: 700,
-                      color: statusColor[o.status], background: statusColor[o.status] + "18",
-                      border: `1px solid ${statusColor[o.status]}33`,
-                      borderRadius: 4, padding: "3px 8px"
-                    }}>{o.status.toUpperCase()}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+            <div style={{height:7,background:T.sand,borderRadius:99,overflow:"hidden",border:`1px solid ${T.border}`}}>
+              <div style={{height:"100%",width:`${item.pct}%`,background:T.lime,borderRadius:99,opacity:1-i*0.15}}/>
+            </div>
+          </div>))}
+        </Card>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 2fr",gap:16}}>
+        <Card>
+          <CardTitle>Mix de produtos</CardTitle>
+          <ResponsiveContainer width="100%" height={160}>
+            <PieChart><Pie data={productMix} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={3}>
+              {productMix.map((e,i)=><Cell key={i} fill={e.color}/>)}
+            </Pie><Tooltip formatter={(v:any)=>[`${v} pedidos`]} contentStyle={{background:T.white,border:`1px solid ${T.border}`,borderRadius:8,fontSize:13}}/></PieChart>
+          </ResponsiveContainer>
+          {productMix.map((p,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+            <span style={{width:10,height:10,borderRadius:"50%",background:p.color,flexShrink:0}}/>
+            <span style={{fontSize:13,color:T.inkSub}}>{p.name}</span>
+            <span style={{fontSize:13,fontWeight:800,color:T.ink,marginLeft:"auto"}}>{p.value}</span>
+          </div>))}
+        </Card>
+        <Card>
+          <CardTitle>Pedidos recentes</CardTitle>
+          <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <thead><tr>{["ID","Cliente","Produto","Status","Valor","Entrega"].map(h=><th key={h} style={{textAlign:"left",fontSize:11,fontWeight:700,color:T.inkFaint,textTransform:"uppercase",letterSpacing:"0.06em",paddingBottom:12,borderBottom:`2px solid ${T.border}`}}>{h}</th>)}</tr></thead>
+            <tbody>{recentOrders.map((o,i)=>{const st=STATUS[o.status];return(<tr key={i}>
+              <td style={{padding:"13px 0",fontSize:13,color:T.inkMid,fontWeight:600,borderBottom:`1px solid ${T.border}`}}>{o.id}</td>
+              <td style={{padding:"13px 8px",fontSize:14,color:T.ink,fontWeight:600,borderBottom:`1px solid ${T.border}`}}>{o.flag} {o.client}</td>
+              <td style={{padding:"13px 8px",fontSize:13,color:T.inkSub,borderBottom:`1px solid ${T.border}`}}>{o.product}</td>
+              <td style={{padding:"13px 8px",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:11,fontWeight:700,color:st.color,background:st.bg,borderRadius:20,padding:"4px 12px"}}>{o.status}</span></td>
+              <td style={{padding:"13px 8px",fontSize:14,fontWeight:800,color:T.ink,borderBottom:`1px solid ${T.border}`}}>{o.value}</td>
+              <td style={{padding:"13px 0",fontSize:13,color:T.inkMid,fontWeight:600,borderBottom:`1px solid ${T.border}`}}>{o.time}</td>
+            </tr>)})}</tbody>
           </table>
-        </div>
+        </Card>
       </div>
     </div>
-  );
-}
+  </div>)}
