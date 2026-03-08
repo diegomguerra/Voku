@@ -4,8 +4,7 @@ import { ProductId } from '@/lib/products'
 import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-const resend = new Resend(process.env.RESEND_API_KEY)
+export const dynamic = 'force-dynamic'
 
 const SYSTEM_PROMPTS: Record<ProductId, string> = {
   landing_page_copy: `Você é RORDENS, o motor de execução da Voku. Escreva uma landing page copy completa e de alta conversão.
@@ -57,6 +56,8 @@ export async function POST(req: NextRequest) {
   try {
     const { order_id, user_id, email, name, product, structured_data, currency } = await req.json()
     const supabase = supabaseAdmin()
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
     // Executar com Anthropic
     const message = await anthropic.messages.create({
