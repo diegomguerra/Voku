@@ -47,16 +47,21 @@ Auth trigger: on_auth_user_created → insere em public.users
 - [✅] Fase 2 — Produtos e precificação definidos
 - [✅] Fase 3 — Landing page no ar (voku.one)
 - [✅] Fase 4 — Backend e automação (Edge Functions, e-mails)
-- [🔨] Fase 5 — Área do cliente (design aprovado, aguardando push)
+- [✅] Fase 5 — Área do cliente (login, pedidos, download — deployado)
 - [✅] Fase 6 — Dashboard operacional (/admin/dashboard)
 - [✅] Fase 7 — Dashboard de mídia (/admin/dashboard/media)
 - [⏳] Fase 8 — Canais de venda (Fiverr + Workana)
 - [⏳] Fase 9 — Pagamentos diretos (Stripe)
 - [🔵] Fase 10 — Máquina de conteúdo social
 
+## Ambiente configurado
+- Vercel: 6 env vars configuradas (Supabase, Anthropic, Resend, App URL)
+- .env.local: completo para dev local
+- Deploy automático: push em main → Vercel redeploy
+
 ## Pendências imediatas
-1. Push da área do cliente (Fase 5) — design em ~/Downloads/voku-cliente-preview.jsx
-2. Verificar domínio ola@voku.one no Resend
+1. Desativar site builder do GoDaddy (intercepta voku.one)
+2. Verificar domínio ola@voku.one no Resend (DNS: MX, SPF, DKIM)
 3. Conectar dashboards a dados reais do Supabase
 
 ## Regras de trabalho

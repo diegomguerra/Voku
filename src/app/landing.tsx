@@ -947,6 +947,7 @@ export default function VokuLanding() {
               <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? "#111" : "transparent", color: lang === l ? "#F8F8F6" : "#AAA", border: "none", borderRadius: 5, padding: "4px 8px", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{l}</button>
             ))}
           </div>
+          <a href="/cliente" style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, fontWeight: 600, color: "#888", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = "#111"} onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = "#888"}>{lang === "PT" ? "Minha área" : lang === "EN" ? "My account" : "Mi cuenta"}</a>
           <button onClick={() => setShowModal(true)} style={{ background: "#111", color: "#F8F8F6", border: "none", borderRadius: 8, padding: "10px 20px", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "#2A3D00"; (e.currentTarget as HTMLElement).style.color = "#E9F59E"; }} onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "#111"; (e.currentTarget as HTMLElement).style.color = "#F8F8F6"; }}>{t.navCta}</button>
         </div>
       </nav>
