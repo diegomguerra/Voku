@@ -1,0 +1,55 @@
+export const PRODUCTS = {
+  landing_page_copy: {
+    id: 'landing_page_copy',
+    name: 'Landing Page Copy',
+    description: 'Copy completa para sua página de vendas',
+    usd: 97,
+    brl: 497,
+    deadline_hours: 24,
+    output_formats: ['docx', 'pdf'],
+    briefing_questions: [
+      'O que você vende? (produto, serviço, curso)',
+      'Para quem é? (descreva seu cliente ideal)',
+      'Qual o maior problema que você resolve?',
+      'Qual resultado concreto o cliente obtém?',
+      'Tem concorrentes? Como você é diferente?',
+      'Tom preferido? (direto, inspirador, técnico)',
+    ],
+  },
+  content_pack: {
+    id: 'content_pack',
+    name: 'Pacote de Conteúdo para Redes',
+    description: '12 posts prontos para Instagram ou LinkedIn',
+    usd: 147,
+    brl: 747,
+    deadline_hours: 48,
+    output_formats: ['docx', 'xlsx'],
+    briefing_questions: [
+      'Qual rede social é prioridade? (Instagram, LinkedIn, ambos)',
+      'O que você vende?',
+      'Tom da marca? (profissional, descontraído, provocador)',
+      'Quais temas abordar? (ou deixe livre)',
+      'Referência de post que você gostou?',
+      'Algum tema proibido?',
+    ],
+  },
+  email_sequence: {
+    id: 'email_sequence',
+    name: 'Sequência de E-mails de Nutrição',
+    description: '5 e-mails prontos para converter sua lista',
+    usd: 127,
+    brl: 647,
+    deadline_hours: 48,
+    output_formats: ['docx'],
+    briefing_questions: [
+      'O que você vende?',
+      'Para quem é a lista? (leads frios, quentes, compradores)',
+      'Qual a oferta no final da sequência?',
+      'Tem desconto ou bônus para o e-mail 5?',
+      'Tom da marca? (consultivo, urgente, amigável)',
+      'Objeções comuns dos seus leads?',
+    ],
+  },
+} as const
+
+export type ProductId = keyof typeof PRODUCTS
