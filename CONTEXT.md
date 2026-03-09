@@ -18,11 +18,13 @@
 - /cliente/pedidos → Área do cliente (src/app/cliente/pedidos/page.tsx)
 - /admin/dashboard → Dashboard operacional (src/app/admin/dashboard/page.tsx)
 - /admin/dashboard/media → Dashboard mídia (src/app/admin/dashboard/media/page.tsx)
+- /admin/dashboard/inbox → Inbox RORDENS (src/app/admin/dashboard/inbox/page.tsx)
 - /api/submit-briefing → Cria pedido + e-mail de confirmação
 - /api/execute-product → Executa produto com IA + e-mail de entrega
+- /api/admin/inbox → API dados inbox (platform_messages + automation_config)
 
 ## Banco de Dados (Supabase)
-Tabelas: users, orders, briefings, deliverables, media_posts, media_spend
+Tabelas: users, orders, briefings, deliverables, media_posts, media_spend, platform_messages, automation_config
 Edge Functions: submit-briefing, execute-product
 Storage bucket: deliverables (privado, signed URLs)
 Auth trigger: on_auth_user_created → insere em public.users
@@ -62,7 +64,7 @@ Auth trigger: on_auth_user_created → insere em public.users
 ## Pendências imediatas
 1. Desativar site builder do GoDaddy (intercepta voku.one)
 2. ~~Verificar domínio ola@voku.one no Resend~~ ✅ Verificado
-3. Conectar dashboards a dados reais do Supabase
+3. ~~Conectar dashboards a dados reais do Supabase~~ ✅ Conectados (ops, mídia, inbox)
 
 ## Regras de trabalho
 - Todo arquivo novo deve ter timestamp no nome: arquivo_YYYYMMDD_HHMMSS
