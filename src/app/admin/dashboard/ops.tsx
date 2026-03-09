@@ -82,6 +82,7 @@ export default function OpsDashboard(){
         <span style={{color:T.borderMd,fontSize:20}}>|</span>
         <span style={{fontSize:15,fontWeight:700,color:T.inkSub}}>Dashboard Operacional</span>
         <a href="/admin/dashboard/media" style={{fontSize:13,color:T.teal,fontWeight:600,textDecoration:"none",marginLeft:8}}>→ Mídia</a>
+        <a href="/admin/dashboard/inbox" style={{fontSize:13,color:T.teal,fontWeight:600,textDecoration:"none",marginLeft:8}}>→ Inbox</a>
       </div>
       <div style={{display:"flex",gap:4,background:T.sand,border:`1px solid ${T.border}`,borderRadius:8,padding:4}}>
         {(["usd","brl"] as const).map(c=><button key={c} onClick={()=>setCurrency(c)} style={{background:currency===c?T.ink:"transparent",color:currency===c?T.lime:T.inkMid,border:"none",borderRadius:6,padding:"6px 18px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>{c.toUpperCase()}</button>)}
