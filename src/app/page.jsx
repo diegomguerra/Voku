@@ -783,10 +783,7 @@ function RegisterFlow({ t, lang, onClose }) {
               <input value={promoCode} onChange={e => setPromoCode(e.target.value.toUpperCase())} placeholder="VOKU15" style={inputStyle} onFocus={e => e.target.style.borderColor = "#111"} onBlur={e => e.target.style.borderColor = "#E0E0D8"} />
             </div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setStep("form")} style={{ flex: 1, padding: "13px", borderRadius: 10, background: "transparent", color: "#888", border: "1.5px solid #E0E0D8", fontFamily: FF, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
-                {lang === "PT" ? "Pular" : lang === "EN" ? "Skip" : "Omitir"}
-              </button>
-              <button onClick={startChat} style={{ flex: 2, padding: "13px", borderRadius: 10, background: "#111", color: "#FAF8F3", border: "none", fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              <button onClick={startChat} style={{ flex: 1, padding: "13px", borderRadius: 10, background: "#111", color: "#FAF8F3", border: "none", fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 {promoCode === "VOKU15" ? "✓ 15% OFF · " : ""}{lang === "PT" ? "Continuar →" : lang === "EN" ? "Continue →" : "Continuar →"}
               </button>
             </div>
