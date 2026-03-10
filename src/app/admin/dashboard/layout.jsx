@@ -1,20 +1,57 @@
 "use client";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { supabase } from "@/lib/supabase";
 
 const FONT = "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap";
 
+const ADMIN_EMAILS = [
+  "diegomguerra@me.com",
+  "dmarcondesguerra@gmail.com",
+];
+
 const NAV = [
-  { href: "/admin/dashboard/unified",    label: "🗺 Mapa do Projeto",      short: "MAPA"       },
-  { href: "/admin/dashboard/status",     label: "✅ Status & Prompts",     short: "STATUS"     },
-  { href: "/admin/dashboard/prospeccao", label: "🎯 Prospecção",           short: "PROSPECÇÃO" },
-  { href: "/admin/dashboard/media",      label: "📱 Media Intelligence",   short: "MÍDIA"      },
-  { href: "/admin/dashboard/fluxo",      label: "🔄 Fluxo Operacional",    short: "FLUXO"      },
+  { href: "/admin/dashboard/unified",    label: "\u{1F5FA} Mapa do Projeto",      short: "MAPA"       },
+  { href: "/admin/dashboard/status",     label: "\u2705 Status & Prompts",     short: "STATUS"     },
+  { href: "/admin/dashboard/prospeccao", label: "\u{1F3AF} Prospecção",           short: "PROSPECÇÃO" },
+  { href: "/admin/dashboard/media",      label: "\u{1F4F1} Media Intelligence",   short: "MÍDIA"      },
+  { href: "/admin/dashboard/fluxo",      label: "\u{1F504} Fluxo Operacional",    short: "FLUXO"      },
 ];
 
 export default function AdminLayout({ children }) {
   const path = usePathname();
   const isIndex = path === "/admin/dashboard";
+  const [auth, setAuth] = useState("loading"); // "loading" | "denied" | "ok"
+
+  useEffect(() => {
+    const sb = supabase();
+    sb.auth.getUser().then(({ data }) => {
+      if (data?.user && ADMIN_EMAILS.includes(data.user.email)) {
+        setAuth("ok");
+      } else {
+        setAuth("denied");
+      }
+    });
+  }, []);
+
+  if (auth === "loading") {
+    return (
+      <div style={{ background: "#0A0A0A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "#444", letterSpacing: "0.12em" }}>LOADING...</div>
+      </div>
+    );
+  }
+
+  if (auth === "denied") {
+    return (
+      <div style={{ background: "#0A0A0A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, color: "#F87171", fontWeight: 700, letterSpacing: "0.08em" }}>ACCESS DENIED</div>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#444" }}>Admin authentication required.</div>
+        <a href="/cliente" style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, color: "#E9F59E", textDecoration: "none", marginTop: 8 }}>Login &rarr;</a>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -64,7 +101,7 @@ export default function AdminLayout({ children }) {
           textDecoration: "none", fontSize: 9, letterSpacing: "0.12em",
           color: "#484858", fontWeight: 600,
         }} className="nav-link">
-          ← VOKU.ONE
+          &larr; VOKU.ONE
         </Link>
       </nav>
 
@@ -106,7 +143,7 @@ function DashboardIndex() {
               {label.split(" ").slice(1).join(" ")}
             </span>
             <span style={{ fontSize: 9, color: "#484858", letterSpacing: "0.1em", marginTop: 4 }}>
-              {href.split("/").pop().toUpperCase()} →
+              {href.split("/").pop().toUpperCase()} &rarr;
             </span>
           </Link>
         ))}
