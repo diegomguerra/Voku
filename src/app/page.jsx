@@ -892,7 +892,7 @@ function NoiseTexture() {
 
 /* ─── MAIN APP ──────────────────────────────────── */
 export default function VokuLanding() {
-  const [lang, setLang] = useState("PT");
+  const [lang, setLang] = useState("EN");
   const [navSolid, setNavSolid] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -940,7 +940,7 @@ export default function VokuLanding() {
           ))}
           {/* lang */}
           <div style={{ display: "flex", gap: 2 }}>
-            {["PT", "EN", "ES"].map(l => (
+            {["EN", "PT", "ES"].map(l => (
               <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? "#C8F135" : "transparent", color: lang === l ? "#111" : "#555", border: "none", borderRadius: 5, padding: "4px 8px", fontFamily: FF, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{l}</button>
             ))}
           </div>
