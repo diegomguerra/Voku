@@ -658,7 +658,7 @@ function RegisterFlow({ t, lang, onClose }) {
 
     try {
       const apiMessages = newMessages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }));
-      const res = await fetch("https://nbxsfsuiwvoriyfwzezs.supabase.co/functions/v1/chat-briefing", {
+      const res = await fetch("https://movfynswogmookzcjijt.supabase.co/functions/v1/chat-briefing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
