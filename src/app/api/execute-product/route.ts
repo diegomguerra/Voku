@@ -46,10 +46,16 @@ Estrutura:
 Para cada e-mail: ASSUNTO, PRÉ-HEADER, CORPO completo, CTA. Tom e idioma do briefing.`,
 }
 
+const TONE_INSTRUCTIONS = [
+  { label: 'Option A — Direct & bold tone', instruction: 'Use a direct, bold, no-nonsense tone. Short sentences. Strong verbs. Go straight to the point.' },
+  { label: 'Option B — Consultive & empathetic tone', instruction: 'Use a consultive, empathetic tone. Show understanding of the reader\'s pain. Guide them step by step.' },
+  { label: 'Option C — Creative & provocative tone', instruction: 'Use a creative, provocative tone. Challenge assumptions. Use unexpected angles and compelling hooks.' },
+]
+
 const PRODUCT_NAMES: Record<ProductId, string> = {
   landing_page_copy: 'Landing Page Copy',
-  content_pack: 'Pacote de Conteúdo para Redes',
-  email_sequence: 'Sequência de E-mails de Nutrição',
+  content_pack: 'Content Pack',
+  email_sequence: 'Email Sequence',
 }
 
 export async function POST(req: NextRequest) {
@@ -59,72 +65,98 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const resend = new Resend(process.env.RESEND_API_KEY)
 
-    // Executar com Anthropic
+    const baseSystem = SYSTEM_PROMPTS[product as ProductId]
+    const briefingText = JSON.stringify(structured_data, null, 2)
+
+    // Generate 3 variations in a single API call
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: SYSTEM_PROMPTS[product as ProductId],
+      max_tokens: 8000,
+      system: `${baseSystem}
+
+IMPORTANT: You must generate EXACTLY 3 variations of the deliverable, each with a different tone.
+Return your response as a JSON array with exactly 3 objects:
+[
+  { "label": "Option A — Direct & bold tone", "text": "...full content here..." },
+  { "label": "Option B — Consultive & empathetic tone", "text": "...full content here..." },
+  { "label": "Option C — Creative & provocative tone", "text": "...full content here..." }
+]
+
+Each variation must be complete and production-ready. Only output the JSON array, no other text.`,
       messages: [{
         role: 'user',
-        content: `BRIEFING DO CLIENTE:\n${JSON.stringify(structured_data, null, 2)}\n\nGere o produto completo agora.`,
+        content: `BRIEFING DO CLIENTE:\n${briefingText}\n\nGenerate 3 complete variations now.`,
       }],
     })
 
-    const outputText = message.content[0].type === 'text' ? message.content[0].text : ''
+    const rawOutput = message.content[0].type === 'text' ? message.content[0].text : '[]'
 
-    // Salvar no Supabase Storage
-    const fileName = `${product}_${order_id}.txt`
-    const filePath = `${user_id}/${fileName}`
+    // Parse the 3 variations
+    let variations: { label: string; text: string }[]
+    try {
+      // Extract JSON from potential markdown code blocks
+      const jsonMatch = rawOutput.match(/\[[\s\S]*\]/)
+      variations = JSON.parse(jsonMatch ? jsonMatch[0] : rawOutput)
+    } catch {
+      // Fallback: if JSON parsing fails, create 1 choice with the raw output
+      variations = [{ label: 'Option A', text: rawOutput }]
+    }
 
-    const { error: storageError } = await supabase.storage
-      .from('deliverables')
-      .upload(filePath, new Blob([outputText], { type: 'text/plain' }), { upsert: true })
+    // Ensure we have at least 1 and at most 3 variations
+    variations = variations.slice(0, 3)
 
-    if (storageError) console.error('Storage:', storageError)
+    // Insert choices
+    for (let i = 0; i < variations.length; i++) {
+      await supabase.from('choices').insert({
+        order_id,
+        type: product,
+        label: variations[i].label || TONE_INSTRUCTIONS[i]?.label || `Option ${i + 1}`,
+        content: { text: variations[i].text },
+        is_selected: false,
+        position: i,
+      })
+    }
 
-    // Salvar deliverable no banco
-    await supabase.from('deliverables').insert({
+    // Insert iteration
+    await supabase.from('iterations').insert({
       order_id,
-      user_id,
-      file_name: fileName,
-      file_path: filePath,
-      file_type: 'docx',
-      storage_bucket: 'deliverables',
+      iteration_num: 1,
+      status: 'pending_choices',
+      choices_sent_at: new Date().toISOString(),
     })
 
-    // Atualizar pedido para entregue
-    await supabase.from('orders')
-      .update({ status: 'delivered', delivered_at: new Date().toISOString() })
-      .eq('id', order_id)
+    // Do NOT update orders.status — it stays as 'in_production'
+    // Do NOT insert into deliverables — client must choose first
 
+    // Get order number for email
     const { data: order } = await supabase
       .from('orders').select('order_number').eq('id', order_id).single()
 
-    // E-mail de entrega
+    // Send email: choices are ready
     const productName = PRODUCT_NAMES[product as ProductId]
-    const downloadUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
+    const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
 
     await resend.emails.send({
       from: 'Voku <ola@voku.one>',
       to: email,
-      subject: `✅ Pronto! Seu ${productName} foi entregue`,
+      subject: `✦ Your 3 ${productName} options are ready`,
       html: `
-        <div style="font-family: monospace; background: #0A0A0A; color: #F0F0EC; padding: 40px; max-width: 560px; margin: 0 auto; border-radius: 12px;">
-          <div style="color: #E9F59E; font-size: 20px; font-weight: bold; margin-bottom: 24px;">✦ VOKU</div>
-          <h2 style="color: #4ADE80; font-size: 18px; margin-bottom: 8px;">✅ Entregue, ${name}.</h2>
-          <p style="color: #888; font-size: 14px; line-height: 1.6;">Seu arquivo está pronto. Acesse sua área do cliente para fazer o download.</p>
+        <div style="font-family: 'Helvetica Neue', sans-serif; background: #0A0A0A; color: #F0F0EC; padding: 40px; max-width: 560px; margin: 0 auto; border-radius: 12px;">
+          <div style="color: #C8F135; font-size: 20px; font-weight: bold; margin-bottom: 24px;">✦ VOKU</div>
+          <h2 style="color: #FFFFFF; font-size: 18px; margin-bottom: 8px;">Your options are ready, ${name}.</h2>
+          <p style="color: #888; font-size: 14px; line-height: 1.6;">We generated ${variations.length} variations of your ${productName}. Pick your favorite, add notes if needed, and approve.</p>
           <div style="margin: 24px 0;">
-            <a href="${downloadUrl}" style="background: #E9F59E; color: #0A0A0A; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">↓ Acessar e fazer download</a>
+            <a href="${choicesUrl}" style="background: #C8F135; color: #0A0A0A; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">Choose your favorite →</a>
           </div>
-          <p style="color: #555; font-size: 12px;">Pedido #${order?.order_number} · Não gostou? Respondemos este e-mail e refazemos. Sem discussão.</p>
+          <p style="color: #555; font-size: 12px;">Order #${order?.order_number} · Don't like any of them? Reply to this email and we'll redo it. No questions asked.</p>
           <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #1F1F1F; color: #333; font-size: 11px;">Voku LLC · Wyoming, USA · voku.one</div>
         </div>
       `,
     })
 
-    return NextResponse.json({ success: true, file_path: filePath })
+    return NextResponse.json({ success: true, choices: variations.length })
   } catch (err) {
     console.error(err)
-    return NextResponse.json({ error: 'Erro na execução' }, { status: 500 })
+    return NextResponse.json({ error: 'Execution error' }, { status: 500 })
   }
 }

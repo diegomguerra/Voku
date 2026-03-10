@@ -83,8 +83,8 @@ export default function PedidosPage(){
                     ))}
                   </div>
                   <div style={{padding:"16px 28px"}}>
-                    {order.status==="delivered"&&<button onClick={()=>handleDownload(order)} style={{background:T.lime,color:T.ink,border:"none",borderRadius:10,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>↓ Fazer download</button>}
-                    {order.status==="in_production"&&<div style={{color:T.teal,fontSize:13,fontWeight:600}}>⏳ Arquivo sendo preparado — entrega até {deadline?.toLocaleDateString("pt-BR")}</div>}
+                    {order.status==="delivered"&&<a href={`/cliente/pedidos/${order.id}`} style={{background:T.lime,color:T.ink,border:"none",borderRadius:10,padding:"10px 24px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",textDecoration:"none",display:"inline-block"}}>↓ Ver pedido / Download</a>}
+                    {order.status==="in_production"&&<a href={`/cliente/pedidos/${order.id}`} style={{color:T.teal,fontSize:13,fontWeight:600,textDecoration:"none",display:"inline-block"}}>✦ Ver opções / Acompanhar →</a>}
                     {order.status==="briefing"&&<div style={{color:T.amber,fontSize:13,fontWeight:600}}>📋 Aguardando confirmação do briefing</div>}
                   </div>
                 </div>
