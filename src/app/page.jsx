@@ -944,7 +944,7 @@ export default function VokuLanding() {
               <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? "#C8F135" : "transparent", color: lang === l ? "#111" : "#555", border: "none", borderRadius: 5, padding: "4px 8px", fontFamily: FF, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{l}</button>
             ))}
           </div>
-          <button onClick={() => setShowModal(true)} style={{ background: "#C8F135", color: "#111", border: "none", borderRadius: 8, padding: "10px 20px", fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }} onMouseEnter={e => { e.target.style.opacity = "0.85"; }} onMouseLeave={e => { e.target.style.opacity = "1"; }}>{t.navCta}</button>
+          <a href="/cliente" style={{ background: "#C8F135", color: "#111", border: "none", borderRadius: 8, padding: "10px 20px", fontFamily: FF, fontSize: 13, fontWeight: 700, cursor: "pointer", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={e => { e.target.style.opacity = "0.85"; }} onMouseLeave={e => { e.target.style.opacity = "1"; }}>{lang === "PT" ? "Minha conta" : lang === "EN" ? "My account" : "Mi cuenta"}</a>
         </div>
       </nav>
 
