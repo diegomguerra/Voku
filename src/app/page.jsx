@@ -378,12 +378,10 @@ function RegisterModal({ t, lang, onClose }) {
       const sys = lang === "PT"
         ? "Você é o assistente da Voku. Converse naturalmente, uma pergunta por vez. Após 4-5 trocas, confirme o briefing. Quando confirmado, responda SOMENTE com JSON: {\"briefingConfirmado\":true,\"servico\":\"...\",\"objetivo\":\"...\",\"prazo\":\"...\",\"resumo\":\"...\"}"
         : "You are Voku's assistant. Chat naturally, one question at a time. After 4-5 exchanges, confirm the brief. When confirmed, respond ONLY with JSON: {\"briefingConfirmado\":true,\"servico\":\"...\",\"objetivo\":\"...\",\"prazo\":\"...\",\"resumo\":\"...\"}";
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://nbxsfsuiwvoriyfwzezs.supabase.co/functions/v1/chat-briefing", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
           system: sys,
           messages: [...messages, { role: "user", text: msg }].map(m => ({ role: m.role, content: m.text })),
         }),
