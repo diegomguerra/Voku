@@ -656,12 +656,10 @@ function RegisterFlow({ t, lang, onClose }) {
 
     try {
       const apiMessages = newMessages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }));
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("https://nbxsfsuiwvoriyfwzezs.supabase.co/functions/v1/voku-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
           system: systemPrompt,
           messages: apiMessages,
         }),
