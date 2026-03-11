@@ -1,84 +1,83 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const VERIFY_TOKEN = Deno.env.get("INSTAGRAM_WEBHOOK_VERIFY_TOKEN") ?? "voku_ig_verify";
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-);
+)
 
-Deno.serve(async (req: Request) => {
+serve(async (req) => {
+  const url = new URL(req.url)
+
+  // Webhook verification (GET)
   if (req.method === "GET") {
-    const url = new URL(req.url);
-    const mode = url.searchParams.get("hub.mode");
-    const token = url.searchParams.get("hub.verify_token");
-    const challenge = url.searchParams.get("hub.challenge");
-    if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      return new Response(challenge, { status: 200 });
+    const mode      = url.searchParams.get("hub.mode")
+    const token     = url.searchParams.get("hub.verify_token")
+    const challenge = url.searchParams.get("hub.challenge")
+
+    if (mode === "subscribe" && token === Deno.env.get("META_WEBHOOK_VERIFY_TOKEN")) {
+      return new Response(challenge, { status: 200 })
     }
-    return new Response("Forbidden", { status: 403 });
+    return new Response("Forbidden", { status: 403 })
   }
 
+  // Receive events (POST)
   if (req.method === "POST") {
-    let payload: any;
-    try {
-      payload = await req.json();
-    } catch {
-      return new Response("Invalid JSON", { status: 400 });
-    }
+    const body = await req.json()
 
     await supabase.from("media_webhook_log").insert({
       platform: "instagram",
-      event_type: payload?.object ?? "unknown",
-      payload,
-      processed: false,
-    });
+      event_type: body.object || "unknown",
+      payload: body,
+      received_at: new Date().toISOString()
+    })
 
-    const entries = payload?.entry ?? [];
-    for (const entry of entries) {
-      const changes = entry?.changes ?? [];
-      for (const change of changes) {
-        if (change.field !== "media") continue;
-        const v = change.value;
-        if (!v?.media_id) continue;
+    for (const entry of body.entry || []) {
+      for (const change of entry.changes || []) {
+        const field = change.field
+        const value = change.value
 
-        const postData = {
-          external_id: String(v.media_id),
-          platform: "instagram" as const,
-          title: v.caption?.substring(0, 255) ?? "Instagram post",
-          content: v.caption ?? null,
-          post_url: v.permalink ?? null,
-          published_at: v.timestamp ? new Date(v.timestamp * 1000).toISOString() : null,
-          likes: v.like_count ?? 0,
-          comments: v.comments_count ?? 0,
-          reach: v.reach ?? 0,
-          impressions: v.impressions ?? 0,
-          saves: v.saved ?? 0,
-          shares: v.shares ?? 0,
-          video_views: v.video_views ?? 0,
-          thumbnail_url: v.thumbnail_url ?? null,
-          webhook_raw: v,
-          updated_at: new Date().toISOString(),
-        };
+        if (field === "comments") {
+          await supabase.from("media_webhook_log").insert({
+            platform: "instagram",
+            event_type: "comment",
+            post_id: value.media_id,
+            user_id: value.from?.id,
+            content: value.text,
+            payload: value,
+            received_at: new Date().toISOString()
+          })
+        }
 
-        const { error } = await supabase
-          .from("media_posts")
-          .upsert(postData, { onConflict: "external_id" });
+        if (field === "mentions") {
+          await supabase.from("media_webhook_log").insert({
+            platform: "instagram",
+            event_type: "mention",
+            payload: value,
+            received_at: new Date().toISOString()
+          })
+        }
+      }
 
-        if (error) {
-          console.error("media_posts upsert error:", error.message);
+      for (const msg of entry.messaging || []) {
+        if (msg.message) {
+          await supabase.from("media_webhook_log").insert({
+            platform: "instagram",
+            event_type: "dm",
+            user_id: msg.sender?.id,
+            content: msg.message.text,
+            payload: msg,
+            received_at: new Date().toISOString()
+          })
         }
       }
     }
 
-    await supabase
-      .from("media_webhook_log")
-      .update({ processed: true })
-      .eq("platform", "instagram")
-      .eq("processed", false);
-
-    return new Response("EVENT_RECEIVED", { status: 200 });
+    return new Response(JSON.stringify({ ok: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" }
+    })
   }
 
-  return new Response("Method not allowed", { status: 405 });
-});
+  return new Response("Method not allowed", { status: 405 })
+})
