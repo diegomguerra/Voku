@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
 const C = {
   bg: "#0F0F0F",
@@ -23,7 +24,7 @@ const C = {
 
 // ── AI INSIGHT ENGINE ────────────────────────────────────────────
 function generateInsight(job) {
-  const text = (job.titulo + " " + job.descricao + " " + job.stack + " " + job.rawText).toLowerCase();
+  const text = (job.titulo + " " + job.descricao + " " + job.stack + " " + job.raw_text).toLowerCase();
   const budget = parseFloat((job.budget || "0").replace(/[$,R]/g, "")) || 0;
 
   let complexidade = "baixa";
@@ -37,13 +38,11 @@ function generateInsight(job) {
 
   const cC = complexoKw.filter(k => text.includes(k)).length;
   const cM = medioKw.filter(k => text.includes(k)).length;
-  const cS = simpleKw.filter(k => text.includes(k)).length;
 
   if (cC >= 3) complexidade = "alta";
   else if (cC >= 1 || cM >= 2) complexidade = "média";
   else complexidade = "baixa";
 
-  // Score base: budget vs complexidade
   const budgetScore = {
     alta: budget >= 1500 ? 85 : budget >= 800 ? 62 : budget >= 400 ? 35 : 12,
     média: budget >= 800 ? 90 : budget >= 400 ? 74 : budget >= 200 ? 55 : 28,
@@ -51,59 +50,52 @@ function generateInsight(job) {
   };
   score = budgetScore[complexidade];
 
-  // Red flags → alertas
   if (text.includes("only europe") || text.includes("europe only") || text.includes("europe please")) {
-    alertas.push("🚫 Restrito à Europa — você pode ser eliminado automaticamente. Avalie antes de aplicar.");
+    alertas.push("\u{1F6AB} Restrito à Europa — você pode ser eliminado automaticamente.");
     score -= 40;
   }
   if ((text.includes("all included") || (text.includes("hosting") && text.includes("domain"))) && budget < 500) {
-    alertas.push("🔴 'Tudo incluído' com budget baixo — escopo inflado. Reposicione a proposta ou recuse.");
+    alertas.push("\u{1F534} 'Tudo incluído' com budget baixo — escopo inflado.");
     score -= 20;
   }
   if (text.includes("ongoing") && budget < 300) {
-    alertas.push("⚠️ Ongoing + budget baixo = armadilha de tempo. Negocie valor por milestone antes de aceitar.");
+    alertas.push("\u26A0\uFE0F Ongoing + budget baixo = armadilha de tempo.");
     score -= 10;
   }
   if (cC >= 3 && budget < 600) {
-    alertas.push("🔴 Complexidade alta, budget insuficiente. Se aplicar, negocie escopo reduzido ou valor maior.");
+    alertas.push("\u{1F534} Complexidade alta, budget insuficiente.");
     score -= 15;
   }
-
-  // Green flags → dicas
   if (text.includes("asap") || text.includes("urgently") || text.includes("urgente")) {
-    dicas.push("⚡ Cliente com urgência — quem responde primeiro tem vantagem real. Aplique nas próximas 2h.");
+    dicas.push("\u26A1 Cliente com urgência — aplique nas próximas 2h.");
     score += 5;
   }
   if (text.includes("payment verified") || job.payment_verified) {
-    dicas.push("✅ Payment Verified confirmado — risco de calote mínimo. Priorize.");
+    dicas.push("\u2705 Payment Verified confirmado.");
     score += 5;
   }
   if (text.includes("featured")) {
-    dicas.push("⭐ Featured Job — cliente pagou para destacar o anúncio. Mais sério e comprometido que a média.");
+    dicas.push("\u2B50 Featured Job — cliente pagou para destacar.");
     score += 5;
   }
-  if (text.includes("mockup") || text.includes("figma") || text.includes("design ready") || text.includes("ready to go") || text.includes("assets ready") || text.includes("copy are all ready")) {
-    dicas.push("📐 Assets e copy prontos — menos revisões, entrega mais rápida. Escopo controlado.");
+  if (text.includes("mockup") || text.includes("figma") || text.includes("design ready") || text.includes("assets ready")) {
+    dicas.push("\u{1F4D0} Assets prontos — entrega mais rápida.");
     score += 10;
   }
   if (text.includes("bilingual") || text.includes("english and spanish") || text.includes("en/es")) {
-    dicas.push("🌐 Bilíngue EN/ES — diferencial se você escreve bem nas duas línguas. Menos concorrentes.");
+    dicas.push("\u{1F310} Bilíngue EN/ES — menos concorrentes.");
   }
   if (budget >= 700) {
-    dicas.push("💰 Budget acima da média — vale investir tempo numa proposta personalizada e detalhada.");
+    dicas.push("\u{1F4B0} Budget acima da média — vale proposta personalizada.");
   }
   if (complexidade === "baixa" && budget >= 150) {
-    dicas.push("💡 Job simples e rápido. Ideal para acumular reviews no início. Alta chance de aprovação.");
+    dicas.push("\u{1F4A1} Job simples e rápido. Ideal para acumular reviews.");
   }
   if (complexidade === "média") {
-    dicas.push("💡 Escopo definido. Na cover letter, mostre 2–3 projetos similares com link ao vivo.");
+    dicas.push("\u{1F4A1} Escopo definido. Mostre 2–3 projetos similares.");
   }
   if (complexidade === "alta" && score >= 50) {
-    dicas.push("💡 Job complexo mas bem pago. Proponha milestones para reduzir risco para os dois lados.");
-  }
-  if (text.includes("open to discussing") || text.includes("open to discuss")) {
-    dicas.push("🤝 Cliente aberto a negociar preço — você tem margem para propor um valor mais justo.");
-    score += 5;
+    dicas.push("\u{1F4A1} Job complexo mas bem pago. Proponha milestones.");
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -144,7 +136,7 @@ function parseJob(text) {
     status: "para aplicar",
     data_aplicacao: "",
     notas: "",
-    rawText: text,
+    raw_text: text,
   };
 }
 
@@ -168,18 +160,45 @@ const LIGHT = {
   purple: "#7C3AED", orange: "#EA580C", yellow: "#CA8A04",
 };
 
+// ── DB helpers ───────────────────────────────────────────────────
+function jobToRow(j) {
+  return {
+    id: j.id, titulo: j.titulo, plataforma: j.plataforma, tipo: j.tipo,
+    budget: j.budget, prazo: j.prazo, stack: j.stack, descricao: j.descricao,
+    payment_verified: j.payment_verified, proposta_enviada: j.proposta_enviada,
+    proposta_texto: j.proposta_texto, valor_proposto: j.valor_proposto,
+    status: j.status, data_aplicacao: j.data_aplicacao, notas: j.notas,
+    raw_text: j.raw_text,
+  };
+}
+
+function rowToJob(r) {
+  return { ...r, rawText: r.raw_text };
+}
+
 // ── MAIN ─────────────────────────────────────────────────────────
 export default function VokuProspeccao() {
   const [dark, setDark] = useState(true);
   const T = dark ? C : LIGHT;
 
   const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [pasteText, setPasteText] = useState("");
   const [showPaste, setShowPaste] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [editMode, setEditMode] = useState(false);
   const [editData, setEditData] = useState(null);
   const [filterStatus, setFilterStatus] = useState("todos");
+
+  // Load from Supabase on mount
+  useEffect(() => {
+    const sb = supabase();
+    sb.from("prospects").select("*").order("created_at", { ascending: false }).then(({ data, error }) => {
+      if (error) console.error("Load prospects:", error);
+      setJobs((data || []).map(rowToJob));
+      setLoading(false);
+    });
+  }, []);
 
   const selectedJob = jobs.find(j => j.id === selectedId);
   const total = jobs.length;
@@ -189,31 +208,48 @@ export default function VokuProspeccao() {
     .filter(j => !["recusado","cancelado"].includes(j.status))
     .reduce((acc, j) => acc + (parseFloat((j.valor_proposto || j.budget || "0").replace(/[$,R]/g,"")) || 0), 0);
 
-  function handlePaste() {
+  async function handlePaste() {
     if (!pasteText.trim()) return;
     const job = parseJob(pasteText);
+    const sb = supabase();
+    const { error } = await sb.from("prospects").insert(jobToRow(job));
+    if (error) { console.error("Insert prospect:", error); return; }
     setJobs(prev => [job, ...prev]);
     setPasteText("");
     setShowPaste(false);
     setSelectedId(job.id);
   }
 
-  function updateStatus(id, status) {
+  async function updateStatus(id, status) {
+    const sb = supabase();
+    await sb.from("prospects").update({ status }).eq("id", id);
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j));
   }
 
-  function handleSave() {
+  async function handleSave() {
+    const sb = supabase();
+    await sb.from("prospects").update(jobToRow(editData)).eq("id", editData.id);
     setJobs(prev => prev.map(j => j.id === editData.id ? { ...editData } : j));
     setEditMode(false);
     setEditData(null);
   }
 
-  function handleDelete(id) {
+  async function handleDelete(id) {
+    const sb = supabase();
+    await sb.from("prospects").delete().eq("id", id);
     setJobs(prev => prev.filter(j => j.id !== id));
     setSelectedId(null);
   }
 
   const filtered = filterStatus === "todos" ? jobs : jobs.filter(j => j.status === filterStatus);
+
+  if (loading) {
+    return (
+      <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: C.muted, letterSpacing: "0.12em" }}>LOADING...</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: "'IBM Plex Mono', monospace" }}>
