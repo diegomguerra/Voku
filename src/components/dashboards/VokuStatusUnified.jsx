@@ -181,7 +181,7 @@ const notifyRes = await fetch(
 // ─── PHASES (from status-map) ─────────────────────────────────────────────────
 const phases = [
   {
-    id: 1, title: "Fundação & Infraestrutura", icon: "⚙️", status: "done",
+    id: 1, title: "Fundação & Infraestrutura", icon: "01", status: "done",
     items: [
       { label: "Wyoming LLC aprovada", done: true },
       { label: "Domínio voku.one registrado (GoDaddy)", done: true },
@@ -200,7 +200,7 @@ const phases = [
     ]
   },
   {
-    id: 2, title: "Produtos & Precificação", icon: "📦", status: "done",
+    id: 2, title: "Produtos & Precificação", icon: "02", status: "done",
     items: [
       { label: "Landing Page Copy — USD 100 / BRL 497 / 24h", done: true },
       { label: "Pacote de Conteúdo para Redes (12 posts) — USD 140 / BRL 747 / 48h", done: true },
@@ -209,7 +209,7 @@ const phases = [
     ]
   },
   {
-    id: 3, title: "Landing Page (voku.one)", icon: "🌐", status: "done",
+    id: 3, title: "Landing Page (voku.one)", icon: "03", status: "done",
     items: [
       { label: "Hero trilíngue (PT/EN/ES no subtítulo)", done: true },
       { label: "Seção 'O vazio do mercado'", done: true },
@@ -224,7 +224,7 @@ const phases = [
     ]
   },
   {
-    id: 4, title: "Backend & Automação", icon: "🤖", status: "done",
+    id: 4, title: "Backend & Automação", icon: "04", status: "done",
     items: [
       { label: "Edge Function: submit-briefing (Supabase)", done: true },
       { label: "Edge Function: execute-product (Supabase)", done: true },
@@ -239,7 +239,7 @@ const phases = [
     ]
   },
   {
-    id: 5, title: "Área do Cliente", icon: "👤", status: "done",
+    id: 5, title: "Área do Cliente", icon: "05", status: "done",
     items: [
       { label: "Login + Cadastro (/cliente) — tema claro", done: true, note: "design aprovado hoje" },
       { label: "Página de pedidos (/cliente/pedidos)", done: true, note: "design aprovado hoje" },
@@ -250,7 +250,7 @@ const phases = [
     ]
   },
   {
-    id: 11, title: "Modelo Colaborativo — Choices", icon: "🤝", status: "next",
+    id: 11, title: "Modelo Colaborativo — Choices", icon: "06", status: "next",
     items: [
       { label: "PRINCÍPIO: Nada 100% pronto — cliente tica opções e itera até aprovar", done: false, note: "OBRIGATÓRIO antes de publicar no Fiverr" },
       { label: "Tabela 'choices' no Supabase", done: true, note: "criada hoje" },
@@ -268,7 +268,7 @@ const phases = [
     ]
   },
   {
-    id: 6, title: "Dashboard Operacional", icon: "📊", status: "done",
+    id: 6, title: "Dashboard Operacional", icon: "07", status: "done",
     items: [
       { label: "Tema claro — fundo areia, letras escuras", done: true },
       { label: "KPIs: Receita, Pedidos, Ticket Médio, Entrega", done: true },
@@ -283,7 +283,7 @@ const phases = [
     ]
   },
   {
-    id: 7, title: "Dashboard de Mídia", icon: "📱", status: "done",
+    id: 7, title: "Dashboard de Mídia", icon: "08", status: "done",
     items: [
       { label: "Tema claro — mesmo design system", done: true },
       { label: "Cards Instagram / TikTok / YouTube", done: true },
@@ -297,7 +297,7 @@ const phases = [
     ]
   },
   {
-    id: 8, title: "Canais de Venda", icon: "💼", status: "next",
+    id: 8, title: "Canais de Venda", icon: "09", status: "next",
     items: [
       { label: "Conta Fiverr criada (@voku_studio / Rordens Blake)", done: true, note: "hoje" },
       { label: "Avatar Fiverr (foto IA aprovada)", done: true, note: "hoje" },
@@ -314,7 +314,7 @@ const phases = [
     ]
   },
   {
-    id: 9, title: "Pagamentos Diretos", icon: "💳", status: "next",
+    id: 9, title: "Pagamentos Diretos", icon: "10", status: "next",
     items: [
       { label: "Stripe integrado ao voku.one", done: false },
       { label: "Checkout direto para 3 produtos", done: false },
@@ -323,7 +323,7 @@ const phases = [
     ]
   },
   {
-    id: 10, title: "Máquina de Conteúdo (Social)", icon: "🎬", status: "future",
+    id: 10, title: "Máquina de Conteúdo (Social)", icon: "11", status: "future",
     items: [
       { label: "Criar conta no YouTube (@voku_studio)", done: false },
       { label: "Criar conta no TikTok (@voku_studio)", done: false },
@@ -353,14 +353,14 @@ const ACTION_CONFIG = {
 };
 
 const flowSteps = [
-  { n:"1", label:"Cliente descobre", sub:"Fiverr / Workana / voku.one", icon:"👁️" },
-  { n:"2", label:"Seleciona produto", sub:"Preço visível desde o início", icon:"🛒" },
-  { n:"3", label:"Registro rápido", sub:"Nome + e-mail → Supabase Auth", icon:"📝" },
-  { n:"4", label:"Briefing com IA", sub:"RORDENS conversa → JSON estruturado", icon:"🤖" },
-  { n:"5", label:"E-mail de confirmação", sub:"Resend → número do pedido + prazo", icon:"📧" },
-  { n:"6", label:"RORDENS executa", sub:"Anthropic API → gera o conteúdo", icon:"⚡" },
-  { n:"7", label:"Arquivo gerado", sub:"Vercel → Supabase Storage", icon:"📄" },
-  { n:"8", label:"Entrega + download", sub:"E-mail + área do cliente (/cliente)", icon:"✅" },
+  { n:"1", label:"Cliente descobre", sub:"Fiverr / Workana / voku.one" },
+  { n:"2", label:"Seleciona produto", sub:"Preço visível desde o início" },
+  { n:"3", label:"Registro rápido", sub:"Nome + e-mail → Supabase Auth" },
+  { n:"4", label:"Briefing com IA", sub:"RORDENS conversa → JSON estruturado" },
+  { n:"5", label:"E-mail de confirmação", sub:"Resend → número do pedido + prazo" },
+  { n:"6", label:"RORDENS executa", sub:"Anthropic API → gera o conteúdo" },
+  { n:"7", label:"Arquivo gerado", sub:"Vercel → Supabase Storage" },
+  { n:"8", label:"Entrega + download", sub:"E-mail + área do cliente (/cliente)" },
 ];
 
 const todayLog = [
@@ -737,7 +737,7 @@ export default function VokuStatusUnified() {
                     <div style={{ padding: "18px 22px" }}>
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <span style={{ fontSize: 20 }}>{phase.icon}</span>
+                          <span style={{ fontSize: 11, fontWeight: 900, color: "#111111", background: "#AAFF00", padding: "4px 8px", letterSpacing: "0.05em", fontFamily: "'Inter', sans-serif" }}>{phase.icon}</span>
                           <div>
                             <div style={{ fontSize: 10, color: TD.inkFaint, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Fase {phase.id}</div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: TD.ink }}>{phase.title}</div>
@@ -789,7 +789,6 @@ export default function VokuStatusUnified() {
                   </div>
                   <div style={{ flex: 1, background: TD.white, border: `1px solid ${TD.border}`, borderRadius: 14, padding: "16px 22px", marginBottom: 12, marginLeft: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 22 }}>{step.icon}</span>
                       <div>
                         <div style={{ fontSize: 15, fontWeight: 700, color: TD.ink }}>{step.label}</div>
                         <div style={{ fontSize: 13, color: TD.inkMid, marginTop: 2 }}>{step.sub}</div>
@@ -803,13 +802,13 @@ export default function VokuStatusUnified() {
             </div>
             <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 14 }}>
               {[
-                { title: "Banco de Dados", icon: "🗄️", items: ["users", "orders", "briefings", "deliverables", "media_posts", "media_spend", "choices", "iterations", "choice_feedback"], color: TD.blueBg, textColor: TD.blue },
-                { title: "Edge Functions", icon: "⚡", items: ["submit-briefing", "execute-product", "send-reply"], color: TD.purpleBg, textColor: TD.purple },
-                { title: "Serviços Externos", icon: "🔌", items: ["Anthropic API (IA)", "Resend (e-mail)", "Supabase Storage", "Vercel (deploy)", "Stripe (pagamentos)"], color: TD.greenBg, textColor: TD.green },
+                { title: "Banco de Dados", items: ["users", "orders", "briefings", "deliverables", "media_posts", "media_spend", "choices", "iterations", "choice_feedback"], color: TD.blueBg, textColor: TD.blue },
+                { title: "Edge Functions", items: ["submit-briefing", "execute-product", "send-reply"], color: TD.purpleBg, textColor: TD.purple },
+                { title: "Serviços Externos", items: ["Anthropic API (IA)", "Resend (e-mail)", "Supabase Storage", "Vercel (deploy)", "Stripe (pagamentos)"], color: TD.greenBg, textColor: TD.green },
               ].map(block => (
                 <div key={block.title} style={{ background: TD.white, border: `1px solid ${TD.border}`, borderRadius: 14, padding: "18px 20px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                    <span style={{ fontSize: 18 }}>{block.icon}</span>
+                    <div style={{ width: 3, height: 14, background: block.textColor }} />
                     <span style={{ fontSize: 13, fontWeight: 700, color: TD.ink }}>{block.title}</span>
                   </div>
                   {block.items.map(item => (
