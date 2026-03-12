@@ -181,6 +181,7 @@ export default function AprovacaoPage() {
   const [statuses, setStatuses] = useState<Record<string, "pendente" | "aprovado" | "rejeitado">>({});
   const [comments, setComments] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingPosts, setLoadingPosts] = useState(false);
   const [despachando, setDespachando] = useState(false);
   const [modal, setModal] = useState<{ show: boolean; success: boolean; msg: string }>({ show: false, success: false, msg: "" });
 
@@ -193,27 +194,34 @@ export default function AprovacaoPage() {
         if (list.length > 0) {
           const first = list[0];
           setSelected(first.semana_key);
-          loadPosts(first);
+          fetchPosts(first.semana_key);
         }
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  function loadPosts(semana: any) {
-    const p = semana.posts || [];
-    setPosts(p);
-    const s: Record<string, "pendente" | "aprovado" | "rejeitado"> = {};
-    const c: Record<string, string> = {};
-    p.forEach((post: any) => { s[post.id] = "pendente"; c[post.id] = ""; });
-    setStatuses(s);
-    setComments(c);
+  function fetchPosts(semanaKey: string) {
+    setLoadingPosts(true);
+    setPosts([]);
+    fetch(`${SUPABASE_FN}/publicar-semana?semana_key=${semanaKey}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const p = data?.semana?.posts || [];
+        setPosts(p);
+        const s: Record<string, "pendente" | "aprovado" | "rejeitado"> = {};
+        const c: Record<string, string> = {};
+        p.forEach((post: any) => { s[post.id] = "pendente"; c[post.id] = ""; });
+        setStatuses(s);
+        setComments(c);
+        setLoadingPosts(false);
+      })
+      .catch(() => setLoadingPosts(false));
   }
 
   function selectSemana(key: string) {
     setSelected(key);
-    const sem = semanas.find((s) => s.semana_key === key);
-    if (sem) loadPosts(sem);
+    fetchPosts(key);
   }
 
   function toggleStatus(postId: string, target: "aprovado" | "rejeitado") {
@@ -309,7 +317,13 @@ export default function AprovacaoPage() {
           </div>
         )}
 
-        {posts.length > 0 && (
+        {loadingPosts && (
+          <div style={{ textAlign: "center", padding: 48, color: T.faint, fontSize: 15 }}>
+            Carregando posts...
+          </div>
+        )}
+
+        {!loadingPosts && posts.length > 0 && (
           <>
             {/* Barra de progresso + ações */}
             <div style={{
