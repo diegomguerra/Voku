@@ -255,29 +255,69 @@ export default function VokuProspeccao() {
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: "'IBM Plex Mono', monospace" }}>
 
       {/* TOPBAR */}
-      <div style={{ borderBottom: `1px solid ${T.border}`, padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span style={{ color: T.accent, fontWeight: 700, fontSize: 17, letterSpacing: "0.04em" }}>✦ VOKU</span>
-          <div style={{ width: 1, height: 14, background: T.border2 }} />
-          <span style={{ fontSize: 12, color: T.muted2, letterSpacing: "0.18em" }}>PROSPECÇÃO</span>
-          <div style={{ width: 1, height: 14, background: T.border2 }} />
-          <span style={{ fontSize: 12, color: T.text }}>{total} jobs · {enviadas} propostas · {aprovados} fechados</span>
+      <div style={{
+        background: "#FFFFFF",
+        borderBottom: "2px solid #111111",
+        padding: "20px 48px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        fontFamily: "'Inter', sans-serif",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <span style={{
+            background: "#AAFF00",
+            color: "#111111",
+            fontWeight: 900,
+            fontSize: "13px",
+            padding: "3px 8px",
+            letterSpacing: "0.05em",
+            fontFamily: "'Inter', sans-serif",
+          }}>VOKU</span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            color: "#999999",
+            letterSpacing: "0.15em",
+            fontFamily: "'Inter', sans-serif",
+          }}>PROSPECÇÃO</span>
+          <span style={{
+            fontSize: "18px",
+            fontWeight: 900,
+            color: "#111111",
+            letterSpacing: "-0.02em",
+            fontFamily: "'Inter', sans-serif",
+          }}>Prospecção</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <button onClick={() => setDark(d => !d)} style={{
-            background: dark ? T.s3 : T.s2,
-            border: `1px solid ${T.border}`,
+            background: dark ? "#111111" : "#F0F0F0",
+            border: "1px solid #E5E5E5",
             borderRadius: 20, padding: "4px 12px",
             display: "flex", alignItems: "center", gap: 6,
-            cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 11, color: T.muted2, fontWeight: 600,
+            cursor: "pointer", fontFamily: "'Inter', sans-serif",
+            fontSize: 11, color: dark ? "#AAFF00" : "#333333", fontWeight: 700,
             transition: "all 0.2s"
           }}>
             <span>{dark ? "☀" : "◑"}</span>
             <span>{dark ? "LIGHT" : "DARK"}</span>
           </button>
-          <div style={{ width: 7, height: 7, borderRadius: "50%", background: T.green, boxShadow: `0 0 7px ${T.green}` }} />
-          <span style={{ fontSize: 11, color: T.muted2 }}>ativo</span>
+          <a href="/admin/dashboard" style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: "#111111",
+            fontWeight: 700,
+            fontSize: "12px",
+            textDecoration: "none",
+            letterSpacing: "0.1em",
+            border: "1px solid #E5E5E5",
+            padding: "8px 16px",
+            fontFamily: "'Inter', sans-serif",
+          }}>← DASHBOARDS</a>
         </div>
       </div>
 

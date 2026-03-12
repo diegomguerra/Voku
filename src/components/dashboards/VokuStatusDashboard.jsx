@@ -259,41 +259,71 @@ export default function VokuDashboard() {
       <div style={{ minHeight: "100vh", background: D.bg, transition: "background 0.2s" }}>
 
         {/* ── HEADER ── */}
-        <header style={{
-          position: "sticky", top: 0, zIndex: 50,
-          height: 54, padding: "0 28px",
-          background: D.header, backdropFilter: "blur(10px)",
-          borderBottom: `1px solid ${D.border}`,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
+        <div style={{
+          background: "#FFFFFF",
+          borderBottom: "2px solid #111111",
+          padding: "20px 48px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          fontFamily: "'Inter', sans-serif",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontWeight: 700, fontSize: 13, letterSpacing: 3, color: D.text }}>VOKU</span>
-            <span style={{ width: 1, height: 14, background: D.border }} />
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 9, color: D.textMid, letterSpacing: 2 }}>STATUS DASHBOARD</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <span style={{
+              background: "#AAFF00",
+              color: "#111111",
+              fontWeight: 900,
+              fontSize: "13px",
+              padding: "3px 8px",
+              letterSpacing: "0.05em",
+              fontFamily: "'Inter', sans-serif",
+            }}>VOKU</span>
+            <span style={{
+              fontSize: "11px",
+              fontWeight: 700,
+              color: "#999999",
+              letterSpacing: "0.15em",
+              fontFamily: "'Inter', sans-serif",
+            }}>STATUS</span>
+            <span style={{
+              fontSize: "18px",
+              fontWeight: 900,
+              color: "#111111",
+              letterSpacing: "-0.02em",
+              fontFamily: "'Inter', sans-serif",
+            }}>Status & Prompts</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, color: D.textSub }}>
-              <span style={{ color: D.accentText, fontWeight: 700 }}>{totalDone}</span>
-              <span style={{ color: D.textMid }}>/{TASKS.length}</span>
-            </span>
-            <div style={{ width: 96, height: 5, background: D.progressBg, borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: "100%", borderRadius: 3, width: pct + "%", background: D.accent, transition: "width 0.4s cubic-bezier(.4,0,.2,1)" }} />
-            </div>
-            <span style={{ fontFamily: "'IBM Plex Mono',monospace", fontSize: 11, fontWeight: 700, color: D.accentText, minWidth: 30 }}>{pct}%</span>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             <button onClick={() => setDark(d => !d)} style={{
-              background: dark ? "#1E1E1E" : "#E8E4DC",
-              border: `1px solid ${D.border}`,
+              background: dark ? "#111111" : "#F0F0F0",
+              border: "1px solid #E5E5E5",
               borderRadius: 20, padding: "4px 12px",
               display: "flex", alignItems: "center", gap: 6,
-              cursor: "pointer", fontFamily: "'IBM Plex Mono',monospace",
-              fontSize: 10, color: D.textSub, fontWeight: 600,
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              fontSize: 11, color: dark ? "#AAFF00" : "#333333", fontWeight: 700,
               transition: "all 0.2s"
             }}>
               <span>{dark ? "☀" : "◑"}</span>
               <span>{dark ? "LIGHT" : "DARK"}</span>
             </button>
+            <a href="/admin/dashboard" style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              color: "#111111",
+              fontWeight: 700,
+              fontSize: "12px",
+              textDecoration: "none",
+              letterSpacing: "0.1em",
+              border: "1px solid #E5E5E5",
+              padding: "8px 16px",
+              fontFamily: "'Inter', sans-serif",
+            }}>← DASHBOARDS</a>
           </div>
-        </header>
+        </div>
 
         {/* ── LEGEND ── */}
         <div style={{ padding: "8px 28px", borderBottom: `1px solid ${D.legendBorder}`, background: dark ? "#0D0D0D" : "#F8F7F3", display: "flex", flexWrap: "wrap", gap: "4px 18px" }}>

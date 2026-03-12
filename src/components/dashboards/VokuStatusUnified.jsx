@@ -433,48 +433,65 @@ export default function VokuStatusUnified() {
     <div style={{ background: TD.sand, minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
 
       {/* ── HEADER ── */}
-      <div style={{ background: TD.ink, padding: "20px 40px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 50 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ background: TD.lime, color: TD.ink, fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 22, fontWeight: 400, padding: "4px 16px", borderRadius: 8 }}>Voku</div>
-          <div>
-            <div style={{ color: "#FFF", fontSize: 16, fontWeight: 700 }}>Mapa do Projeto</div>
-            <div style={{ color: TD.inkFaint, fontSize: 12 }}>voku.one — atualizado em 09/03/2026</div>
-          </div>
+      <div style={{
+        background: "#FFFFFF",
+        borderBottom: "2px solid #111111",
+        padding: "20px 48px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        fontFamily: "'Inter', sans-serif",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <span style={{
+            background: "#AAFF00",
+            color: "#111111",
+            fontWeight: 900,
+            fontSize: "13px",
+            padding: "3px 8px",
+            letterSpacing: "0.05em",
+            fontFamily: "'Inter', sans-serif",
+          }}>VOKU</span>
+          <span style={{
+            fontSize: "11px",
+            fontWeight: 700,
+            color: "#999999",
+            letterSpacing: "0.15em",
+            fontFamily: "'Inter', sans-serif",
+          }}>MAPA</span>
+          <span style={{
+            fontSize: "18px",
+            fontWeight: 900,
+            color: "#111111",
+            letterSpacing: "-0.02em",
+            fontFamily: "'Inter', sans-serif",
+          }}>Mapa do Projeto</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-          <div style={{ display: "flex", gap: 28 }}>
-            {[
-              { label: "Fases concluídas", value: `${donePhases}/${phases.length}`, color: TD.lime },
-              { label: "Itens feitos", value: `${doneItems}/${allItems.length}`, color: "#FFF" },
-              { label: "MVP no ar", value: "✅ voku.one", color: TD.lime },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: "center" }}>
-                <div style={{ color: s.color, fontSize: 20, fontWeight: 800 }}>{s.value}</div>
-                <div style={{ color: TD.inkFaint, fontSize: 11 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => setDark(d => !d)} style={{
-            background: dark ? "#2A2A2A" : "rgba(255,255,255,0.12)",
-            border: "1px solid rgba(255,255,255,0.2)",
-            borderRadius: 20, padding: "5px 14px",
-            display: "flex", alignItems: "center", gap: 6,
-            cursor: "pointer", fontFamily: "'Plus Jakarta Sans', sans-serif",
-            fontSize: 12, color: "#FFF", fontWeight: 600,
-          }}>
-            <span>{dark ? "☀" : "◑"}</span>
-            <span>{dark ? "LIGHT" : "DARK"}</span>
-          </button>
-        </div>
+        <a href="/admin/dashboard" style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          color: "#111111",
+          fontWeight: 700,
+          fontSize: "12px",
+          textDecoration: "none",
+          letterSpacing: "0.1em",
+          border: "1px solid #E5E5E5",
+          padding: "8px 16px",
+          fontFamily: "'Inter', sans-serif",
+        }}>← DASHBOARDS</a>
       </div>
 
       {/* ── NAV ── */}
       <div style={{ background: TD.white, borderBottom: `1px solid ${TD.border}`, padding: "0 40px", display: "flex", gap: 4 }}>
         {[
-          { key: "today",   label: "🗓️ Hoje" },
-          { key: "tasks",   label: "⚡ Pendências & Prompts" },
-          { key: "phases",  label: "📋 Todas as Fases" },
-          { key: "flow",    label: "🔄 Fluxo de Automação" },
+          { key: "today",   label: "Hoje" },
+          { key: "tasks",   label: "Pendências & Prompts" },
+          { key: "phases",  label: "Todas as Fases" },
+          { key: "flow",    label: "Fluxo de Automação" },
         ].map(tab => (
           <button key={tab.key} onClick={() => setView(tab.key)} style={{
             background: "none", border: "none",
