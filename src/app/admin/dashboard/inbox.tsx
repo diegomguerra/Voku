@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client";
 import { useState, useEffect } from "react";
+import AdminHeader from "@/components/AdminHeader";
 
 const T = {
   sand:"#FAF8F3",white:"#FFFFFF",ink:"#111111",inkSub:"#3D3D3D",inkMid:"#6B6B6B",inkFaint:"#A0A0A0",
@@ -70,16 +71,7 @@ export default function InboxDashboard() {
 
   return (
     <div style={{background:T.sand,minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
-      {/* Header */}
-      <div style={{background:T.white,borderBottom:`1px solid ${T.border}`,padding:"0 40px",display:"flex",alignItems:"center",justifyContent:"space-between",height:64}}>
-        <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{background:T.ink,color:T.lime,fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:20,padding:"4px 14px",borderRadius:6}}>Voku</div>
-          <span style={{color:T.borderMd,fontSize:20}}>|</span>
-          <span style={{fontSize:15,fontWeight:700,color:T.inkSub}}>Inbox RORDENS</span>
-          <a href="/admin/dashboard" style={{fontSize:13,color:T.teal,fontWeight:600,textDecoration:"none",marginLeft:8}}>← Ops</a>
-          <a href="/admin/dashboard/media" style={{fontSize:13,color:T.teal,fontWeight:600,textDecoration:"none",marginLeft:8}}>→ Midia</a>
-        </div>
-      </div>
+      <AdminHeader title="Inbox" sub="MENSAGENS" />
 
       <div style={{padding:"32px 40px",maxWidth:1200,margin:"0 auto"}}>
         {/* Stats */}

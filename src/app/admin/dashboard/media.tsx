@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AdminHeader from "@/components/AdminHeader";
 
 const SUPABASE_URL = "https://movfynswogmookzcjijt.supabase.co";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vdmZ5bnN3b2dtb29remNqaWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjI1OTQsImV4cCI6MjA1NzI5ODU5NH0.xGa5i-UMXuUBCXFcIRiSBxHxG0IlX2xyK6ok7bS4W5k";
@@ -146,35 +147,7 @@ export default function MediaDashboard() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#F7F7F7", fontFamily: "'Inter', sans-serif" }}>
-      <div style={{
-        background: "#FFFFFF",
-        borderBottom: "2px solid #111111",
-        padding: "20px 48px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <a href="/admin/dashboard" style={{
-            fontSize: "13px", fontWeight: 700, color: "#999999",
-            textDecoration: "none", letterSpacing: "0.05em",
-          }}>← ADMIN</a>
-          <span style={{ color: "#E5E5E5" }}>|</span>
-          <span style={{
-            background: "#AAFF00", color: "#111111", fontWeight: 900,
-            fontSize: "13px", padding: "3px 8px", letterSpacing: "0.05em",
-          }}>MÍDIA</span>
-          <span style={{
-            fontSize: "18px", fontWeight: 900, color: "#111111", letterSpacing: "-0.02em",
-          }}>Media Intelligence</span>
-        </div>
-        <div style={{ fontSize: "12px", color: "#999999", fontWeight: 500 }}>
-          {filtered.length} posts · atualizado via Meta API
-        </div>
-      </div>
+      <AdminHeader title="Media Intelligence" sub="MÍDIA" />
 
       <div style={{ padding: "40px 48px", maxWidth: "1400px", margin: "0 auto" }}>
         <div style={{

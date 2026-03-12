@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useState } from "react";
+import AdminHeader from "@/components/AdminHeader";
 
 const COLORS = {
   bg: "#0A0A0A",
@@ -224,42 +225,7 @@ export default function VokuFlow() {
         padding: "0 0 80px",
       }}
     >
-      {/* Header */}
-      <div
-        style={{
-          borderBottom: `1px solid ${COLORS.border}`,
-          padding: "28px 40px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ color: COLORS.accent, fontSize: 22, fontWeight: 700 }}>✦ VOKU</span>
-            <span style={{ color: COLORS.muted, fontSize: 12 }}>—</span>
-            <span style={{ color: COLORS.muted, fontSize: 12, letterSpacing: "0.1em" }}>
-              FLUXO OPERACIONAL
-            </span>
-          </div>
-          <div style={{ color: COLORS.muted, fontSize: 11, marginTop: 4 }}>
-            Do primeiro clique à entrega do produto — todas as plataformas mapeadas
-          </div>
-        </div>
-        <div
-          style={{
-            background: COLORS.claude + "22",
-            border: `1px solid ${COLORS.claude}44`,
-            color: COLORS.claudeLight,
-            borderRadius: 6,
-            padding: "6px 14px",
-            fontSize: 11,
-            letterSpacing: "0.08em",
-          }}
-        >
-          ◈ POWERED BY RORDENS
-        </div>
-      </div>
+      <AdminHeader title="Fluxo Operacional" sub="FLUXO" />
 
       <div style={{ padding: "0 40px", maxWidth: 1100, margin: "0 auto" }}>
         {/* Section: Fluxo */}

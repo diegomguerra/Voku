@@ -26,7 +26,7 @@ export default function OpsDashboard() {
         <div style={{ width: "60px", height: "4px", background: "#AAFF00", marginTop: "24px" }} />
       </div>
 
-      <div style={{ padding: "48px", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "2px", background: "#111111" }}>
+      <div style={{ padding: "48px", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "2px", background: "#111111" }}>
         {dashboards.map((d) => (
           <a key={d.href} href={d.href} style={{
             background: d.accent ? "#AAFF00" : "#FFFFFF",
