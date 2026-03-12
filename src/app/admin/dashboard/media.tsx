@@ -1,161 +1,352 @@
-// @ts-nocheck
 "use client";
-import { useState, useEffect } from "react";
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-const T = {
-  sand:"#FAF8F3",white:"#FFFFFF",ink:"#111111",inkSub:"#3D3D3D",inkMid:"#6B6B6B",inkFaint:"#A0A0A0",
-  lime:"#C8F135",border:"#E8E5DE",borderMd:"#D1CCBF",
-  green:"#166534",greenBg:"#DCFCE7",teal:"#0D7A6E",tealBg:"#E6F5F3",
-  red:"#991B1B",redBg:"#FEE2E2",purple:"#6D28D9",purpleBg:"#EDE9FE",
+
+import { useEffect, useState } from "react";
+
+const SUPABASE_URL = "https://movfynswogmookzcjijt.supabase.co";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1vdmZ5bnN3b2dtb29remNqaWp0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE3MjI1OTQsImV4cCI6MjA1NzI5ODU5NH0.xGa5i-UMXuUBCXFcIRiSBxHxG0IlX2xyK6ok7bS4W5k";
+
+interface Metrica {
+  id: string;
+  post_id: string;
+  semana_key: string;
+  instagram_media_id: string;
+  titulo: string;
+  tipo: string;
+  pilar: string;
+  dia: string;
+  horario: string;
+  imagem_url: string;
+  impressions: number;
+  reach: number;
+  likes: number;
+  comments: number;
+  saved: number;
+  shares: number;
+  plays: number;
+  engagement_rate: number;
+  coletado_em: string;
+}
+
+const PILAR_COLORS: Record<string, { bg: string; text: string }> = {
+  "EDUCAÇÃO":   { bg: "#EBF0FF", text: "#1A3FA0" },
+  "PROVOCAÇÃO": { bg: "#FFE8E8", text: "#A01A1A" },
+  "PROCESSO":   { bg: "#F2EBFF", text: "#6A1AB0" },
+  "PROVA":      { bg: "#FFF4D6", text: "#7A5000" },
+  "CONVERSÃO":  { bg: "#E6FFF2", text: "#0A6B34" },
 };
-const PLAT_MAP: Record<string,string> = { instagram:"Instagram", tiktok:"TikTok", youtube:"YouTube" };
-const PLAT:Record<string,{color:string;bg:string;emoji:string}>={Instagram:{color:T.purple,bg:T.purpleBg,emoji:"📸"},TikTok:{color:T.ink,bg:T.sand,emoji:"🎵"},YouTube:{color:T.red,bg:T.redBg,emoji:"▶️"}};
-function Card({children,style={}}:any){return <div style={{background:T.white,border:`1px solid ${T.border}`,borderRadius:14,padding:"24px",boxShadow:"0 2px 8px rgba(0,0,0,0.04)",...style}}>{children}</div>}
-function CardTitle({children}:any){return <div style={{fontSize:15,fontWeight:700,color:T.ink,marginBottom:20}}>{children}</div>}
-function TT({active,payload,label}:any){if(!active||!payload?.length)return null;return(<div style={{background:T.white,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",fontSize:13,boxShadow:"0 4px 16px rgba(0,0,0,0.1)"}}><div style={{color:T.inkMid,marginBottom:4,fontWeight:600}}>{label}</div>{payload.map((p:any,i:number)=><div key={i} style={{color:T.ink,fontWeight:700}}>{p.name}: {p.value.toLocaleString()}</div>)}</div>)}
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const year = d.getFullYear();
-  return `${day}/${month}/${year}`;
+function StatCard({ label, value, unit = "", accent = false }: { label: string; value: string | number; unit?: string; accent?: boolean }) {
+  return (
+    <div style={{
+      background: accent ? "#111111" : "#FFFFFF",
+      border: "1px solid #E5E5E5",
+      padding: "24px",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
+    }}>
+      <div style={{
+        fontSize: "11px",
+        fontWeight: 700,
+        letterSpacing: "0.15em",
+        color: accent ? "#AAFF00" : "#999999",
+      }}>{label}</div>
+      <div style={{
+        fontSize: "clamp(28px, 3vw, 40px)",
+        fontWeight: 900,
+        color: accent ? "#FFFFFF" : "#111111",
+        letterSpacing: "-0.02em",
+        lineHeight: 1,
+      }}>
+        {value}<span style={{ fontSize: "18px", fontWeight: 500 }}>{unit}</span>
+      </div>
+    </div>
+  );
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
-  return String(n);
+function PilarBadge({ pilar }: { pilar: string }) {
+  const c = PILAR_COLORS[pilar] || { bg: "#F0F0F0", text: "#333333" };
+  return (
+    <span style={{
+      background: c.bg,
+      color: c.text,
+      fontSize: "10px",
+      fontWeight: 700,
+      padding: "3px 8px",
+      letterSpacing: "0.1em",
+    }}>{pilar}</span>
+  );
 }
 
-export default function MediaDashboard(){
-  const [data, setData] = useState<any>(null);
+function EngagementBar({ value, max }: { value: number; max: number }) {
+  const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ flex: 1, height: "4px", background: "#E5E5E5" }}>
+        <div style={{ width: `${pct}%`, height: "100%", background: "#AAFF00" }} />
+      </div>
+      <span style={{ fontSize: "12px", fontWeight: 700, color: "#111111", minWidth: "40px", textAlign: "right" }}>
+        {value.toLocaleString("pt-BR")}
+      </span>
+    </div>
+  );
+}
+
+export default function MediaDashboard() {
+  const [metricas, setMetricas] = useState<Metrica[]>([]);
   const [loading, setLoading] = useState(true);
+  const [semanaFiltro, setSemanaFiltro] = useState("todas");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
+  const [sortBy, setSortBy] = useState("engagement_rate");
 
   useEffect(() => {
-    fetch("/api/admin/media")
+    fetch(`${SUPABASE_URL}/functions/v1/salvar-metricas`, {
+      headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` },
+    })
       .then(r => r.json())
-      .then(d => { setData(d); setLoading(false); })
+      .then(data => {
+        setMetricas(Array.isArray(data) ? data : []);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div style={{background:T.sand,minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif",display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <span style={{fontSize:18,fontWeight:700,color:T.inkMid}}>Carregando...</span>
+  const semanas = ["todas", ...Array.from(new Set(metricas.map(m => m.semana_key)))];
+
+  const filtered = metricas
+    .filter(m => semanaFiltro === "todas" || m.semana_key === semanaFiltro)
+    .filter(m => tipoFiltro === "todos" || m.tipo === tipoFiltro)
+    .sort((a, b) => {
+      const map: Record<string, keyof Metrica> = {
+        engagement_rate: "engagement_rate",
+        impressions: "impressions",
+        reach: "reach",
+        likes: "likes",
+        saved: "saved",
+        plays: "plays",
+      };
+      const key = map[sortBy] || "engagement_rate";
+      return (b[key] as number) - (a[key] as number);
+    });
+
+  const total_impressions = filtered.reduce((s, m) => s + m.impressions, 0);
+  const total_reach = filtered.reduce((s, m) => s + m.reach, 0);
+  const total_likes = filtered.reduce((s, m) => s + m.likes, 0);
+  const total_comments = filtered.reduce((s, m) => s + m.comments, 0);
+  const total_saved = filtered.reduce((s, m) => s + m.saved, 0);
+  const total_shares = filtered.reduce((s, m) => s + m.shares, 0);
+  const total_plays = filtered.reduce((s, m) => s + m.plays, 0);
+  const avg_engagement = filtered.length > 0
+    ? (filtered.reduce((s, m) => s + m.engagement_rate, 0) / filtered.length).toFixed(2)
+    : "0.00";
+  const maxEngagement = Math.max(...filtered.map(m => m.engagement_rate), 1);
+
+  const melhorPost = filtered.reduce((best, m) =>
+    m.engagement_rate > (best?.engagement_rate || 0) ? m : best, filtered[0]);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F7F7F7", fontFamily: "'Inter', sans-serif" }}>
+      <div style={{
+        background: "#FFFFFF",
+        borderBottom: "2px solid #111111",
+        padding: "20px 48px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <a href="/admin/dashboard" style={{
+            fontSize: "13px", fontWeight: 700, color: "#999999",
+            textDecoration: "none", letterSpacing: "0.05em",
+          }}>← ADMIN</a>
+          <span style={{ color: "#E5E5E5" }}>|</span>
+          <span style={{
+            background: "#AAFF00", color: "#111111", fontWeight: 900,
+            fontSize: "13px", padding: "3px 8px", letterSpacing: "0.05em",
+          }}>MÍDIA</span>
+          <span style={{
+            fontSize: "18px", fontWeight: 900, color: "#111111", letterSpacing: "-0.02em",
+          }}>Media Intelligence</span>
+        </div>
+        <div style={{ fontSize: "12px", color: "#999999", fontWeight: 500 }}>
+          {filtered.length} posts · atualizado via Meta API
+        </div>
       </div>
-    );
-  }
 
-  const platformCards = (data?.posts_by_platform ?? []).map((p: any) => {
-    const name = PLAT_MAP[p.platform] ?? p.platform;
-    const pl = PLAT[name] ?? { color: T.ink, bg: T.sand, emoji: "" };
-    return { name, count: p.count ?? 0, color: pl.color, bg: pl.bg, emoji: pl.emoji };
-  });
-  // Ensure all 3 platforms appear even if API returns fewer
-  const allPlatforms = ["Instagram", "TikTok", "YouTube"];
-  const platformCardsMap = Object.fromEntries(platformCards.map((p: any) => [p.name, p]));
-  const finalPlatformCards = allPlatforms.map(name => platformCardsMap[name] ?? {
-    name, count: 0, color: PLAT[name].color, bg: PLAT[name].bg, emoji: PLAT[name].emoji,
-  });
+      <div style={{ padding: "40px 48px", maxWidth: "1400px", margin: "0 auto" }}>
+        <div style={{
+          display: "flex", gap: "12px", marginBottom: "32px",
+          flexWrap: "wrap", alignItems: "center",
+        }}>
+          <span style={{ fontSize: "12px", fontWeight: 700, color: "#999999", letterSpacing: "0.1em" }}>FILTRAR</span>
+          {semanas.map(s => (
+            <button key={s} onClick={() => setSemanaFiltro(s)} style={{
+              padding: "6px 14px",
+              background: semanaFiltro === s ? "#111111" : "#FFFFFF",
+              color: semanaFiltro === s ? "#AAFF00" : "#333333",
+              border: "1px solid #E5E5E5", fontWeight: 700, fontSize: "12px",
+              cursor: "pointer", letterSpacing: "0.05em", fontFamily: "Inter, sans-serif",
+            }}>{s === "todas" ? "TODAS" : s}</button>
+          ))}
+          <span style={{ width: "1px", height: "20px", background: "#E5E5E5" }} />
+          {["todos", "CARROSSEL", "REEL"].map(t => (
+            <button key={t} onClick={() => setTipoFiltro(t)} style={{
+              padding: "6px 14px",
+              background: tipoFiltro === t ? "#AAFF00" : "#FFFFFF",
+              color: "#111111", border: "1px solid #E5E5E5", fontWeight: 700,
+              fontSize: "12px", cursor: "pointer", letterSpacing: "0.05em",
+              fontFamily: "Inter, sans-serif",
+            }}>{t.toUpperCase()}</button>
+          ))}
+          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "#999999", letterSpacing: "0.1em" }}>ORDENAR</span>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{
+              padding: "6px 12px", border: "1px solid #E5E5E5", background: "#FFFFFF",
+              fontWeight: 700, fontSize: "12px", color: "#111111",
+              fontFamily: "Inter, sans-serif", cursor: "pointer",
+            }}>
+              <option value="engagement_rate">Engajamento %</option>
+              <option value="impressions">Impressões</option>
+              <option value="reach">Alcance</option>
+              <option value="likes">Curtidas</option>
+              <option value="saved">Salvamentos</option>
+              <option value="plays">Plays</option>
+            </select>
+          </span>
+        </div>
 
-  const avgEngagement = data?.avg_engagement ?? 0;
-  const totalReach = data?.total_reach ?? 0;
-  const totalPosts = data?.total_posts ?? 0;
-
-  const growthData = (data?.weekly_growth ?? []).map((w: any) => ({
-    month: w.week,
-    ig: w.ig ?? 0,
-    tt: w.tt ?? 0,
-    yt: w.yt ?? 0,
-  }));
-
-  const spendLeads = (data?.spend_by_month ?? []).map((s: any) => ({
-    month: s.month,
-    spend: s.amount ?? 0,
-    leads: s.leads ?? 0,
-  }));
-
-  const posts = (data?.top_posts ?? []).map((p: any) => {
-    const platName = PLAT_MAP[p.platform] ?? p.platform;
-    const totalEng = (p.likes ?? 0) + (p.comments ?? 0) + (p.shares ?? 0);
-    return {
-      plat: platName,
-      title: p.title ?? "",
-      views: formatNumber(p.reach ?? 0),
-      eng: p.reach ? ((totalEng / p.reach) * 100).toFixed(1) + "%" : "0%",
-      leads: totalEng,
-      date: formatDate(p.published_at),
-    };
-  });
-
-  return(<div style={{background:T.sand,minHeight:"100vh",fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
-    <div style={{background:T.white,borderBottom:`1px solid ${T.border}`,padding:"0 40px",display:"flex",alignItems:"center",height:64,gap:16}}>
-      <div style={{background:T.ink,color:T.lime,fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:20,padding:"4px 14px",borderRadius:6}}>Voku</div>
-      <span style={{color:T.borderMd,fontSize:20}}>|</span>
-      <span style={{fontSize:15,fontWeight:700,color:T.inkSub}}>Dashboard de Mídia</span>
-      <a href="/admin/dashboard" style={{fontSize:13,color:T.teal,fontWeight:600,textDecoration:"none",marginLeft:8}}>← Operacional</a>
-    </div>
-    <div style={{padding:"32px 40px",maxWidth:1200,margin:"0 auto"}}>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:24}}>
-        {finalPlatformCards.map((p: any)=>(
-          <Card key={p.name}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
-              <div style={{display:"flex",alignItems:"center",gap:10}}><span style={{fontSize:22}}>{p.emoji}</span><span style={{fontSize:15,fontWeight:700,color:T.ink}}>{p.name}</span></div>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "80px", color: "#999999", fontSize: "16px", fontWeight: 700 }}>
+            Carregando métricas...
+          </div>
+        ) : metricas.length === 0 ? (
+          <div style={{ background: "#FFFFFF", border: "1px solid #E5E5E5", padding: "60px", textAlign: "center" }}>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>📊</div>
+            <div style={{ fontSize: "20px", fontWeight: 900, color: "#111111", marginBottom: "8px" }}>
+              Nenhuma métrica ainda
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-              {[{label:"Posts",value:formatNumber(p.count),color:T.ink},{label:"Engajamento",value:avgEngagement.toFixed(1)+"%",color:T.teal}].map(s=>(
-                <div key={s.label} style={{background:T.sand,borderRadius:10,padding:"14px",border:`1px solid ${T.border}`}}>
-                  <div style={{fontSize:11,color:T.inkFaint,fontWeight:600,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}}>{s.label}</div>
-                  <div style={{fontSize:26,fontWeight:800,color:s.color}}>{s.value}</div>
+            <div style={{ fontSize: "14px", color: "#999999" }}>
+              Execute <code style={{ background: "#F0F0F0", padding: "2px 6px" }}>python scripts/buscar_metricas.py</code> para coletar os dados
+            </div>
+          </div>
+        ) : (
+          <>
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+              gap: "2px", marginBottom: "2px",
+            }}>
+              <StatCard label="ALCANCE TOTAL" value={total_reach.toLocaleString("pt-BR")} accent />
+              <StatCard label="IMPRESSÕES" value={total_impressions.toLocaleString("pt-BR")} />
+              <StatCard label="ENGAJAMENTO MÉDIO" value={avg_engagement} unit="%" />
+              <StatCard label="CURTIDAS" value={total_likes.toLocaleString("pt-BR")} />
+              <StatCard label="COMENTÁRIOS" value={total_comments.toLocaleString("pt-BR")} />
+              <StatCard label="SALVAMENTOS" value={total_saved.toLocaleString("pt-BR")} />
+              <StatCard label="COMPARTILHAMENTOS" value={total_shares.toLocaleString("pt-BR")} />
+              <StatCard label="PLAYS (REELS)" value={total_plays.toLocaleString("pt-BR")} />
+            </div>
+
+            {melhorPost && (
+              <div style={{
+                background: "#111111", padding: "24px 32px", marginBottom: "2px",
+                display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap",
+              }}>
+                <div>
+                  <div style={{ fontSize: "10px", fontWeight: 700, color: "#AAFF00", letterSpacing: "0.2em", marginBottom: "6px" }}>
+                    ✦ MELHOR POST
+                  </div>
+                  <div style={{ fontSize: "18px", fontWeight: 900, color: "#FFFFFF", letterSpacing: "-0.01em" }}>
+                    {melhorPost.titulo}
+                  </div>
+                </div>
+                <div style={{ marginLeft: "auto", display: "flex", gap: "24px" }}>
+                  {[
+                    { label: "ENGAJAMENTO", value: `${melhorPost.engagement_rate}%` },
+                    { label: "ALCANCE", value: melhorPost.reach.toLocaleString("pt-BR") },
+                    { label: "SALVAMENTOS", value: melhorPost.saved.toLocaleString("pt-BR") },
+                  ].map(stat => (
+                    <div key={stat.label} style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "22px", fontWeight: 900, color: "#AAFF00" }}>{stat.value}</div>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: "#666666", letterSpacing: "0.1em" }}>{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ background: "#FFFFFF", border: "1px solid #E5E5E5" }}>
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 80px 100px 90px 70px 70px 70px 70px 70px 90px",
+                padding: "12px 24px", borderBottom: "2px solid #111111", gap: "8px",
+              }}>
+                {["TÍTULO","TIPO","PILAR","ENGAGEMENT","ALCANCE","LIKES","COMENTS","SALVOS","PLAYS","DIA"].map(h => (
+                  <div key={h} style={{ fontSize: "10px", fontWeight: 700, color: "#999999", letterSpacing: "0.12em" }}>{h}</div>
+                ))}
+              </div>
+              {filtered.map((m, i) => (
+                <div key={m.id} style={{
+                  display: "grid",
+                  gridTemplateColumns: "2fr 80px 100px 90px 70px 70px 70px 70px 70px 90px",
+                  padding: "16px 24px",
+                  borderBottom: i < filtered.length - 1 ? "1px solid #F0F0F0" : "none",
+                  gap: "8px", alignItems: "center",
+                  background: i % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
+                }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#F5FFF0"}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? "#FFFFFF" : "#FAFAFA"}
+                >
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#111111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.titulo}
+                  </div>
+                  <div>
+                    <span style={{
+                      background: m.tipo === "REEL" ? "#111111" : "#AAFF00",
+                      color: m.tipo === "REEL" ? "#AAFF00" : "#111111",
+                      fontSize: "10px", fontWeight: 700, padding: "2px 6px", letterSpacing: "0.05em",
+                    }}>{m.tipo}</span>
+                  </div>
+                  <div><PilarBadge pilar={m.pilar} /></div>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 900, color: "#111111" }}>{m.engagement_rate}%</div>
+                    <EngagementBar value={m.engagement_rate} max={maxEngagement} />
+                  </div>
+                  {[m.reach, m.likes, m.comments, m.saved, m.plays].map((val, vi) => (
+                    <div key={vi} style={{ fontSize: "13px", fontWeight: val > 0 ? 700 : 400, color: val > 0 ? "#111111" : "#CCCCCC" }}>
+                      {val > 0 ? val.toLocaleString("pt-BR") : "—"}
+                    </div>
+                  ))}
+                  <div style={{ fontSize: "11px", color: "#999999", fontWeight: 500 }}>{m.dia}</div>
                 </div>
               ))}
             </div>
-          </Card>
-        ))}
+
+            <div style={{ marginTop: "2px", background: "#FFFFFF", border: "1px solid #E5E5E5", padding: "32px" }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.15em", color: "#999999", marginBottom: "24px" }}>
+                PERFORMANCE POR PILAR
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "16px" }}>
+                {Object.keys(PILAR_COLORS).map(pilar => {
+                  const posts = filtered.filter(m => m.pilar === pilar);
+                  if (posts.length === 0) return null;
+                  const avgEng = (posts.reduce((s, m) => s + m.engagement_rate, 0) / posts.length).toFixed(2);
+                  const c = PILAR_COLORS[pilar];
+                  return (
+                    <div key={pilar} style={{ background: c.bg, padding: "20px", borderLeft: `3px solid ${c.text}` }}>
+                      <div style={{ fontSize: "10px", fontWeight: 700, color: c.text, letterSpacing: "0.12em", marginBottom: "8px" }}>{pilar}</div>
+                      <div style={{ fontSize: "28px", fontWeight: 900, color: "#111111" }}>{avgEng}%</div>
+                      <div style={{ fontSize: "11px", color: "#666666", marginTop: "4px" }}>{posts.length} post{posts.length > 1 ? "s" : ""}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"2fr 1fr",gap:16,marginBottom:24}}>
-        <Card>
-          <CardTitle>Crescimento de seguidores</CardTitle>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={growthData}>
-              <XAxis dataKey="month" tick={{fontSize:13,fill:T.inkMid}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fontSize:12,fill:T.inkMid}} axisLine={false} tickLine={false}/>
-              <Tooltip content={<TT/>}/>
-              <Line type="monotone" dataKey="ig" name="Instagram" stroke={T.purple} strokeWidth={2.5} dot={false}/>
-              <Line type="monotone" dataKey="tt" name="TikTok" stroke={T.ink} strokeWidth={2.5} dot={false}/>
-              <Line type="monotone" dataKey="yt" name="YouTube" stroke={T.red} strokeWidth={2.5} dot={false}/>
-            </LineChart>
-          </ResponsiveContainer>
-        </Card>
-        <Card>
-          <CardTitle>Investimento vs Leads</CardTitle>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={spendLeads}>
-              <XAxis dataKey="month" tick={{fontSize:13,fill:T.inkMid}} axisLine={false} tickLine={false}/>
-              <YAxis tick={{fontSize:12,fill:T.inkMid}} axisLine={false} tickLine={false}/>
-              <Tooltip content={<TT/>}/>
-              <Bar dataKey="spend" name="Investimento $" fill={T.borderMd} radius={[4,4,0,0]}/>
-              <Bar dataKey="leads" name="Leads" fill={T.lime} radius={[4,4,0,0]}/>
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
-      </div>
-      <Card>
-        <CardTitle>Performance dos posts</CardTitle>
-        <table style={{width:"100%",borderCollapse:"collapse"}}>
-          <thead><tr>{["Plataforma","Título","Views","Engajamento","Leads","Data"].map(h=><th key={h} style={{textAlign:"left",fontSize:11,fontWeight:700,color:T.inkFaint,textTransform:"uppercase",letterSpacing:"0.06em",paddingBottom:12,borderBottom:`2px solid ${T.border}`}}>{h}</th>)}</tr></thead>
-          <tbody>{posts.map((p: any,i: number)=>{const pl=PLAT[p.plat] ?? {color:T.ink,bg:T.sand,emoji:""};return(<tr key={i}>
-            <td style={{padding:"13px 0",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:11,fontWeight:700,color:pl.color,background:pl.bg,borderRadius:20,padding:"4px 12px"}}>{pl.emoji} {p.plat}</span></td>
-            <td style={{padding:"13px 12px",fontSize:13,color:T.inkSub,borderBottom:`1px solid ${T.border}`}}>{p.title}</td>
-            <td style={{padding:"13px 12px",fontSize:14,fontWeight:800,color:T.ink,borderBottom:`1px solid ${T.border}`}}>{p.views}</td>
-            <td style={{padding:"13px 12px",fontSize:14,fontWeight:800,color:T.teal,borderBottom:`1px solid ${T.border}`}}>{p.eng}</td>
-            <td style={{padding:"13px 12px",borderBottom:`1px solid ${T.border}`}}><span style={{fontSize:13,fontWeight:800,color:T.green,background:T.greenBg,borderRadius:20,padding:"4px 12px"}}>{p.leads} leads</span></td>
-            <td style={{padding:"13px 0",fontSize:13,color:T.inkMid,fontWeight:600,borderBottom:`1px solid ${T.border}`}}>{p.date}</td>
-          </tr>)})}</tbody>
-        </table>
-      </Card>
     </div>
-  </div>)}
+  );
+}
