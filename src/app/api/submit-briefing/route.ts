@@ -8,10 +8,36 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY)
   try {
-    const { user_id, email, name, product, conversation, structured_data, currency = 'USD' } = await req.json()
+    const { user_id: rawUserId, email, name, product, conversation, structured_data, currency = 'USD' } = await req.json()
 
-    if (!user_id || !email || !product || !structured_data) {
+    if (!email || !product || !structured_data) {
       return NextResponse.json({ error: 'Campos obrigatórios ausentes' }, { status: 400 })
+    }
+
+    const supabase = supabaseAdmin()
+
+    // Resolve user_id: use provided, or look up by email, or create
+    let user_id = rawUserId
+    if (!user_id) {
+      const { data: existingUsers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', email)
+        .limit(1)
+      if (existingUsers && existingUsers.length > 0) {
+        user_id = existingUsers[0].id
+      } else {
+        // Look up in auth.users via admin API
+        const { data: { users } } = await supabase.auth.admin.listUsers()
+        const match = users?.find((u: any) => u.email === email)
+        if (match) {
+          user_id = match.id
+        }
+      }
+    }
+
+    if (!user_id) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 400 })
     }
 
     const productInfo = PRODUCTS[product as ProductId]
@@ -19,7 +45,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Produto inválido' }, { status: 400 })
     }
 
-    const supabase = supabaseAdmin()
     const deadline = new Date()
     deadline.setHours(deadline.getHours() + productInfo.deadline_hours)
 

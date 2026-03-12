@@ -618,11 +618,15 @@ function RegisterFlow({ t, lang, onClose }) {
   const [step, setStep] = useState("register"); // register | promo | form | chat | done
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [userId, setUserId] = useState(null);
   const [promoCode, setPromoCode] = useState("");
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState("");
   const [briefing, setBriefing] = useState(null);
+  const [submittingBriefing, setSubmittingBriefing] = useState(false);
   const chatRef = useRef(null);
 
   const systemPrompt = lang === "PT"
@@ -636,6 +640,98 @@ function RegisterFlow({ t, lang, onClose }) {
     : lang === "EN"
     ? `Hi ${name || "there"}! 👋 I'm Voku's AI. I'll help you build your project brief — fast and without long forms.\n\nTo start: **what do you need?** Marketing & copy, automation, content — or a combination?`
     : `¡Hola ${name || ""}! 👋 Soy la IA de Voku. Te ayudaré a armar el briefing de tu proyecto — rápido y sin formularios largos.\n\n¿Para empezar: **qué necesitas?** Marketing y copy, automatización, contenido — ¿o una combinación?`;
+
+  const handleRegister = async () => {
+    if (!email || !name || registering) return;
+    setRegistering(true);
+    setRegisterError("");
+    try {
+      const { createClient } = await import("@supabase/supabase-js");
+      const sb = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      );
+      const password = crypto.randomUUID().slice(0, 16);
+      const { data, error } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name: name } },
+      });
+      if (error) {
+        if (error.message?.includes("already registered")) {
+          // User exists — sign in and continue
+          const { data: signInData, error: signInError } = await sb.auth.signInWithOtp({ email });
+          if (signInError) throw signInError;
+          // For existing users, we still let them continue the flow
+          // The trigger on_auth_user_created won't fire, but the user already exists
+          setUserId(null); // will be resolved on submit-briefing via email lookup
+          setStep("promo");
+        } else {
+          throw error;
+        }
+      } else {
+        setUserId(data.user?.id || null);
+        setStep("promo");
+      }
+    } catch (err) {
+      setRegisterError(
+        lang === "PT" ? "Erro ao criar conta. Tente novamente." :
+        lang === "EN" ? "Error creating account. Try again." :
+        "Error al crear cuenta. Inténtalo de nuevo."
+      );
+    } finally {
+      setRegistering(false);
+    }
+  };
+
+  const mapProductId = (servico) => {
+    if (!servico) return "landing_page_copy";
+    const s = servico.toLowerCase();
+    if (s.includes("landing") || s.includes("copy") || s.includes("página") || s.includes("page")) return "landing_page_copy";
+    if (s.includes("conteúdo") || s.includes("content") || s.includes("contenido") || s.includes("post") || s.includes("rede") || s.includes("social")) return "content_pack";
+    if (s.includes("email") || s.includes("e-mail") || s.includes("correo") || s.includes("nutrição") || s.includes("nurture") || s.includes("sequência") || s.includes("sequence")) return "email_sequence";
+    return "landing_page_copy";
+  };
+
+  const submitBriefing = async (parsed) => {
+    setSubmittingBriefing(true);
+    try {
+      const product = mapProductId(parsed.servico);
+      const conversation = messages.map(m => `${m.role}: ${m.text}`).join("\n\n");
+
+      // If we don't have userId yet (existing user flow), look it up
+      let uid = userId;
+      if (!uid) {
+        const { createClient } = await import("@supabase/supabase-js");
+        const sb = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        );
+        const { data: sessionData } = await sb.auth.getSession();
+        uid = sessionData?.session?.user?.id || null;
+      }
+
+      const res = await fetch("/api/submit-briefing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: uid,
+          email,
+          name,
+          product,
+          conversation,
+          structured_data: parsed,
+          currency: "USD",
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) console.error("submit-briefing error:", result);
+    } catch (err) {
+      console.error("submitBriefing error:", err);
+    } finally {
+      setSubmittingBriefing(false);
+    }
+  };
 
   const startChat = () => {
     setStep("form");
@@ -675,6 +771,7 @@ function RegisterFlow({ t, lang, onClose }) {
           if (parsed.briefingConfirmado) {
             setBriefing(parsed);
             setStep("done");
+            submitBriefing(parsed);
             return;
           }
         }
@@ -737,10 +834,12 @@ function RegisterFlow({ t, lang, onClose }) {
                 <input value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" type="email" style={inputStyle} onFocus={e => (e.currentTarget as HTMLElement).style.borderColor = "#111"} onBlur={e => (e.currentTarget as HTMLElement).style.borderColor = "#E0E0D8"} />
               </div>
               <button
-                onClick={() => email && name && setStep("promo")}
-                style={{ padding: "14px", borderRadius: 10, background: email && name ? "#111" : "#E0E0D8", color: email && name ? "#F8F8F6" : "#AAA", border: "none", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 14, fontWeight: 700, cursor: email && name ? "pointer" : "default", transition: "all 0.3s", marginTop: 4 }}>
-                {lang === "PT" ? "Continuar →" : lang === "EN" ? "Continue →" : "Continuar →"}
+                onClick={handleRegister}
+                disabled={!email || !name || registering}
+                style={{ padding: "14px", borderRadius: 10, background: email && name && !registering ? "#111" : "#E0E0D8", color: email && name && !registering ? "#F8F8F6" : "#AAA", border: "none", fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 14, fontWeight: 700, cursor: email && name && !registering ? "pointer" : "default", transition: "all 0.3s", marginTop: 4, opacity: registering ? 0.6 : 1 }}>
+                {registering ? (lang === "PT" ? "Criando conta..." : lang === "EN" ? "Creating account..." : "Creando cuenta...") : (lang === "PT" ? "Continuar →" : lang === "EN" ? "Continue →" : "Continuar →")}
               </button>
+              {registerError && <p style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 12, color: "#E53935", marginTop: 8, textAlign: "center" }}>{registerError}</p>}
             </div>
             <div style={{ marginTop: 20, padding: "14px 16px", background: "#F0EFE8", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 16 }}>🔒</span>
@@ -839,7 +938,9 @@ function RegisterFlow({ t, lang, onClose }) {
                 {lang === "PT" ? "Briefing confirmado!" : lang === "EN" ? "Brief confirmed!" : "¡Briefing confirmado!"}
               </h3>
               <p style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, color: "#888" }}>
-                {lang === "PT" ? "Você receberá a proposta em até 2h no e-mail:" : lang === "EN" ? "You'll receive the proposal within 2h at:" : "Recibirás la propuesta en 2h en el email:"}
+                {submittingBriefing
+                  ? (lang === "PT" ? "Enviando seu briefing..." : lang === "EN" ? "Submitting your brief..." : "Enviando tu briefing...")
+                  : (lang === "PT" ? "Pedido criado! Você receberá as opções por e-mail em breve:" : lang === "EN" ? "Order created! You'll receive your options by email shortly:" : "¡Pedido creado! Recibirás las opciones por email pronto:")}
               </p>
               <p style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 14, fontWeight: 700, color: "#111", margin: "4px 0 0" }}>{email}</p>
             </div>
