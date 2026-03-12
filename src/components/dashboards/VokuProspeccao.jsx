@@ -3,23 +3,23 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 const C = {
-  bg: "#0F0F0F",
-  s1: "#161616",
-  s2: "#1C1C1C",
-  s3: "#232323",
-  border: "#2E2E2E",
-  border2: "#3A3A3A",
-  accent: "#E9F59E",
-  accentDim: "#C8D97A",
-  text: "#F5F5F0",
-  muted: "#888888",
-  muted2: "#AAAAAA",
-  green: "#4ADE80",
-  red: "#F87171",
-  blue: "#60A5FA",
-  purple: "#A78BFA",
-  orange: "#FB923C",
-  yellow: "#FCD34D",
+  bg: "#FFFFFF",
+  s1: "#FFFFFF",
+  s2: "#FAFAFA",
+  s3: "#F0F0F0",
+  border: "#E5E5E5",
+  border2: "#D5D5D5",
+  accent: "#AAFF00",
+  accentDim: "#8AD000",
+  text: "#111111",
+  muted: "#999999",
+  muted2: "#666666",
+  green: "#16A34A",
+  red: "#DC2626",
+  blue: "#2563EB",
+  purple: "#7C3AED",
+  orange: "#EA580C",
+  yellow: "#CA8A04",
 };
 
 // ── AI INSIGHT ENGINE ────────────────────────────────────────────
@@ -51,51 +51,51 @@ function generateInsight(job) {
   score = budgetScore[complexidade];
 
   if (text.includes("only europe") || text.includes("europe only") || text.includes("europe please")) {
-    alertas.push("\u{1F6AB} Restrito à Europa — você pode ser eliminado automaticamente.");
+    alertas.push("Restrito à Europa — você pode ser eliminado automaticamente.");
     score -= 40;
   }
   if ((text.includes("all included") || (text.includes("hosting") && text.includes("domain"))) && budget < 500) {
-    alertas.push("\u{1F534} 'Tudo incluído' com budget baixo — escopo inflado.");
+    alertas.push("'Tudo incluído' com budget baixo — escopo inflado.");
     score -= 20;
   }
   if (text.includes("ongoing") && budget < 300) {
-    alertas.push("\u26A0\uFE0F Ongoing + budget baixo = armadilha de tempo.");
+    alertas.push("Ongoing + budget baixo = armadilha de tempo.");
     score -= 10;
   }
   if (cC >= 3 && budget < 600) {
-    alertas.push("\u{1F534} Complexidade alta, budget insuficiente.");
+    alertas.push("Complexidade alta, budget insuficiente.");
     score -= 15;
   }
   if (text.includes("asap") || text.includes("urgently") || text.includes("urgente")) {
-    dicas.push("\u26A1 Cliente com urgência — aplique nas próximas 2h.");
+    dicas.push("Cliente com urgência — aplique nas próximas 2h.");
     score += 5;
   }
   if (text.includes("payment verified") || job.payment_verified) {
-    dicas.push("\u2705 Payment Verified confirmado.");
+    dicas.push("Payment Verified confirmado.");
     score += 5;
   }
   if (text.includes("featured")) {
-    dicas.push("\u2B50 Featured Job — cliente pagou para destacar.");
+    dicas.push("Featured Job — cliente pagou para destacar.");
     score += 5;
   }
   if (text.includes("mockup") || text.includes("figma") || text.includes("design ready") || text.includes("assets ready")) {
-    dicas.push("\u{1F4D0} Assets prontos — entrega mais rápida.");
+    dicas.push("Assets prontos — entrega mais rápida.");
     score += 10;
   }
   if (text.includes("bilingual") || text.includes("english and spanish") || text.includes("en/es")) {
-    dicas.push("\u{1F310} Bilíngue EN/ES — menos concorrentes.");
+    dicas.push("Bilíngue EN/ES — menos concorrentes.");
   }
   if (budget >= 700) {
-    dicas.push("\u{1F4B0} Budget acima da média — vale proposta personalizada.");
+    dicas.push("Budget acima da média — vale proposta personalizada.");
   }
   if (complexidade === "baixa" && budget >= 150) {
-    dicas.push("\u{1F4A1} Job simples e rápido. Ideal para acumular reviews.");
+    dicas.push("Job simples e rápido. Ideal para acumular reviews.");
   }
   if (complexidade === "média") {
-    dicas.push("\u{1F4A1} Escopo definido. Mostre 2–3 projetos similares.");
+    dicas.push("Escopo definido. Mostre 2-3 projetos similares.");
   }
   if (complexidade === "alta" && score >= 50) {
-    dicas.push("\u{1F4A1} Job complexo mas bem pago. Proponha milestones.");
+    dicas.push("Job complexo mas bem pago. Proponha milestones.");
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -151,14 +151,7 @@ const jobStatusColor = {
 const complexColor = { "baixa": C.green, "média": C.yellow, "alta": C.red };
 const scoreColor = s => s >= 70 ? C.green : s >= 40 ? C.yellow : C.red;
 
-const LIGHT = {
-  bg: "#F5F4F0", s1: "#FFFFFF", s2: "#EFEFEB", s3: "#E6E4DF",
-  border: "#D8D5CE", border2: "#C8C5BE",
-  accent: "#5A7A00", accentDim: "#4A6800",
-  text: "#1A1A18", muted: "#888880", muted2: "#555550",
-  green: "#16A34A", red: "#DC2626", blue: "#2563EB",
-  purple: "#7C3AED", orange: "#EA580C", yellow: "#CA8A04",
-};
+// Theme is now always white — no dark mode toggle needed
 
 // ── DB helpers ───────────────────────────────────────────────────
 function jobToRow(j) {
@@ -178,8 +171,7 @@ function rowToJob(r) {
 
 // ── MAIN ─────────────────────────────────────────────────────────
 export default function VokuProspeccao() {
-  const [dark, setDark] = useState(true);
-  const T = dark ? C : LIGHT;
+  const T = C;
 
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -245,14 +237,14 @@ export default function VokuProspeccao() {
 
   if (loading) {
     return (
-      <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: C.muted, letterSpacing: "0.12em" }}>LOADING...</div>
+      <div style={{ background: "#FFFFFF", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 700, color: "#999999", letterSpacing: "0.1em" }}>LOADING...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: "'IBM Plex Mono', monospace" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: "'Inter', sans-serif" }}>
 
       {/* TOPBAR */}
       <div style={{
@@ -293,18 +285,6 @@ export default function VokuProspeccao() {
           }}>Prospecção</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button onClick={() => setDark(d => !d)} style={{
-            background: dark ? "#111111" : "#F0F0F0",
-            border: "1px solid #E5E5E5",
-            borderRadius: 20, padding: "4px 12px",
-            display: "flex", alignItems: "center", gap: 6,
-            cursor: "pointer", fontFamily: "'Inter', sans-serif",
-            fontSize: 11, color: dark ? "#AAFF00" : "#333333", fontWeight: 700,
-            transition: "all 0.2s"
-          }}>
-            <span>{dark ? "☀" : "◑"}</span>
-            <span>{dark ? "LIGHT" : "DARK"}</span>
-          </button>
           <a href="/admin/dashboard" style={{
             display: "flex",
             alignItems: "center",
@@ -331,7 +311,7 @@ export default function VokuProspeccao() {
         ].map(([label, value, color]) => (
           <div key={label} style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 8, padding: "14px 18px" }}>
             <div style={{ fontSize: 11, letterSpacing: "0.14em", color: T.muted2, marginBottom: 6, fontWeight: 600 }}>{label}</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "'DM Mono', monospace", lineHeight: 1 }}>{value}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color, fontFamily: "'Inter', sans-serif", lineHeight: 1 }}>{value}</div>
           </div>
         ))}
       </div>
@@ -348,7 +328,7 @@ export default function VokuProspeccao() {
                 color: filterStatus === s ? (jobStatusColor[s] || T.accent) : T.muted2,
                 borderRadius: 5, padding: "6px 14px", fontSize: 11,
                 letterSpacing: "0.08em", cursor: "pointer", textTransform: "uppercase",
-                fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600
+                fontFamily: "'Inter', sans-serif", fontWeight: 600
               }}>{s}</button>
             ))}
           </div>
@@ -358,7 +338,7 @@ export default function VokuProspeccao() {
             border: `1px solid ${T.accent}`,
             borderRadius: 6, padding: "8px 20px", fontSize: 11,
             fontWeight: 700, letterSpacing: "0.1em", cursor: "pointer",
-            fontFamily: "'IBM Plex Mono', monospace"
+            fontFamily: "'Inter', sans-serif"
           }}>+ COLAR JOB</button>
         </div>
 
@@ -374,7 +354,7 @@ export default function VokuProspeccao() {
                 width: "100%", minHeight: 100, background: T.s3,
                 border: `1px solid ${T.border2}`, borderRadius: 6,
                 padding: "9px 11px", color: T.text, fontSize: 11,
-                fontFamily: "'IBM Plex Mono', monospace", resize: "vertical",
+                fontFamily: "'Inter', sans-serif", resize: "vertical",
                 outline: "none", boxSizing: "border-box", lineHeight: 1.6
               }}
             />
@@ -382,12 +362,12 @@ export default function VokuProspeccao() {
               <button onClick={handlePaste} style={{
                 background: T.accent, color: T.bg, border: "none", borderRadius: 5,
                 padding: "6px 18px", fontSize: 9, fontWeight: 700, cursor: "pointer",
-                fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em"
+                fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em"
               }}>PROCESSAR</button>
               <button onClick={() => { setShowPaste(false); setPasteText(""); }} style={{
                 background: "transparent", color: T.muted, border: `1px solid ${T.border}`,
                 borderRadius: 5, padding: "6px 14px", fontSize: 9, cursor: "pointer",
-                fontFamily: "'IBM Plex Mono', monospace"
+                fontFamily: "'Inter', sans-serif"
               }}>CANCELAR</button>
             </div>
           </div>
@@ -480,7 +460,7 @@ export default function VokuProspeccao() {
                           <button onClick={e => { e.stopPropagation(); setEditData({ ...j }); setEditMode(true); }} style={{
                             background: "transparent", border: `1px solid ${T.border2}`, color: T.muted2,
                             borderRadius: 4, padding: "4px 10px", fontSize: 10, cursor: "pointer",
-                            fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.06em", fontWeight: 600
+                            fontFamily: "'Inter', sans-serif", letterSpacing: "0.06em", fontWeight: 600
                           }}>EDITAR</button>
                         </td>
                       </tr>
@@ -580,7 +560,7 @@ export default function VokuProspeccao() {
                           border: `1px solid ${selectedJob.status === s ? jobStatusColor[s] : T.border2}`,
                           color: selectedJob.status === s ? jobStatusColor[s] : T.muted2,
                           borderRadius: 4, padding: "5px 11px", fontSize: 10,
-                          cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace",
+                          cursor: "pointer", fontFamily: "'Inter', sans-serif",
                           letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600
                         }}>{s}</button>
                       ))}
@@ -610,13 +590,13 @@ export default function VokuProspeccao() {
                       flex: 1, background: T.accent + "16", color: T.accent,
                       border: `1px solid ${T.accent}35`, borderRadius: 6, padding: 10,
                       fontSize: 11, fontWeight: 700, cursor: "pointer",
-                      fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em"
+                      fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em"
                     }}>EDITAR</button>
                     <button onClick={() => handleDelete(selectedJob.id)} style={{
                       flex: 1, background: T.red + "16", color: T.red,
                       border: `1px solid ${T.red}35`, borderRadius: 6, padding: 10,
                       fontSize: 11, fontWeight: 700, cursor: "pointer",
-                      fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em"
+                      fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em"
                     }}>REMOVER</button>
                   </div>
                 </div>
@@ -628,7 +608,7 @@ export default function VokuProspeccao() {
 
       {/* EDIT MODAL */}
       {editMode && editData && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
           <div style={{ background: T.s1, border: `1px solid ${T.border2}`, borderRadius: 12, padding: 26, width: 520, maxHeight: "88vh", overflowY: "auto" }}>
             <div style={{ fontSize: 8, letterSpacing: "0.16em", color: T.accent, marginBottom: 18 }}>EDITAR JOB — {editData.id}</div>
 
@@ -636,7 +616,7 @@ export default function VokuProspeccao() {
               <div key={field} style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 7, color: T.muted, letterSpacing: "0.13em", marginBottom: 4 }}>{label}</div>
                 <input value={editData[field] || ""} onChange={e => setEditData(p => ({ ...p, [field]: e.target.value }))}
-                  style={{ width: "100%", background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 5, padding: "6px 9px", color: T.text, fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 5, padding: "6px 9px", color: T.text, fontSize: 11, fontFamily: "'Inter', sans-serif", outline: "none", boxSizing: "border-box" }}
                 />
               </div>
             ))}
@@ -650,7 +630,7 @@ export default function VokuProspeccao() {
                     border: `1px solid ${editData.proposta_enviada === v ? T.accent : T.border}`,
                     color: editData.proposta_enviada === v ? T.accent : T.muted,
                     borderRadius: 4, padding: "5px 14px", fontSize: 9, cursor: "pointer",
-                    fontFamily: "'IBM Plex Mono', monospace"
+                    fontFamily: "'Inter', sans-serif"
                   }}>{v ? "SIM" : "NÃO"}</button>
                 ))}
               </div>
@@ -660,7 +640,7 @@ export default function VokuProspeccao() {
               <div style={{ fontSize: 7, color: T.muted, letterSpacing: "0.13em", marginBottom: 4 }}>TEXTO DA PROPOSTA / COVER LETTER</div>
               <textarea value={editData.proposta_texto || ""} onChange={e => setEditData(p => ({ ...p, proposta_texto: e.target.value }))} rows={5}
                 placeholder="Cole aqui a cover letter enviada..."
-                style={{ width: "100%", background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 5, padding: "7px 9px", color: T.text, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6 }}
+                style={{ width: "100%", background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 5, padding: "7px 9px", color: T.text, fontSize: 10, fontFamily: "'Inter', sans-serif", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6 }}
               />
             </div>
 
@@ -668,13 +648,13 @@ export default function VokuProspeccao() {
               <div style={{ fontSize: 7, color: T.muted, letterSpacing: "0.13em", marginBottom: 4 }}>NOTAS INTERNAS</div>
               <textarea value={editData.notas || ""} onChange={e => setEditData(p => ({ ...p, notas: e.target.value }))} rows={3}
                 placeholder="Contexto do cliente, negociações, observações..."
-                style={{ width: "100%", background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 5, padding: "7px 9px", color: T.text, fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6 }}
+                style={{ width: "100%", background: T.s3, border: `1px solid ${T.border2}`, borderRadius: 5, padding: "7px 9px", color: T.text, fontSize: 10, fontFamily: "'Inter', sans-serif", outline: "none", resize: "vertical", boxSizing: "border-box", lineHeight: 1.6 }}
               />
             </div>
 
             <div style={{ display: "flex", gap: 7 }}>
-              <button onClick={handleSave} style={{ flex: 1, background: T.accent, color: T.bg, border: "none", borderRadius: 6, padding: 10, fontSize: 9, fontWeight: 700, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace", letterSpacing: "0.1em" }}>SALVAR</button>
-              <button onClick={() => { setEditMode(false); setEditData(null); }} style={{ flex: 1, background: "transparent", color: T.muted, border: `1px solid ${T.border}`, borderRadius: 6, padding: 10, fontSize: 9, cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}>CANCELAR</button>
+              <button onClick={handleSave} style={{ flex: 1, background: T.accent, color: T.bg, border: "none", borderRadius: 6, padding: 10, fontSize: 9, fontWeight: 700, cursor: "pointer", fontFamily: "'Inter', sans-serif", letterSpacing: "0.1em" }}>SALVAR</button>
+              <button onClick={() => { setEditMode(false); setEditData(null); }} style={{ flex: 1, background: "transparent", color: T.muted, border: `1px solid ${T.border}`, borderRadius: 6, padding: 10, fontSize: 9, cursor: "pointer", fontFamily: "'Inter', sans-serif" }}>CANCELAR</button>
             </div>
           </div>
         </div>
