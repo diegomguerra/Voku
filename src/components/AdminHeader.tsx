@@ -18,12 +18,14 @@ export default function AdminHeader({ title, sub }: { title: string; sub: string
           fontSize: "13px",
           padding: "3px 8px",
           letterSpacing: "0.05em",
+          flexShrink: 0,
         }}>VOKU</span>
         <span style={{
           fontSize: "11px",
           fontWeight: 700,
           color: "#999999",
           letterSpacing: "0.15em",
+          flexShrink: 0,
         }}>{sub}</span>
         <span className="adm-header-title" style={{
           fontSize: "18px",
@@ -45,7 +47,7 @@ export default function AdminHeader({ title, sub }: { title: string; sub: string
           (e.currentTarget as HTMLElement).style.borderColor = "#E5E5E5";
         }}
       >
-        ← DASHBOARDS
+        ← <span className="adm-header-back-label">DASHBOARDS</span>
       </a>
     </div>
   );

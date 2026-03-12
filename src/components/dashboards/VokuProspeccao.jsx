@@ -300,7 +300,7 @@ export default function VokuProspeccao() {
       <div className="adm-prosp-body">
 
         {/* TOOLBAR */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div className="adm-prosp-toolbar">
           <div style={{ display: "flex", gap: 6 }}>
             {["todos","para aplicar","aguardando","aprovado","recusado"].map(s => (
               <button key={s} onClick={() => setFilterStatus(s)} style={{

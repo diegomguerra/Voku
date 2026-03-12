@@ -149,11 +149,8 @@ export default function MediaDashboard() {
     <div style={{ minHeight: "100vh", background: "#F7F7F7", fontFamily: "'Inter', sans-serif" }}>
       <AdminHeader title="Media Intelligence" sub="MÍDIA" />
 
-      <div style={{ padding: "40px 48px", maxWidth: "1400px", margin: "0 auto" }}>
-        <div style={{
-          display: "flex", gap: "12px", marginBottom: "32px",
-          flexWrap: "wrap", alignItems: "center",
-        }}>
+      <div className="adm-media-body">
+        <div className="adm-media-filters">
           <span style={{ fontSize: "12px", fontWeight: 700, color: "#999999", letterSpacing: "0.1em" }}>FILTRAR</span>
           {semanas.map(s => (
             <button key={s} onClick={() => setSemanaFiltro(s)} style={{
@@ -174,7 +171,7 @@ export default function MediaDashboard() {
               fontFamily: "Inter, sans-serif",
             }}>{t.toUpperCase()}</button>
           ))}
-          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" }}>
+          <span className="adm-media-sort">
             <span style={{ fontSize: "12px", fontWeight: 700, color: "#999999", letterSpacing: "0.1em" }}>ORDENAR</span>
             <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{
               padding: "6px 12px", border: "1px solid #E5E5E5", background: "#FFFFFF",
@@ -223,9 +220,8 @@ export default function MediaDashboard() {
             </div>
 
             {melhorPost && (
-              <div style={{
-                background: "#111111", padding: "24px 32px", marginBottom: "2px",
-                display: "flex", alignItems: "center", gap: "24px", flexWrap: "wrap",
+              <div className="adm-media-best" style={{
+                background: "#111111", marginBottom: "2px",
               }}>
                 <div>
                   <div style={{ fontSize: "10px", fontWeight: 700, color: "#AAFF00", letterSpacing: "0.2em", marginBottom: "6px" }}>
@@ -235,7 +231,7 @@ export default function MediaDashboard() {
                     {melhorPost.titulo}
                   </div>
                 </div>
-                <div style={{ marginLeft: "auto", display: "flex", gap: "24px" }}>
+                <div className="adm-media-best-stats">
                   {[
                     { label: "ENGAJAMENTO", value: `${melhorPost.engagement_rate}%` },
                     { label: "ALCANCE", value: melhorPost.reach.toLocaleString("pt-BR") },
@@ -250,49 +246,52 @@ export default function MediaDashboard() {
               </div>
             )}
 
-            <div style={{ background: "#FFFFFF", border: "1px solid #E5E5E5" }}>
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 80px 100px 90px 70px 70px 70px 70px 70px 90px",
-                padding: "12px 24px", borderBottom: "2px solid #111111", gap: "8px",
+            <div className="adm-media-table-wrap" style={{ background: "#FFFFFF", border: "1px solid #E5E5E5" }}>
+              <div className="adm-media-table-row adm-media-table-header" style={{
+                padding: "12px 24px", borderBottom: "2px solid #111111",
               }}>
                 {["TÍTULO","TIPO","PILAR","ENGAGEMENT","ALCANCE","LIKES","COMENTS","SALVOS","PLAYS","DIA"].map(h => (
                   <div key={h} style={{ fontSize: "10px", fontWeight: 700, color: "#999999", letterSpacing: "0.12em" }}>{h}</div>
                 ))}
               </div>
               {filtered.map((m, i) => (
-                <div key={m.id} style={{
-                  display: "grid",
-                  gridTemplateColumns: "2fr 80px 100px 90px 70px 70px 70px 70px 70px 90px",
+                <div key={m.id} className="adm-media-table-row" style={{
                   padding: "16px 24px",
                   borderBottom: i < filtered.length - 1 ? "1px solid #F0F0F0" : "none",
-                  gap: "8px", alignItems: "center",
                   background: i % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
                 }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = "#F5FFF0"}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = i % 2 === 0 ? "#FFFFFF" : "#FAFAFA"}
                 >
-                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#111111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <div className="adm-media-table-cell" data-label="TÍTULO" style={{ fontSize: "13px", fontWeight: 700, color: "#111111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {m.titulo}
                   </div>
-                  <div>
+                  <div className="adm-media-table-cell" data-label="TIPO">
                     <span style={{
                       background: m.tipo === "REEL" ? "#111111" : "#AAFF00",
                       color: m.tipo === "REEL" ? "#AAFF00" : "#111111",
                       fontSize: "10px", fontWeight: 700, padding: "2px 6px", letterSpacing: "0.05em",
                     }}>{m.tipo}</span>
                   </div>
-                  <div><PilarBadge pilar={m.pilar} /></div>
-                  <div>
-                    <div style={{ fontSize: "14px", fontWeight: 900, color: "#111111" }}>{m.engagement_rate}%</div>
-                    <EngagementBar value={m.engagement_rate} max={maxEngagement} />
+                  <div className="adm-media-table-cell" data-label="PILAR"><PilarBadge pilar={m.pilar} /></div>
+                  <div className="adm-media-table-cell" data-label="ENGAGEMENT">
+                    <div>
+                      <div style={{ fontSize: "14px", fontWeight: 900, color: "#111111" }}>{m.engagement_rate}%</div>
+                      <EngagementBar value={m.engagement_rate} max={maxEngagement} />
+                    </div>
                   </div>
-                  {[m.reach, m.likes, m.comments, m.saved, m.plays].map((val, vi) => (
-                    <div key={vi} style={{ fontSize: "13px", fontWeight: val > 0 ? 700 : 400, color: val > 0 ? "#111111" : "#CCCCCC" }}>
+                  {[
+                    { val: m.reach, label: "ALCANCE" },
+                    { val: m.likes, label: "LIKES" },
+                    { val: m.comments, label: "COMENTS" },
+                    { val: m.saved, label: "SALVOS" },
+                    { val: m.plays, label: "PLAYS" },
+                  ].map(({ val, label }) => (
+                    <div key={label} className="adm-media-table-cell" data-label={label} style={{ fontSize: "13px", fontWeight: val > 0 ? 700 : 400, color: val > 0 ? "#111111" : "#CCCCCC" }}>
                       {val > 0 ? val.toLocaleString("pt-BR") : "—"}
                     </div>
                   ))}
-                  <div style={{ fontSize: "11px", color: "#999999", fontWeight: 500 }}>{m.dia}</div>
+                  <div className="adm-media-table-cell" data-label="DIA" style={{ fontSize: "11px", color: "#999999", fontWeight: 500 }}>{m.dia}</div>
                 </div>
               ))}
             </div>

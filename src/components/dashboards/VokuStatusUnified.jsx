@@ -433,19 +433,15 @@ export default function VokuStatusUnified() {
     <div style={{ background: TD.sand, minHeight: "100vh", fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
 
       {/* ── HEADER ── */}
-      <div style={{
+      <div className="adm-header" style={{
         background: "#FFFFFF",
         borderBottom: "2px solid #111111",
-        padding: "20px 48px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
         position: "sticky",
         top: 0,
         zIndex: 100,
         fontFamily: "'Inter', sans-serif",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div className="adm-header-left">
           <span style={{
             background: "#AAFF00",
             color: "#111111",
@@ -453,40 +449,29 @@ export default function VokuStatusUnified() {
             fontSize: "13px",
             padding: "3px 8px",
             letterSpacing: "0.05em",
-            fontFamily: "'Inter', sans-serif",
+            flexShrink: 0,
           }}>VOKU</span>
           <span style={{
             fontSize: "11px",
             fontWeight: 700,
             color: "#999999",
             letterSpacing: "0.15em",
-            fontFamily: "'Inter', sans-serif",
+            flexShrink: 0,
           }}>MAPA</span>
-          <span style={{
+          <span className="adm-header-title" style={{
             fontSize: "18px",
             fontWeight: 900,
             color: "#111111",
             letterSpacing: "-0.02em",
-            fontFamily: "'Inter', sans-serif",
           }}>Mapa do Projeto</span>
         </div>
-        <a href="/admin/dashboard" style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          color: "#111111",
-          fontWeight: 700,
-          fontSize: "12px",
-          textDecoration: "none",
-          letterSpacing: "0.1em",
-          border: "1px solid #E5E5E5",
-          padding: "8px 16px",
-          fontFamily: "'Inter', sans-serif",
-        }}>← DASHBOARDS</a>
+        <a href="/admin/dashboard" className="adm-header-back"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >← <span className="adm-header-back-label">DASHBOARDS</span></a>
       </div>
 
       {/* ── NAV ── */}
-      <div style={{ background: TD.white, borderBottom: `1px solid ${TD.border}`, padding: "0 40px", display: "flex", gap: 4 }}>
+      <div className="adm-unified-tabs" style={{ background: TD.white, borderBottom: `1px solid ${TD.border}`, padding: "0 16px" }}>
         {[
           { key: "today",   label: "Hoje" },
           { key: "tasks",   label: "Pendências & Prompts" },
@@ -505,7 +490,7 @@ export default function VokuStatusUnified() {
         ))}
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
+      <div className="adm-unified-body" style={{ maxWidth: 1100 }}>
 
         {/* ══ TODAY TAB ══ */}
         {view === "today" && (
@@ -513,7 +498,7 @@ export default function VokuStatusUnified() {
             <div style={{ fontSize: 20, fontWeight: 800, color: TD.ink, marginBottom: 6 }}>Sessão de hoje — 09/03/2026</div>
             <div style={{ fontSize: 14, color: TD.inkMid, marginBottom: 28 }}>O que foi feito e o que falta para fechar o dia.</div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 24 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16, marginBottom: 24 }}>
               <div style={{ background: TD.white, border: `1px solid ${TD.border}`, borderRadius: 14, padding: "22px 24px" }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: TD.inkFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 16 }}>✅ Concluído hoje</div>
                 {todayLog.filter(i => i.done).map((item, i) => (

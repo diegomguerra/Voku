@@ -259,19 +259,15 @@ export default function VokuDashboard() {
       <div style={{ minHeight: "100vh", background: D.bg, transition: "background 0.2s" }}>
 
         {/* ── HEADER ── */}
-        <div style={{
+        <div className="adm-header" style={{
           background: "#FFFFFF",
           borderBottom: "2px solid #111111",
-          padding: "20px 48px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
           position: "sticky",
           top: 0,
           zIndex: 100,
           fontFamily: "'Inter', sans-serif",
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div className="adm-header-left">
             <span style={{
               background: "#AAFF00",
               color: "#111111",
@@ -279,24 +275,23 @@ export default function VokuDashboard() {
               fontSize: "13px",
               padding: "3px 8px",
               letterSpacing: "0.05em",
-              fontFamily: "'Inter', sans-serif",
+              flexShrink: 0,
             }}>VOKU</span>
             <span style={{
               fontSize: "11px",
               fontWeight: 700,
               color: "#999999",
               letterSpacing: "0.15em",
-              fontFamily: "'Inter', sans-serif",
+              flexShrink: 0,
             }}>STATUS</span>
-            <span style={{
+            <span className="adm-header-title" style={{
               fontSize: "18px",
               fontWeight: 900,
               color: "#111111",
               letterSpacing: "-0.02em",
-              fontFamily: "'Inter', sans-serif",
             }}>Status & Prompts</span>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div className="adm-header-actions">
             <button onClick={() => setDark(d => !d)} style={{
               background: dark ? "#111111" : "#F0F0F0",
               border: "1px solid #E5E5E5",
@@ -309,24 +304,14 @@ export default function VokuDashboard() {
               <span>{dark ? "☀" : "◑"}</span>
               <span>{dark ? "LIGHT" : "DARK"}</span>
             </button>
-            <a href="/admin/dashboard" style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              color: "#111111",
-              fontWeight: 700,
-              fontSize: "12px",
-              textDecoration: "none",
-              letterSpacing: "0.1em",
-              border: "1px solid #E5E5E5",
-              padding: "8px 16px",
-              fontFamily: "'Inter', sans-serif",
-            }}>← DASHBOARDS</a>
+            <a href="/admin/dashboard" className="adm-header-back"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >← <span className="adm-header-back-label">DASHBOARDS</span></a>
           </div>
         </div>
 
         {/* ── LEGEND ── */}
-        <div style={{ padding: "8px 28px", borderBottom: `1px solid ${D.legendBorder}`, background: dark ? "#0D0D0D" : "#F8F7F3", display: "flex", flexWrap: "wrap", gap: "4px 18px" }}>
+        <div className="adm-status-legend" style={{ borderBottom: `1px solid ${D.legendBorder}`, background: dark ? "#0D0D0D" : "#F8F7F3" }}>
           {Object.entries(ACTION_CONFIG).map(([key, cfg]) => (
             <div key={key} style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
@@ -336,7 +321,7 @@ export default function VokuDashboard() {
         </div>
 
         {/* ── CONTENT ── */}
-        <div style={{ maxWidth: 840, margin: "0 auto", padding: "26px 28px 56px" }}>
+        <div className="adm-status-body">
           {sections.map(section => {
             const tasks = TASKS.filter(t => t.section === section);
             const sectionDone = tasks.filter(t => done[t.id]).length;
@@ -529,11 +514,11 @@ export default function VokuDashboard() {
           }}
         >
           <div
-            className="fade-up"
+            className="fade-up adm-status-modal-content"
             onClick={e => e.stopPropagation()}
             style={{
               background: D.surface, borderRadius: 10, border: `1px solid ${D.border}`,
-              width: "100%", maxWidth: 600, overflow: "hidden",
+              overflow: "hidden",
               boxShadow: "0 24px 64px rgba(0,0,0,0.3)",
             }}
           >

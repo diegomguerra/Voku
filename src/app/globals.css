@@ -5,9 +5,10 @@
 body {
   background: #FFFFFF;
   color: #111111;
+  -webkit-text-size-adjust: 100%;
 }
 
-/* ── Admin responsive ─────────────────────────── */
+/* ── Admin responsive system ──────────────────── */
 
 /* Header */
 .adm-header {
@@ -21,6 +22,7 @@ body {
   display: flex;
   align-items: center;
   gap: 16px;
+  min-width: 0;
 }
 .adm-header-title { display: inline; }
 .adm-header-back {
@@ -36,9 +38,16 @@ body {
   padding: 8px 16px;
   white-space: nowrap;
   transition: all 0.15s;
+  flex-shrink: 0;
+}
+.adm-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
-/* Ops home grid */
+/* Ops home */
 .adm-ops-grid {
   padding: 48px;
   display: grid;
@@ -53,6 +62,7 @@ body {
 
 /* Fluxo */
 .adm-fluxo-body { padding: 0 40px; }
+.adm-fluxo-step-row { display: flex; gap: 20px; }
 .adm-fluxo-step-card-inner {
   display: flex;
   align-items: center;
@@ -76,8 +86,41 @@ body {
   height: 56px;
   flex-shrink: 0;
 }
-.adm-fluxo-vline {
-  left: 27px;
+.adm-fluxo-vline { left: 27px; }
+
+/* Media */
+.adm-media-body { padding: 40px 48px; max-width: 1400px; margin: 0 auto; }
+.adm-media-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 32px;
+}
+.adm-media-sort {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.adm-media-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.adm-media-table-row {
+  display: grid;
+  grid-template-columns: 2fr 80px 100px 90px 70px 70px 70px 70px 70px 90px;
+  gap: 8px;
+  align-items: center;
+}
+.adm-media-best {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 24px 32px;
+}
+.adm-media-best-stats {
+  margin-left: auto;
+  display: flex;
+  gap: 24px;
 }
 
 /* Prospeccao */
@@ -95,58 +138,96 @@ body {
   gap: 12px;
   align-items: start;
 }
-.adm-prosp-layout.no-detail {
-  grid-template-columns: 1fr;
+.adm-prosp-layout.no-detail { grid-template-columns: 1fr; }
+.adm-prosp-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
 }
 
-/* ── Tablet ──────────────────────────────────── */
+/* Status dashboard */
+.adm-status-body { max-width: 840px; margin: 0 auto; padding: 26px 28px 56px; }
+.adm-status-legend {
+  padding: 8px 28px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.adm-status-modal-content { width: 100%; max-width: 600px; }
+
+/* Unified / Mapa */
+.adm-unified-body { padding: 0 28px 60px; max-width: 1200px; margin: 0 auto; }
+.adm-unified-tabs { display: flex; gap: 2px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── Tablet (768–1024) ──────────────────────────── */
 @media (max-width: 1024px) {
+  .adm-header { padding: 16px 24px; }
+
   .adm-ops-grid { grid-template-columns: repeat(2, 1fr); padding: 32px; }
   .adm-ops-hero { padding: 48px 32px 32px; }
-  .adm-ops-topbar { padding: 16px 32px; }
-  .adm-ops-footer { padding: 20px 32px; }
+  .adm-ops-topbar { padding: 16px 24px; }
+  .adm-ops-footer { padding: 20px 24px; }
   .adm-ops-card { padding: 28px; min-height: 160px; }
 
   .adm-fluxo-body { padding: 0 24px; }
   .adm-fluxo-products { grid-template-columns: repeat(2, 1fr); }
   .adm-fluxo-cost-row { grid-template-columns: 140px 100px 1fr; padding: 10px 16px; font-size: 11px; }
 
+  .adm-media-body { padding: 28px 24px; }
+  .adm-media-table-row {
+    grid-template-columns: 2fr 70px 90px 80px 60px 60px 60px 60px 60px 80px;
+    gap: 6px;
+  }
+
   .adm-prosp-layout { grid-template-columns: 1fr; }
   .adm-prosp-kpis { padding: 16px 20px; }
   .adm-prosp-body { padding: 16px 20px; }
 
-  .adm-header { padding: 16px 24px; }
+  .adm-status-body { padding: 20px 20px 40px; }
+  .adm-status-legend { padding: 8px 20px; }
+
+  .adm-unified-body { padding: 0 20px 40px; }
 }
 
-/* ── Mobile ──────────────────────────────────── */
+/* ── Mobile (≤640) ──────────────────────────────── */
 @media (max-width: 640px) {
+  /* Header */
   .adm-header {
     padding: 12px 16px;
-    flex-wrap: wrap;
     gap: 8px;
   }
   .adm-header-left {
     gap: 8px;
-    flex-wrap: wrap;
+    flex: 1;
+    min-width: 0;
   }
   .adm-header-title {
-    display: block;
-    width: 100%;
-    font-size: 16px !important;
-    margin-top: 2px;
+    font-size: 15px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .adm-header-back {
-    padding: 6px 12px;
+    padding: 6px 10px;
     font-size: 11px;
+    letter-spacing: 0.05em;
   }
+  .adm-header-back-label { display: none; }
+  .adm-header-actions { gap: 8px; }
 
+  /* Ops home */
   .adm-ops-grid { grid-template-columns: 1fr; padding: 16px; }
-  .adm-ops-hero { padding: 32px 16px 24px; }
+  .adm-ops-hero { padding: 28px 16px 20px; }
   .adm-ops-topbar { padding: 12px 16px; }
   .adm-ops-footer { padding: 16px; }
   .adm-ops-card { padding: 24px; min-height: auto; }
 
+  /* Fluxo */
   .adm-fluxo-body { padding: 0 16px; }
+  .adm-fluxo-step-row { gap: 12px; }
   .adm-fluxo-step-card-inner {
     flex-direction: column;
     align-items: flex-start;
@@ -154,18 +235,55 @@ body {
   }
   .adm-fluxo-badges { justify-content: flex-start; }
   .adm-fluxo-cost-row {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
     padding: 10px 16px;
+    font-size: 11px;
   }
+  .adm-fluxo-cost-note { grid-column: 1 / -1; }
   .adm-fluxo-products { grid-template-columns: 1fr; }
   .adm-fluxo-node {
-    width: 40px;
-    height: 40px;
-    font-size: 10px !important;
+    width: 36px;
+    height: 36px;
+    font-size: 9px !important;
   }
-  .adm-fluxo-vline { left: 19px; }
+  .adm-fluxo-vline { left: 17px; }
 
+  /* Media */
+  .adm-media-body { padding: 16px; }
+  .adm-media-filters { gap: 6px; margin-bottom: 16px; }
+  .adm-media-sort { margin-left: 0; width: 100%; }
+  .adm-media-sort select { flex: 1; }
+  .adm-media-table-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 12px 16px !important;
+  }
+  .adm-media-table-header { display: none; }
+  .adm-media-table-cell { display: flex; justify-content: space-between; align-items: center; }
+  .adm-media-table-cell::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: #999;
+    letter-spacing: 0.1em;
+    flex-shrink: 0;
+    margin-right: 12px;
+  }
+  .adm-media-best {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 12px;
+  }
+  .adm-media-best-stats {
+    margin-left: 0;
+    gap: 16px;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Prospeccao */
   .adm-prosp-kpis {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
@@ -173,4 +291,16 @@ body {
   }
   .adm-prosp-body { padding: 12px 16px; }
   .adm-prosp-layout { grid-template-columns: 1fr; }
+  .adm-prosp-toolbar { flex-direction: column; align-items: stretch; }
+  .adm-prosp-toolbar > div { flex-wrap: wrap; }
+
+  /* Status */
+  .adm-status-body { padding: 16px 16px 32px; }
+  .adm-status-legend { padding: 8px 16px; gap: 4px 12px; }
+  .adm-status-modal-content { max-width: 100%; margin: 0 8px; }
+
+  /* Unified / Mapa */
+  .adm-unified-body { padding: 0 16px 32px; }
+  .adm-unified-tabs { gap: 0; }
+  .adm-unified-tabs button { font-size: 11px !important; padding: 10px 12px !important; }
 }

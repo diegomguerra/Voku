@@ -262,9 +262,8 @@ export default function VokuFlow() {
                 <div
                   key={step.id}
                   onClick={() => setActive(isActive ? null : step.id)}
+                  className="adm-fluxo-step-row"
                   style={{
-                    display: "flex",
-                    gap: 20,
                     marginBottom: 12,
                     cursor: "pointer",
                     position: "relative",
