@@ -3,6 +3,174 @@
 @tailwind utilities;
 
 body {
-  background: #0A0A0A;
-  color: #F0F0EC;
+  background: #FFFFFF;
+  color: #111111;
+}
+
+/* ── Admin responsive ─────────────────────────── */
+
+/* Header */
+.adm-header {
+  padding: 20px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.adm-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.adm-header-title { display: inline; }
+.adm-header-back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #111111;
+  font-weight: 700;
+  font-size: 12px;
+  text-decoration: none;
+  letter-spacing: 0.1em;
+  border: 1px solid #E5E5E5;
+  padding: 8px 16px;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+/* Ops home grid */
+.adm-ops-grid {
+  padding: 48px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  background: #111111;
+}
+.adm-ops-hero { padding: 80px 48px 48px; }
+.adm-ops-topbar { padding: 20px 48px; }
+.adm-ops-footer { padding: 24px 48px; }
+.adm-ops-card { padding: 40px; min-height: 200px; }
+
+/* Fluxo */
+.adm-fluxo-body { padding: 0 40px; }
+.adm-fluxo-step-card-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.adm-fluxo-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.adm-fluxo-cost-row {
+  display: grid;
+  grid-template-columns: 180px 120px 1fr;
+  padding: 12px 20px;
+  align-items: center;
+  font-size: 12px;
+}
+.adm-fluxo-products {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.adm-fluxo-node {
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+}
+.adm-fluxo-vline {
+  left: 27px;
+}
+
+/* Prospeccao */
+.adm-prosp-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 16px 28px;
+}
+.adm-prosp-body { padding: 20px 28px; }
+.adm-prosp-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.adm-prosp-layout {
+  display: grid;
+  grid-template-columns: 1fr 390px;
+  gap: 12px;
+  align-items: start;
+}
+.adm-prosp-layout.no-detail {
+  grid-template-columns: 1fr;
+}
+
+/* ── Tablet ──────────────────────────────────── */
+@media (max-width: 1024px) {
+  .adm-ops-grid { grid-template-columns: repeat(2, 1fr); padding: 32px; }
+  .adm-ops-hero { padding: 48px 32px 32px; }
+  .adm-ops-topbar { padding: 16px 32px; }
+  .adm-ops-footer { padding: 20px 32px; }
+  .adm-ops-card { padding: 28px; min-height: 160px; }
+
+  .adm-fluxo-body { padding: 0 24px; }
+  .adm-fluxo-products { grid-template-columns: repeat(2, 1fr); }
+  .adm-fluxo-cost-row { grid-template-columns: 140px 100px 1fr; padding: 10px 16px; font-size: 11px; }
+
+  .adm-prosp-layout { grid-template-columns: 1fr; }
+  .adm-prosp-kpis { padding: 16px 20px; }
+  .adm-prosp-body { padding: 16px 20px; }
+
+  .adm-header { padding: 16px 24px; }
+}
+
+/* ── Mobile ──────────────────────────────────── */
+@media (max-width: 640px) {
+  .adm-header {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .adm-header-left {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .adm-header-title {
+    display: block;
+    width: 100%;
+    font-size: 16px !important;
+    margin-top: 2px;
+  }
+  .adm-header-back {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .adm-ops-grid { grid-template-columns: 1fr; padding: 16px; }
+  .adm-ops-hero { padding: 32px 16px 24px; }
+  .adm-ops-topbar { padding: 12px 16px; }
+  .adm-ops-footer { padding: 16px; }
+  .adm-ops-card { padding: 24px; min-height: auto; }
+
+  .adm-fluxo-body { padding: 0 16px; }
+  .adm-fluxo-step-card-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .adm-fluxo-badges { justify-content: flex-start; }
+  .adm-fluxo-cost-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 10px 16px;
+  }
+  .adm-fluxo-products { grid-template-columns: 1fr; }
+  .adm-fluxo-node {
+    width: 40px;
+    height: 40px;
+    font-size: 10px !important;
+  }
+  .adm-fluxo-vline { left: 19px; }
+
+  .adm-prosp-kpis {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    padding: 12px 16px;
+  }
+  .adm-prosp-body { padding: 12px 16px; }
+  .adm-prosp-layout { grid-template-columns: 1fr; }
 }

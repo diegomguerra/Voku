@@ -247,19 +247,15 @@ export default function VokuProspeccao() {
     <div style={{ background: T.bg, minHeight: "100vh", color: T.text, fontFamily: "'Inter', sans-serif" }}>
 
       {/* TOPBAR */}
-      <div style={{
+      <div className="adm-header" style={{
         background: "#FFFFFF",
         borderBottom: "2px solid #111111",
-        padding: "20px 48px",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
         position: "sticky",
         top: 0,
         zIndex: 100,
         fontFamily: "'Inter', sans-serif",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div className="adm-header-left">
           <span style={{
             background: "#AAFF00",
             color: "#111111",
@@ -267,42 +263,27 @@ export default function VokuProspeccao() {
             fontSize: "13px",
             padding: "3px 8px",
             letterSpacing: "0.05em",
-            fontFamily: "'Inter', sans-serif",
           }}>VOKU</span>
           <span style={{
             fontSize: "11px",
             fontWeight: 700,
             color: "#999999",
             letterSpacing: "0.15em",
-            fontFamily: "'Inter', sans-serif",
           }}>PROSPECÇÃO</span>
-          <span style={{
+          <span className="adm-header-title" style={{
             fontSize: "18px",
             fontWeight: 900,
             color: "#111111",
             letterSpacing: "-0.02em",
-            fontFamily: "'Inter', sans-serif",
           }}>Prospecção</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <a href="/admin/dashboard" style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#111111",
-            fontWeight: 700,
-            fontSize: "12px",
-            textDecoration: "none",
-            letterSpacing: "0.1em",
-            border: "1px solid #E5E5E5",
-            padding: "8px 16px",
-            fontFamily: "'Inter', sans-serif",
-          }}>← DASHBOARDS</a>
-        </div>
+        <a href="/admin/dashboard" className="adm-header-back"
+          style={{ fontFamily: "'Inter', sans-serif" }}
+        >← DASHBOARDS</a>
       </div>
 
       {/* KPIs */}
-      <div style={{ borderBottom: `1px solid ${T.border}`, padding: "16px 28px", display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 12 }}>
+      <div className="adm-prosp-kpis" style={{ borderBottom: `1px solid ${T.border}` }}>
         {[
           ["JOBS", total || "—", T.blue],
           ["PROPOSTAS", enviadas || "—", T.accent],
@@ -316,7 +297,7 @@ export default function VokuProspeccao() {
         ))}
       </div>
 
-      <div style={{ padding: "20px 28px" }}>
+      <div className="adm-prosp-body">
 
         {/* TOOLBAR */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
@@ -384,10 +365,10 @@ export default function VokuProspeccao() {
 
         {/* TABLE + DETAIL */}
         {filtered.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: selectedId ? "1fr 390px" : "1fr", gap: 12, alignItems: "start" }}>
+          <div className={`adm-prosp-layout${selectedId ? "" : " no-detail"}`}>
 
             {/* TABLE */}
-            <div style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+            <div className="adm-prosp-table-wrap" style={{ background: T.s2, border: `1px solid ${T.border}`, borderRadius: 10 }}>
               <table style={{ width: "100%", borderCollapse: "collapse" }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${T.border}` }}>

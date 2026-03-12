@@ -228,7 +228,7 @@ export default function VokuFlow() {
     >
       <AdminHeader title="Fluxo Operacional" sub="FLUXO" />
 
-      <div style={{ padding: "0 40px", maxWidth: 1100, margin: "0 auto" }}>
+      <div className="adm-fluxo-body" style={{ maxWidth: 1100, margin: "0 auto" }}>
         {/* Section: Fluxo */}
         <div style={{ marginTop: 48 }}>
           <div
@@ -246,9 +246,9 @@ export default function VokuFlow() {
           <div style={{ position: "relative" }}>
             {/* Vertical line */}
             <div
+              className="adm-fluxo-vline"
               style={{
                 position: "absolute",
-                left: 27,
                 top: 20,
                 bottom: 20,
                 width: 1,
@@ -272,9 +272,8 @@ export default function VokuFlow() {
                 >
                   {/* Node */}
                   <div
+                    className="adm-fluxo-node"
                     style={{
-                      width: 56,
-                      height: 56,
                       borderRadius: "50%",
                       background: isActive ? step.color + "22" : COLORS.card,
                       border: `1.5px solid ${isActive ? step.color : COLORS.border}`,
@@ -305,10 +304,8 @@ export default function VokuFlow() {
                     }}
                   >
                     <div
+                      className="adm-fluxo-step-card-inner"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
                         marginBottom: isActive ? 10 : 0,
                       }}
                     >
@@ -328,7 +325,7 @@ export default function VokuFlow() {
                           {step.title}
                         </span>
                       </div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      <div className="adm-fluxo-badges">
                         {step.platforms.map((pid) => (
                           <PlatformBadge key={pid} id={pid} small />
                         ))}
@@ -497,13 +494,9 @@ export default function VokuFlow() {
             ].map((row, i) => (
               <div
                 key={i}
+                className="adm-fluxo-cost-row"
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "180px 120px 1fr",
-                  padding: "12px 20px",
                   borderBottom: i < 6 ? `1px solid ${COLORS.border}` : "none",
-                  alignItems: "center",
-                  fontSize: 12,
                 }}
               >
                 <span style={{ color: COLORS.text, fontWeight: 600 }}>{row.plat}</span>
@@ -555,7 +548,7 @@ export default function VokuFlow() {
             [ 04 / PRODUTOS MVP ]
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+          <div className="adm-fluxo-products">
             {[
               {
                 name: "Landing Page Copy",
