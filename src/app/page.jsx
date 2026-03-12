@@ -112,6 +112,11 @@ const T = {
     finalSub: "Crie sua conta grátis e descreva o projeto. Nossa IA organiza tudo. Você recebe a proposta em minutos.",
     finalCta: "Criar conta e começar",
 
+    heroBanners: {
+      copy: { label: "VOKU · COPY", title: "Palavras que", titleItalic: "convertem.", bullets: ["Hero · Problema · Solução", "3 variações de headline", "DOCX + PDF"], price: "$100", priceLabel: "A PARTIR DE", delivery: "ENTREGA 24H" },
+      social: { label: "PACK REDES SOCIAIS", title: "12 posts.", titleBold: "Prontos pra postar.", price: "$140", delivery: "48h", fields: [{l:"Hook",s:"Sua história, bem contada.",lime:true},{l:"Legenda",s:"Copy envolvente.",lime:false},{l:"Hashtags",s:"#branding",lime:false}] },
+      email: { title: "5 e-mails. Zero", titleItalic: "enrolação.", price: "$195", delivery: "48h", steps: [{n:"01",t:"Boas-vindas",s:"Primeira impressão.",lime:true},{n:"02",t:"Valor",s:"Construir confiança.",lime:false},{n:"03",t:"CTA",s:"Fechar o negócio.",lime:false}] },
+    },
     footer: "We make it Happen.",
     footerLinks: ["Workana", "Fiverr", "WhatsApp"],
   },
@@ -174,6 +179,11 @@ const T = {
     finalHighlight: "solve it for good?",
     finalSub: "Create your free account and describe the project. Our AI organizes everything. You get the proposal in minutes.",
     finalCta: "Create account and start",
+    heroBanners: {
+      copy: { label: "VOKU · COPY", title: "Words that", titleItalic: "convert.", bullets: ["Hero · Problem · Solution", "3 headline variations", "DOCX + PDF"], price: "$100", priceLabel: "STARTING AT", delivery: "24H DELIVERY" },
+      social: { label: "SOCIAL MEDIA PACK", title: "12 posts.", titleBold: "Ready to go.", price: "$140", delivery: "48h", fields: [{l:"Hook",s:"Your story, told right.",lime:true},{l:"Caption",s:"Engaging copy.",lime:false},{l:"Hashtags",s:"#branding",lime:false}] },
+      email: { title: "5 emails. Zero", titleItalic: "fluff.", price: "$195", delivery: "48h", steps: [{n:"01",t:"Welcome",s:"First impression.",lime:true},{n:"02",t:"Value",s:"Build trust.",lime:false},{n:"03",t:"CTA",s:"Close the deal.",lime:false}] },
+    },
     footer: "We make it Happen.",
     footerLinks: ["Workana", "Fiverr", "WhatsApp"],
   },
@@ -236,6 +246,11 @@ const T = {
     finalHighlight: "resolver de una vez?",
     finalSub: "Crea tu cuenta gratuita y describe el proyecto. Nuestra IA organiza todo. Recibes la propuesta en minutos.",
     finalCta: "Crear cuenta y empezar",
+    heroBanners: {
+      copy: { label: "VOKU · COPY", title: "Palabras que", titleItalic: "convierten.", bullets: ["Hero · Problema · Solución", "3 variaciones de titular", "DOCX + PDF"], price: "$100", priceLabel: "DESDE", delivery: "ENTREGA 24H" },
+      social: { label: "PACK REDES SOCIALES", title: "12 posts.", titleBold: "Listos para publicar.", price: "$140", delivery: "48h", fields: [{l:"Hook",s:"Tu historia, bien contada.",lime:true},{l:"Leyenda",s:"Copy atractivo.",lime:false},{l:"Hashtags",s:"#branding",lime:false}] },
+      email: { title: "5 emails. Sin", titleItalic: "rodeos.", price: "$195", delivery: "48h", steps: [{n:"01",t:"Bienvenida",s:"Primera impresión.",lime:true},{n:"02",t:"Valor",s:"Construir confianza.",lime:false},{n:"03",t:"CTA",s:"Cerrar el trato.",lime:false}] },
+    },
     footer: "We make it Happen.",
     footerLinks: ["Workana", "Fiverr", "WhatsApp"],
   },
@@ -954,7 +969,7 @@ export default function VokuLanding() {
         <div style={{ position: "absolute", inset: 0, opacity: 0.07, backgroundImage: "linear-gradient(rgba(255,255,255,0.15) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.15) 1px,transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
 
         {/* ── two-column grid ── */}
-        <div style={{ width: "100%", maxWidth: 1400, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center", position: "relative", zIndex: 2 }}>
+        <div className="hero-grid" style={{ width: "100%", maxWidth: 1400, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px", alignItems: "center", position: "relative", zIndex: 2 }}>
 
           {/* LEFT — copy */}
           <div>
@@ -992,24 +1007,24 @@ export default function VokuLanding() {
           </div>
 
                     {/* RIGHT — Gig-style split banners */}
-          <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(32px)", transition: "all 0.9s ease 0.3s", position: "relative" }}>
+          <div className="hero-right-panel" style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(32px)", transition: "all 0.9s ease 0.3s", position: "relative" }}>
             <div style={{ borderRadius: 20, overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.7)", border: "1px solid #1e1e1e" }}>
 
               {/* Banner 1 — Copy / Gig 1 */}
               <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", minHeight: 190 }}>
                 <div style={{ background: "#111", padding: "28px 24px", position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E')", backgroundSize: "180px" }} />
-                  <div style={{ fontFamily: FF, fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#C8F135", marginBottom: 10 }}>VOKU · COPY</div>
-                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(26px,3.2vw,40px)", color: "#fff", lineHeight: 0.95 }}>Words that</div>
-                  <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(26px,3.2vw,40px)", color: "#C8F135", lineHeight: 0.95, marginBottom: 14 }}>convert.</div>
-                  {["Hero · Problem · Solution", "3 headline variations", "DOCX + PDF"].map((it, i) => (
-                    <div key={i} style={{ fontFamily: FF, fontSize: 10, color: "#444", marginBottom: 4 }}>→ {it}</div>
+                  <div style={{ fontFamily: FF, fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#C8F135", marginBottom: 10 }}>{t.heroBanners.copy.label}</div>
+                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(26px,3.2vw,40px)", color: "#fff", lineHeight: 0.95 }}>{t.heroBanners.copy.title}</div>
+                  <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(26px,3.2vw,40px)", color: "#C8F135", lineHeight: 0.95, marginBottom: 14 }}>{t.heroBanners.copy.titleItalic}</div>
+                  {t.heroBanners.copy.bullets.map((it, i) => (
+                    <div key={i} style={{ fontFamily: FF, fontSize: 10, color: "#444", marginBottom: 4 }}>{"\u2192"} {it}</div>
                   ))}
                 </div>
                 <div style={{ background: "#C8F135", padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <div style={{ fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 2, color: "#2a3d00" }}>STARTING AT</div>
-                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(34px,4vw,50px)", color: "#111", lineHeight: 0.9 }}>$100</div>
-                  <div style={{ background: "#111", color: "#C8F135", borderRadius: 30, padding: "5px 12px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1.5 }}>24H DELIVERY</div>
+                  <div style={{ fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 2, color: "#2a3d00" }}>{t.heroBanners.copy.priceLabel}</div>
+                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(34px,4vw,50px)", color: "#111", lineHeight: 0.9 }}>{t.heroBanners.copy.price}</div>
+                  <div style={{ background: "#111", color: "#C8F135", borderRadius: 30, padding: "5px 12px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1.5 }}>{t.heroBanners.copy.delivery}</div>
                   <div style={{ display: "flex", gap: 4 }}>
                     {["EN","PT","ES"].map(l => <div key={l} style={{ background: "#111", color: "#fff", borderRadius: 20, padding: "3px 7px", fontFamily: FF, fontSize: 8, fontWeight: 700 }}>{l}</div>)}
                   </div>
@@ -1022,13 +1037,13 @@ export default function VokuLanding() {
               <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", minHeight: 150 }}>
                 <div style={{ background: "#0d0d0d", padding: "20px 24px", position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E')", backgroundSize: "180px" }} />
-                  <div style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 30, padding: "3px 9px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>SOCIAL MEDIA PACK</div>
-                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>12 posts.</div>
-                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>Ready to go.</div>
-                  <div style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>$140</span> — 48h</div>
+                  <div style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 30, padding: "3px 9px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{t.heroBanners.social.label}</div>
+                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>{t.heroBanners.social.title}</div>
+                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>{t.heroBanners.social.titleBold}</div>
+                  <div style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.social.price}</span> — {t.heroBanners.social.delivery}</div>
                 </div>
                 <div style={{ background: "#0d0d0d", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 6, justifyContent: "center" }}>
-                  {[{l:"Hook",s:"Your story, told right.",lime:true},{l:"Caption",s:"Engaging copy.",lime:false},{l:"Hashtags",s:"#branding",lime:false}].map((c,i) => (
+                  {t.heroBanners.social.fields.map((c,i) => (
                     <div key={i} style={{ background: c.lime ? "#C8F135" : "#161616", border: c.lime ? "none" : "1px solid #222", borderRadius: 7, padding: "7px 9px" }}>
                       <div style={{ fontFamily: FF, fontSize: 9, fontWeight: 700, color: c.lime ? "#111" : "#FAF8F3" }}>{c.l}</div>
                       <div style={{ fontFamily: FF, fontSize: 8, color: c.lime ? "#2a3d00" : "#555" }}>{c.s}</div>
@@ -1043,12 +1058,12 @@ export default function VokuLanding() {
               <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", minHeight: 150 }}>
                 <div style={{ background: "#111", padding: "20px 24px", position: "relative", overflow: "hidden" }}>
                   <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E')", backgroundSize: "180px" }} />
-                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>5 emails. Zero</div>
-                  <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>fluff.</div>
-                  <div style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>$195</span> — 48h</div>
+                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>{t.heroBanners.email.title}</div>
+                  <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>{t.heroBanners.email.titleItalic}</div>
+                  <div style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.email.price}</span> — {t.heroBanners.email.delivery}</div>
                 </div>
                 <div style={{ background: "#111", padding: "14px 12px", display: "flex", flexDirection: "column", gap: 5, justifyContent: "center" }}>
-                  {[{n:"01",t:"Welcome",s:"First impression.",lime:true},{n:"02",t:"Value",s:"Build trust.",lime:false},{n:"03",t:"CTA",s:"Close the deal.",lime:false}].map((s,i) => (
+                  {t.heroBanners.email.steps.map((s,i) => (
                     <div key={i} style={{ background: s.lime ? "#C8F135" : "#1a1a1a", border: s.lime ? "none" : "1px solid #222", borderRadius: 7, padding: "6px 9px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <div style={{ fontFamily: FF, fontSize: 9, fontWeight: 700, color: s.lime ? "#111" : "#FAF8F3" }}>{s.n} {s.t}</div>
@@ -1200,6 +1215,9 @@ export default function VokuLanding() {
           [style*="repeat(3,1fr)"] { grid-template-columns: 1fr !important; }
           [style*="320px 1fr"] { grid-template-columns: 1fr !important; }
           [style*="1fr auto 1fr"] { grid-template-columns: 1fr !important; }
+          .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
+          .hero-right-panel { width: 100% !important; max-width: 100% !important; }
+          section[style*="100px 52px"] { padding: 80px 24px 40px !important; }
         }
       `}</style>
     </div>
