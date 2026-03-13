@@ -6,7 +6,6 @@ import { Resend } from 'resend'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest) {
-  const resend = new Resend(process.env.RESEND_API_KEY)
   try {
     const { user_id: rawUserId, email, name, product, conversation, structured_data, currency = 'USD' } = await req.json()
 
@@ -82,14 +81,15 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({ order_id: order.id, user_id, email, name, product, structured_data, currency }),
     }).catch(console.error)
 
-    // E-mail de confirmação imediato
+    // E-mail de confirmação (non-blocking)
     const deadlineFormatted = deadline.toLocaleString('pt-BR', {
       timeZone: 'America/Sao_Paulo',
       dateStyle: 'short',
       timeStyle: 'short',
     })
 
-    await resend.emails.send({
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    resend.emails.send({
       from: 'Voku <ola@voku.one>',
       to: email,
       subject: `✦ Pedido #${order.order_number} recebido — ${productInfo.name}`,
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
           <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #1F1F1F; color: #333; font-size: 11px;">Voku LLC · Wyoming, USA · voku.one</div>
         </div>
       `,
-    })
+    }).catch(e => console.error('Resend email error:', e))
 
     return NextResponse.json({
       success: true,
@@ -116,8 +116,8 @@ export async function POST(req: NextRequest) {
       order_number: order.order_number,
       deadline: deadline.toISOString(),
     })
-  } catch (err) {
-    console.error(err)
+  } catch (err: any) {
+    console.error('submit-briefing error:', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

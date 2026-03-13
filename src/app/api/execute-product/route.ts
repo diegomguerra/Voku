@@ -5,6 +5,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 const SYSTEM_PROMPTS: Record<ProductId, string> = {
   landing_page_copy: `Você é RORDENS, o motor de execução da Voku. Escreva uma landing page copy completa e de alta conversão.
@@ -70,8 +71,8 @@ export async function POST(req: NextRequest) {
 
     // Generate 3 variations in a single API call
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8000,
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 6000,
       system: `${baseSystem}
 
 IMPORTANT: You must generate EXACTLY 3 variations of the deliverable, each with a different tone.
@@ -136,7 +137,8 @@ Each variation must be complete and production-ready. Only output the JSON array
     const productName = PRODUCT_NAMES[product as ProductId]
     const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
 
-    await resend.emails.send({
+    // E-mail (non-blocking — não impede geração das choices)
+    resend.emails.send({
       from: 'Voku <ola@voku.one>',
       to: email,
       subject: `✦ Your 3 ${productName} options are ready`,
@@ -152,7 +154,7 @@ Each variation must be complete and production-ready. Only output the JSON array
           <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #1F1F1F; color: #333; font-size: 11px;">Voku LLC · Wyoming, USA · voku.one</div>
         </div>
       `,
-    })
+    }).catch(e => console.error('Resend email error:', e))
 
     return NextResponse.json({ success: true, choices: variations.length })
   } catch (err) {
