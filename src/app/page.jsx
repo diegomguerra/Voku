@@ -5,7 +5,14 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,w
 const FF = "'Plus Jakarta Sans', sans-serif";
 const FFS = "'DM Serif Display', serif";
 
-/* ─── PRICING ANCHORS ───────────────────────────── */
+/* ─── PRICING ──────────────────────────────────── */
+const USD_TO_BRL = 1.0038 * 5.4;
+function toBRL(usd) {
+  const n = parseFloat(usd.replace(/[^0-9.]/g, ""));
+  return `R$${Math.round(n * USD_TO_BRL)}`;
+}
+function price(usd, lang) { return lang === "PT" ? toBRL(usd) : usd; }
+
 const PRICES = {
   mkt: { from: "$197", label: { PT: "a partir de", EN: "from", ES: "desde" } },
   auto: { from: "$297", label: { PT: "a partir de", EN: "from", ES: "desde" } },
@@ -429,7 +436,7 @@ function ServiceExplorer({ services, lang }) {
               <div style={{ fontFamily: FF, fontSize: 13, fontWeight: isA ? 700 : 500, color: isA ? "#0f0f0f" : "#555", lineHeight: 1.3, transition: "all 0.3s" }}>{s.label}</div>
               {isA && (
                 <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontFamily: FF, fontSize: 16, fontWeight: 800, color: "#C8F135" }}>{s.price}{s.priceSuffix}</span>
+                  <span style={{ fontFamily: FF, fontSize: 16, fontWeight: 800, color: "#C8F135" }}>{price(s.price, lang)}{s.priceSuffix}</span>
                   <span style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>{s.priceNote}</span>
                 </div>
               )}
@@ -453,7 +460,7 @@ function ServiceExplorer({ services, lang }) {
               {svc.badge.toUpperCase()}
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontFamily: FF, fontSize: 26, fontWeight: 800, color: isDark ? "#C8F135" : "#111", letterSpacing: -0.5 }}>{svc.price}{svc.priceSuffix}</div>
+              <div style={{ fontFamily: FF, fontSize: 26, fontWeight: 800, color: isDark ? "#C8F135" : "#111", letterSpacing: -0.5 }}>{price(svc.price, lang)}{svc.priceSuffix}</div>
               <div style={{ fontFamily: FF, fontSize: 10, color: isDark ? "#555" : "#AAA", marginTop: 2 }}>{svc.priceNote}</div>
             </div>
           </div>
@@ -605,7 +612,7 @@ function PricingSection({ t }) {
               )}
               <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: plan.highlight ? "#888" : "#444", letterSpacing: 1, marginBottom: 20 }}>{plan.name.toUpperCase()}</div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 }}>
-                <span style={{ fontFamily: FF, fontSize: 40, fontWeight: 800, color: "#FAF8F3", letterSpacing: -1.5 }}>{plan.price}</span>
+                <span style={{ fontFamily: FF, fontSize: 40, fontWeight: 800, color: "#FAF8F3", letterSpacing: -1.5 }}>{price(plan.price, lang)}</span>
                 <span style={{ fontFamily: FF, fontSize: 14, color: plan.highlight ? "#444" : "#AAA", fontWeight: 500 }}>{plan.period}</span>
               </div>
               <p style={{ fontFamily: FF, fontSize: 13, color: "#BBB", lineHeight: 1.6, marginBottom: 28, minHeight: 40 }}>{plan.desc}</p>
@@ -1004,7 +1011,7 @@ export default function VokuLanding() {
                 </div>
                 <div style={{ background: "#C8F135", padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
                   <div style={{ fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 2, color: "#2a3d00" }}>{t.heroBanners.copy.priceLabel}</div>
-                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(34px,4vw,50px)", color: "#111", lineHeight: 0.9 }}>{t.heroBanners.copy.price}</div>
+                  <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(34px,4vw,50px)", color: "#111", lineHeight: 0.9 }}>{price(t.heroBanners.copy.price, lang)}</div>
                   <div style={{ background: "#111", color: "#C8F135", borderRadius: 30, padding: "5px 12px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1.5 }}>{t.heroBanners.copy.delivery}</div>
                   <div style={{ display: "flex", gap: 4 }}>
                     {["EN","PT","ES"].map(l => <div key={l} style={{ background: "#111", color: "#fff", borderRadius: 20, padding: "3px 7px", fontFamily: FF, fontSize: 8, fontWeight: 700 }}>{l}</div>)}
@@ -1021,7 +1028,7 @@ export default function VokuLanding() {
                   <div style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 30, padding: "3px 9px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{t.heroBanners.social.label}</div>
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>{t.heroBanners.social.title}</div>
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>{t.heroBanners.social.titleBold}</div>
-                  <div style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.social.price}</span> — {t.heroBanners.social.delivery}</div>
+                  <div style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>{lang === "PT" ? "a partir de" : "from"} <span style={{ color: "#C8F135", fontWeight: 800 }}>{price(t.heroBanners.social.price, lang)}</span> — {t.heroBanners.social.delivery}</div>
                 </div>
                 <div style={{ background: "#0d0d0d", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 6, justifyContent: "center" }}>
                   {t.heroBanners.social.fields.map((c,i) => (
@@ -1041,7 +1048,7 @@ export default function VokuLanding() {
                   <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E')", backgroundSize: "180px" }} />
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>{t.heroBanners.email.title}</div>
                   <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>{t.heroBanners.email.titleItalic}</div>
-                  <div style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.email.price}</span> — {t.heroBanners.email.delivery}</div>
+                  <div style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>{lang === "PT" ? "a partir de" : "from"} <span style={{ color: "#C8F135", fontWeight: 800 }}>{price(t.heroBanners.email.price, lang)}</span> — {t.heroBanners.email.delivery}</div>
                 </div>
                 <div style={{ background: "#111", padding: "14px 12px", display: "flex", flexDirection: "column", gap: 5, justifyContent: "center" }}>
                   {t.heroBanners.email.steps.map((s,i) => (
