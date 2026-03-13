@@ -883,24 +883,6 @@ const rv = (vis, delay = 0) => ({
   transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
 });
 
-/* ─── CUSTOM CURSOR ─────────────────────────────── */
-function CustomCursor() {
-  const [pos, setPos] = useState({ x: -100, y: -100 });
-  const [big, setBig] = useState(false);
-  useEffect(() => {
-    const move = e => setPos({ x: e.clientX, y: e.clientY });
-    const over = e => { if (e.target.closest("a,button,[data-hover]")) setBig(true); };
-    const out = () => setBig(false);
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseover", over);
-    window.addEventListener("mouseout", out);
-    return () => { window.removeEventListener("mousemove", move); window.removeEventListener("mouseover", over); window.removeEventListener("mouseout", out); };
-  }, []);
-  return (
-    <div style={{ position: "fixed", zIndex: 9999, pointerEvents: "none", width: big ? 40 : 10, height: big ? 40 : 10, borderRadius: "50%", background: big ? "rgba(233,245,158,0.15)" : "#C8F135", border: big ? "1.5px solid rgba(233,245,158,0.5)" : "none", transform: `translate(${pos.x - (big ? 20 : 5)}px, ${pos.y - (big ? 20 : 5)}px)`, transition: "width 0.2s, height 0.2s, background 0.2s, border 0.2s, transform 0.08s", mixBlendMode: "multiply" }} />
-  );
-}
-
 function NoiseTexture() {
   return <div style={{ position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none", opacity: 0.04, backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`, backgroundSize: "200px 200px" }} />;
 }
@@ -941,8 +923,7 @@ export default function VokuLanding() {
   };
 
   return (
-    <div style={{ background: "#0d0d0d", color: "#FAF8F3", overflowX: "hidden", cursor: "none" }}>
-      <CustomCursor />
+    <div style={{ background: "#0d0d0d", color: "#FAF8F3", overflowX: "hidden" }}>
       <NoiseTexture />
       {showModal && <RegisterFlow t={t} lang={lang} onClose={() => setShowModal(false)} />}
 
@@ -1208,7 +1189,6 @@ export default function VokuLanding() {
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         ::selection { background: #C8F135; color: #111; }
-        a, button { cursor: none !important; }
         @media (max-width: 768px) {
           nav > div:last-child > a { display: none; }
           [style*="repeat(4,1fr)"] { grid-template-columns: 1fr 1fr !important; }
