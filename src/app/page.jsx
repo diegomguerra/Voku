@@ -430,7 +430,7 @@ function ServiceExplorer({ services, lang }) {
               {isA && (
                 <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontFamily: FF, fontSize: 16, fontWeight: 800, color: "#C8F135" }}>{s.price}{s.priceSuffix}</span>
-                  <span style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>{s.priceNote}</span>
+                  <span style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>{s.priceNote}</span>
                 </div>
               )}
             </button>
@@ -497,7 +497,7 @@ function GapSection({ t }) {
       <div style={{ maxWidth: 1040, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div style={{ textAlign: "center", marginBottom: 60 }}>
           <h2 style={{ ...rv(vis), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,3.5vw,46px)", color: "#FAF8F3", margin: "0 0 12px", letterSpacing: -0.5 }}>{t.gapTitle}</h2>
-          <p style={{ ...rv(vis, 0.1), fontFamily: FF, fontSize: 15, color: "#666" }}>{t.gapSub}</p>
+          <p style={{ ...rv(vis, 0.1), fontFamily: FF, fontSize: 15, color: "#CCC" }}>{t.gapSub}</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 3, alignItems: "stretch" }}>
           {t.gapItems.map((col, i) => (
@@ -538,9 +538,9 @@ function PromoSection({ t }) {
     <section ref={ref} style={{ padding: "80px 52px", background: "#111", position: "relative", overflow: "hidden" }}>
       <div style={{ position: "absolute", inset: 0, opacity: 0.02, backgroundImage: "repeating-linear-gradient(45deg, #C8F135 0, #C8F135 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px", pointerEvents: "none" }} />
       <div style={{ maxWidth: 640, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
-        <div style={{ ...rv(vis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#333", marginBottom: 16 }}>PROMO</div>
+        <div style={{ ...rv(vis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#999", marginBottom: 16 }}>PROMO</div>
         <h2 style={{ ...rv(vis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,3.5vw,44px)", color: "#FAF8F3", margin: "0 0 16px", letterSpacing: -0.5 }}>{t.promoTitle}</h2>
-        <p style={{ ...rv(vis, 0.14), fontFamily: FF, fontSize: 14, color: "#555", lineHeight: 1.7, marginBottom: 36 }}>{t.promoBody}</p>
+        <p style={{ ...rv(vis, 0.14), fontFamily: FF, fontSize: 14, color: "#BBB", lineHeight: 1.7, marginBottom: 36 }}>{t.promoBody}</p>
 
         <div style={{ ...rv(vis, 0.18), display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 20 }}>
           <button onClick={() => { setIgDone(true); window.open("https://instagram.com/voku.one", "_blank"); }}
@@ -564,9 +564,9 @@ function PromoSection({ t }) {
 
         {codeRevealed && (
           <div style={{ marginTop: 8, padding: "20px 32px", background: "rgba(233,245,158,0.08)", border: "1.5px solid rgba(233,245,158,0.2)", borderRadius: 12, display: "inline-block" }}>
-            <div style={{ fontFamily: FF, fontSize: 11, color: "#555", marginBottom: 8, letterSpacing: 1 }}>SEU CÓDIGO</div>
+            <div style={{ fontFamily: FF, fontSize: 11, color: "#BBB", marginBottom: 8, letterSpacing: 1 }}>SEU CÓDIGO</div>
             <div style={{ fontFamily: FF, fontSize: 28, fontWeight: 800, color: "#C8F135", letterSpacing: 4 }}>VOKU15</div>
-            <div style={{ fontFamily: FF, fontSize: 11, color: "#444", marginTop: 8 }}>15% de desconto · válido por 7 dias</div>
+            <div style={{ fontFamily: FF, fontSize: 11, color: "#AAA", marginTop: 8 }}>15% de desconto · válido por 7 dias</div>
           </div>
         )}
       </div>
@@ -608,12 +608,12 @@ function PricingSection({ t }) {
                 <span style={{ fontFamily: FF, fontSize: 40, fontWeight: 800, color: "#FAF8F3", letterSpacing: -1.5 }}>{plan.price}</span>
                 <span style={{ fontFamily: FF, fontSize: 14, color: plan.highlight ? "#444" : "#AAA", fontWeight: 500 }}>{plan.period}</span>
               </div>
-              <p style={{ fontFamily: FF, fontSize: 13, color: "#555", lineHeight: 1.6, marginBottom: 28, minHeight: 40 }}>{plan.desc}</p>
+              <p style={{ fontFamily: FF, fontSize: 13, color: "#BBB", lineHeight: 1.6, marginBottom: 28, minHeight: 40 }}>{plan.desc}</p>
               <div style={{ marginBottom: 32 }}>
                 {plan.items.map((item, j) => (
                   <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
                     <span style={{ color: "#C8F135", fontSize: 13, marginTop: 1, flexShrink: 0 }}>✓</span>
-                    <span style={{ fontFamily: FF, fontSize: 13, color: "#666", lineHeight: 1.5 }}>{item}</span>
+                    <span style={{ fontFamily: FF, fontSize: 13, color: "#CCC", lineHeight: 1.5 }}>{item}</span>
                   </div>
                 ))}
               </div>
@@ -707,7 +707,7 @@ function RegisterFlow({ t, lang, onClose }) {
 
   const overlay = { position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 };
   const card = { background: "#FAFAF5", borderRadius: 20, width: "100%", maxWidth: 520, maxHeight: "90vh", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 40px 120px rgba(0,0,0,0.4)" };
-  const labelStyle = { fontFamily: FF, fontSize: 12, fontWeight: 600, color: "#888", marginBottom: 6, display: "block" };
+  const labelStyle = { fontFamily: FF, fontSize: 12, fontWeight: 600, color: "#CCC", marginBottom: 6, display: "block" };
   const inputStyle = { fontFamily: FF, fontSize: 14, color: "#111", background: "#fff", border: "1px solid #E0E0D8", borderRadius: 10, padding: "12px 14px", width: "100%", outline: "none", transition: "border-color 0.2s" };
 
   return (
@@ -741,7 +741,7 @@ function RegisterFlow({ t, lang, onClose }) {
             <h3 style={{ fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: 26, color: "#111", margin: "0 0 8px" }}>
               {lang === "PT" ? "Crie sua conta grátis." : lang === "EN" ? "Create your free account." : "Crea tu cuenta gratuita."}
             </h3>
-            <p style={{ fontFamily: FF, fontSize: 13, color: "#888", margin: "0 0 28px", lineHeight: 1.6 }}>
+            <p style={{ fontFamily: FF, fontSize: 13, color: "#CCC", margin: "0 0 28px", lineHeight: 1.6 }}>
               {lang === "PT" ? "Sem cartão de crédito. Proposta em minutos." : lang === "EN" ? "No credit card. Proposal in minutes." : "Sin tarjeta de crédito. Propuesta en minutos."}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -761,7 +761,7 @@ function RegisterFlow({ t, lang, onClose }) {
             </div>
             <div style={{ marginTop: 20, padding: "14px 16px", background: "#F0F0EA", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 16 }}>🔒</span>
-              <span style={{ fontFamily: FF, fontSize: 11, color: "#888", lineHeight: 1.5 }}>
+              <span style={{ fontFamily: FF, fontSize: 11, color: "#CCC", lineHeight: 1.5 }}>
                 {lang === "PT" ? "Seus dados ficam só aqui. Sem spam. Sem revenda." : lang === "EN" ? "Your data stays here. No spam. No resale." : "Tus datos se quedan aquí. Sin spam. Sin reventa."}
               </span>
             </div>
@@ -774,7 +774,7 @@ function RegisterFlow({ t, lang, onClose }) {
             <h3 style={{ fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: 24, color: "#111", margin: "0 0 8px" }}>
               {lang === "PT" ? `Olá, ${name}! 🎉` : lang === "EN" ? `Welcome, ${name}! 🎉` : `¡Bienvenido, ${name}! 🎉`}
             </h3>
-            <p style={{ fontFamily: FF, fontSize: 13, color: "#888", margin: "0 0 24px", lineHeight: 1.6 }}>
+            <p style={{ fontFamily: FF, fontSize: 13, color: "#CCC", margin: "0 0 24px", lineHeight: 1.6 }}>
               {lang === "PT" ? "Siga a Voku nas redes e ganhe 15% de desconto no seu projeto." : lang === "EN" ? "Follow Voku on social media and get 15% off your project." : "Sigue a Voku en redes sociales y obtén 15% de descuento en tu proyecto."}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
@@ -852,7 +852,7 @@ function RegisterFlow({ t, lang, onClose }) {
               <h3 style={{ fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: 24, color: "#111", margin: "0 0 8px" }}>
                 {lang === "PT" ? "Briefing confirmado!" : lang === "EN" ? "Brief confirmed!" : "¡Briefing confirmado!"}
               </h3>
-              <p style={{ fontFamily: FF, fontSize: 13, color: "#888" }}>
+              <p style={{ fontFamily: FF, fontSize: 13, color: "#CCC" }}>
                 {lang === "PT" ? "Você receberá a proposta em até 2h no e-mail:" : lang === "EN" ? "You'll receive the proposal within 2h at:" : "Recibirás la propuesta en 2h en el email:"}
               </p>
               <p style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: "#111", margin: "4px 0 0" }}>{email}</p>
@@ -932,7 +932,7 @@ export default function VokuLanding() {
         <div style={{ fontFamily: FF, fontWeight: 800, fontSize: 22, letterSpacing: -1, color: "#FAF8F3" }}>VOKU</div>
         <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
           {t.nav.map((item, i) => (
-            <a key={i} href={["#servicos", "#processo", "#precos"][i]} style={{ fontFamily: FF, fontSize: 13, fontWeight: 500, color: "#555", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "#FAF8F3"} onMouseLeave={e => e.target.style.color = "#555"}>{item}</a>
+            <a key={i} href={["#servicos", "#processo", "#precos"][i]} style={{ fontFamily: FF, fontSize: 13, fontWeight: 500, color: "#BBB", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "#FAF8F3"} onMouseLeave={e => e.target.style.color = "#555"}>{item}</a>
           ))}
           {/* lang */}
           <div style={{ display: "flex", gap: 2 }}>
@@ -966,12 +966,12 @@ export default function VokuLanding() {
               <span style={{ display: "block", fontStyle: "italic", color: "#C8F135", opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(28px)", transition: "all 0.7s ease 0.26s" }}>{t.h1italic}</span>
             </h1>
 
-            <p style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(20px)", transition: "all 0.65s ease 0.34s", fontFamily: FF, fontSize: "clamp(15px,1.3vw,17px)", color: "#666", lineHeight: 1.7, marginBottom: 32, maxWidth: 480 }}>{t.sub}</p>
+            <p style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(20px)", transition: "all 0.65s ease 0.34s", fontFamily: FF, fontSize: "clamp(15px,1.3vw,17px)", color: "#CCC", lineHeight: 1.7, marginBottom: 32, maxWidth: 480 }}>{t.sub}</p>
 
             {/* trust badges */}
             <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s ease 0.38s", display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 36 }}>
               {t.trustBadges.map((badge, i) => (
-                <div key={i} style={{ fontFamily: FF, fontSize: 11, fontWeight: 600, color: "#666", background: "#161616", border: "1px solid #222", borderRadius: 20, padding: "5px 12px", letterSpacing: 0.3 }}>
+                <div key={i} style={{ fontFamily: FF, fontSize: 11, fontWeight: 600, color: "#CCC", background: "#161616", border: "1px solid #222", borderRadius: 20, padding: "5px 12px", letterSpacing: 0.3 }}>
                   {badge}
                 </div>
               ))}
@@ -981,7 +981,7 @@ export default function VokuLanding() {
               <button onClick={() => setShowModal(true)} style={{ background: "#C8F135", color: "#111", border: "none", borderRadius: 10, padding: "18px 40px", fontFamily: FF, fontSize: 15, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, transition: "all 0.3s" }} onMouseEnter={e => { e.target.style.opacity = "0.88"; e.target.style.transform = "translateY(-2px)"; }} onMouseLeave={e => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }}>
                 {t.cta}
               </button>
-              <a href="#servicos" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "18px 28px", borderRadius: 10, border: "1.5px solid #2a2a2a", fontFamily: FF, fontSize: 15, fontWeight: 600, color: "#555", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.color = "#C8F135"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}>
+              <a href="#servicos" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "18px 28px", borderRadius: 10, border: "1.5px solid #2a2a2a", fontFamily: FF, fontSize: 15, fontWeight: 600, color: "#BBB", textDecoration: "none", transition: "all 0.2s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.color = "#C8F135"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#555"; }}>
                 {t.ctaSec} ↓
               </a>
             </div>
@@ -999,7 +999,7 @@ export default function VokuLanding() {
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(26px,3.2vw,40px)", color: "#fff", lineHeight: 0.95 }}>{t.heroBanners.copy.title}</div>
                   <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(26px,3.2vw,40px)", color: "#C8F135", lineHeight: 0.95, marginBottom: 14 }}>{t.heroBanners.copy.titleItalic}</div>
                   {t.heroBanners.copy.bullets.map((it, i) => (
-                    <div key={i} style={{ fontFamily: FF, fontSize: 10, color: "#444", marginBottom: 4 }}>{"\u2192"} {it}</div>
+                    <div key={i} style={{ fontFamily: FF, fontSize: 10, color: "#AAA", marginBottom: 4 }}>{"\u2192"} {it}</div>
                   ))}
                 </div>
                 <div style={{ background: "#C8F135", padding: "28px 20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
@@ -1021,7 +1021,7 @@ export default function VokuLanding() {
                   <div style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 30, padding: "3px 9px", fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{t.heroBanners.social.label}</div>
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>{t.heroBanners.social.title}</div>
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>{t.heroBanners.social.titleBold}</div>
-                  <div style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.social.price}</span> — {t.heroBanners.social.delivery}</div>
+                  <div style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.social.price}</span> — {t.heroBanners.social.delivery}</div>
                 </div>
                 <div style={{ background: "#0d0d0d", padding: "16px 12px", display: "flex", flexDirection: "column", gap: 6, justifyContent: "center" }}>
                   {t.heroBanners.social.fields.map((c,i) => (
@@ -1041,7 +1041,7 @@ export default function VokuLanding() {
                   <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "url('data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E')", backgroundSize: "180px" }} />
                   <div style={{ fontFamily: FF, fontWeight: 800, fontSize: "clamp(20px,2.5vw,30px)", color: "#fff", lineHeight: 0.9 }}>{t.heroBanners.email.title}</div>
                   <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(20px,2.5vw,30px)", color: "#C8F135", lineHeight: 0.9, marginBottom: 8 }}>{t.heroBanners.email.titleItalic}</div>
-                  <div style={{ fontFamily: FF, fontSize: 10, color: "#444" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.email.price}</span> — {t.heroBanners.email.delivery}</div>
+                  <div style={{ fontFamily: FF, fontSize: 10, color: "#AAA" }}>from <span style={{ color: "#C8F135", fontWeight: 800 }}>{t.heroBanners.email.price}</span> — {t.heroBanners.email.delivery}</div>
                 </div>
                 <div style={{ background: "#111", padding: "14px 12px", display: "flex", flexDirection: "column", gap: 5, justifyContent: "center" }}>
                   {t.heroBanners.email.steps.map((s,i) => (
@@ -1065,7 +1065,7 @@ export default function VokuLanding() {
 
         {/* scroll hint */}
         <div style={{ position: "absolute", bottom: 36, left: "50%", transform: "translateX(-50%)", opacity: heroVisible ? 0.4 : 0, transition: "opacity 1s ease 1s", display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-          <span style={{ fontFamily: FF, fontSize: 10, letterSpacing: 2, color: "#333" }}>{t.scrollHint.toUpperCase()}</span>
+          <span style={{ fontFamily: FF, fontSize: 10, letterSpacing: 2, color: "#999" }}>{t.scrollHint.toUpperCase()}</span>
           <div style={{ width: 1, height: 32, background: "linear-gradient(to bottom, #AAA, transparent)", animation: "scrollLine 2s ease-in-out infinite" }} />
         </div>
       </section>
@@ -1076,12 +1076,12 @@ export default function VokuLanding() {
       {/* ══ STATS ══ */}
       <section ref={statsRef} style={{ padding: "80px 52px", background: "#0a0a0a", borderBottom: "1px solid #161616" }}>
         <div style={{ maxWidth: 1040, margin: "0 auto" }}>
-          <div style={{ ...rv(statsVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#333", marginBottom: 40, textAlign: "center" }}>{t.statsLabel.toUpperCase()}</div>
+          <div style={{ ...rv(statsVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#999", marginBottom: 40, textAlign: "center" }}>{t.statsLabel.toUpperCase()}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }}>
             {t.stats.map((s, i) => (
               <div key={i} style={{ ...rv(statsVis, i * 0.1), textAlign: "center", padding: "32px 24px", borderLeft: i > 0 ? "1px solid #161616" : "none" }}>
                 <div style={{ fontFamily: FFS, fontStyle: "italic", fontSize: "clamp(36px,4vw,56px)", color: "#FAF8F3", marginBottom: 8 }}>{statsVis ? s.n : "—"}</div>
-                <div style={{ fontFamily: FF, fontSize: 12, color: "#444", letterSpacing: 0.5, fontWeight: 500 }}>{s.l}</div>
+                <div style={{ fontFamily: FF, fontSize: 12, color: "#AAA", letterSpacing: 0.5, fontWeight: 500 }}>{s.l}</div>
               </div>
             ))}
           </div>
@@ -1096,10 +1096,10 @@ export default function VokuLanding() {
         <div style={{ maxWidth: 1040, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
             <div>
-              <div style={{ ...rv(exploreVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#333", marginBottom: 10 }}>{t.exploreLabel}</div>
+              <div style={{ ...rv(exploreVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#999", marginBottom: 10 }}>{t.exploreLabel}</div>
               <h2 style={{ ...rv(exploreVis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,4vw,48px)", color: "#FAF8F3", margin: 0, letterSpacing: -0.5 }}>{t.exploreTitle}</h2>
             </div>
-            <p style={{ ...rv(exploreVis, 0.12), fontFamily: FF, fontSize: 13, color: "#444", fontStyle: "italic" }}>{t.exploreSub}</p>
+            <p style={{ ...rv(exploreVis, 0.12), fontFamily: FF, fontSize: 13, color: "#AAA", fontStyle: "italic" }}>{t.exploreSub}</p>
           </div>
           <div style={{ ...rv(exploreVis, 0.16) }}>
             <ServiceExplorer services={services} lang={lang} />
@@ -1110,19 +1110,19 @@ export default function VokuLanding() {
       {/* ══ SOCIAL PROOF ══ */}
       <section ref={proofRef} style={{ padding: "80px 52px", background: "#0a0a0a" }}>
         <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
-          <div style={{ ...rv(proofVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#333", marginBottom: 28 }}>{t.proofLabel}</div>
+          <div style={{ ...rv(proofVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#999", marginBottom: 28 }}>{t.proofLabel}</div>
           <blockquote style={{ ...rv(proofVis, 0.1), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(18px,2.5vw,26px)", color: "#FAF8F3", lineHeight: 1.5, margin: "0 0 20px", position: "relative" }}>
             <span style={{ position: "absolute", top: -20, left: -10, fontSize: 60, color: "#C8F135", lineHeight: 1, fontFamily: "serif" }}>"</span>
             {t.proofQuote}
           </blockquote>
-          <div style={{ ...rv(proofVis, 0.18), fontFamily: FF, fontSize: 12, color: "#444", letterSpacing: 0.5 }}>{t.proofAuthor}</div>
+          <div style={{ ...rv(proofVis, 0.18), fontFamily: FF, fontSize: 12, color: "#AAA", letterSpacing: 0.5 }}>{t.proofAuthor}</div>
 
           {/* guarantee */}
           <div style={{ ...rv(proofVis, 0.24), marginTop: 48, padding: "28px 32px", background: "#141414", borderRadius: 16, border: "1px solid #222", textAlign: "left", display: "flex", gap: 20, alignItems: "flex-start" }}>
             <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>🛡️</div>
             <div>
               <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: "#FAF8F3", marginBottom: 6 }}>{t.guaranteeTitle}</div>
-              <div style={{ fontFamily: FF, fontSize: 13, color: "#666", lineHeight: 1.65 }}>{t.guaranteeBody}</div>
+              <div style={{ fontFamily: FF, fontSize: 13, color: "#CCC", lineHeight: 1.65 }}>{t.guaranteeBody}</div>
             </div>
           </div>
         </div>
@@ -1133,7 +1133,7 @@ export default function VokuLanding() {
         <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(233,245,158,0.04) 0%, transparent 65%)", pointerEvents: "none" }} />
         <div style={{ maxWidth: 1040, margin: "0 auto", position: "relative", zIndex: 1 }}>
           <div style={{ ...rv(processVis), marginBottom: 10 }}>
-            <span style={{ fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#333" }}>{t.processLabel}</span>
+            <span style={{ fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#999" }}>{t.processLabel}</span>
           </div>
           <h2 style={{ ...rv(processVis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,4.5vw,52px)", color: "#FAF8F3", margin: "0 0 60px", letterSpacing: -0.5 }}>{t.processTitle}</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 2 }}>
@@ -1142,7 +1142,7 @@ export default function VokuLanding() {
                 {i === 0 && <div style={{ position: "absolute", left: -1, top: 0, bottom: 0, width: 2, background: "linear-gradient(to bottom, #C8F135, transparent)" }} />}
                 <div style={{ fontFamily: FF, fontWeight: 800, fontSize: 11, color: "#C8F135", letterSpacing: 2.5, marginBottom: 20 }}>{s.n}</div>
                 <div style={{ fontFamily: FF, fontWeight: 700, fontSize: 16, color: "#FAF8F3", marginBottom: 10, lineHeight: 1.3 }}>{s.t}</div>
-                <div style={{ fontFamily: FF, fontWeight: 300, fontSize: 13, color: "#555", lineHeight: 1.75 }}>{s.d}</div>
+                <div style={{ fontFamily: FF, fontWeight: 300, fontSize: 13, color: "#BBB", lineHeight: 1.75 }}>{s.d}</div>
               </div>
             ))}
           </div>
@@ -1163,11 +1163,11 @@ export default function VokuLanding() {
             {t.finalTitle}{" "}
             <span style={{ textDecoration: "underline", textDecorationColor: "#C8F135", textDecorationThickness: 4, textUnderlineOffset: 6 }}>{t.finalHighlight}</span>
           </h2>
-          <p style={{ ...rv(ctaVis, 0.1), fontFamily: FF, fontSize: 16, color: "#555", lineHeight: 1.7, marginBottom: 40 }}>{t.finalSub}</p>
+          <p style={{ ...rv(ctaVis, 0.1), fontFamily: FF, fontSize: 16, color: "#BBB", lineHeight: 1.7, marginBottom: 40 }}>{t.finalSub}</p>
           <button onClick={() => setShowModal(true)} style={{ ...rv(ctaVis, 0.18), background: "#C8F135", color: "#111", border: "none", borderRadius: 12, padding: "20px 52px", fontFamily: FF, fontSize: 16, fontWeight: 700, cursor: "pointer", letterSpacing: 0.3, boxShadow: "0 8px 48px rgba(200,241,53,0.15)", transition: "all 0.3s" }} onMouseEnter={e => { e.target.style.opacity = "0.88"; e.target.style.transform = "translateY(-3px)"; e.target.style.boxShadow = "0 20px 48px rgba(0,0,0,0.18)"; }} onMouseLeave={e => { e.target.style.opacity = "1"; e.target.style.transform = "translateY(0)"; }}>
             {t.finalCta} →
           </button>
-          <div style={{ ...rv(ctaVis, 0.24), marginTop: 20, fontFamily: FF, fontSize: 12, color: "#333", letterSpacing: 1 }}>
+          <div style={{ ...rv(ctaVis, 0.24), marginTop: 20, fontFamily: FF, fontSize: 12, color: "#999", letterSpacing: 1 }}>
             {t.footerLinks.join(" · ")}
           </div>
         </div>
@@ -1176,7 +1176,7 @@ export default function VokuLanding() {
       {/* ══ FOOTER ══ */}
       <footer style={{ background: "#0A0A0A", padding: "28px 52px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
         <div style={{ fontFamily: FF, fontWeight: 800, fontSize: 18, color: "#2a2a2a", letterSpacing: -0.5 }}>VOKU</div>
-        <div style={{ fontFamily: FF, fontSize: 11, color: "#333", letterSpacing: 1 }}>voku.one · {t.footer}</div>
+        <div style={{ fontFamily: FF, fontSize: 11, color: "#999", letterSpacing: 1 }}>voku.one · {t.footer}</div>
         <div style={{ fontFamily: FF, fontSize: 10, color: "#2a2a2a", letterSpacing: 0.5 }}>Voku LLC · Wyoming, USA · © 2025</div>
       </footer>
 
