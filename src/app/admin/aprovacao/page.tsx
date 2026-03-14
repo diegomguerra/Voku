@@ -46,22 +46,56 @@ function Badge({ label, colors }: { label: string; colors: { color: string; bg: 
 function CarrosselMockup({ slides }: { slides: any[] }) {
   const [idx, setIdx] = useState(0);
   const s = slides[idx];
+  const isOdd = idx % 2 === 0; // 0-indexed: even idx = odd slide (1,3,5...)
+  const isCta = s.cta || idx === slides.length - 1;
+  const bgColor = isCta ? T.accent : isOdd ? T.white : T.base;
+  const textColor = isCta ? T.base : isOdd ? T.base : T.white;
+  const subColor = isCta ? "#334400" : isOdd ? "#555555" : "#666666";
+  const accentColor = isCta ? T.base : T.accent;
+  // Support both old format (texto/num/label) and new format (titulo/subtitulo/lista)
+  const slideText = s.texto || s.titulo || "";
+  const slideLabel = s.label || (s.cta ? "CTA" : `SLIDE ${idx + 1}`);
+  const slideNum = s.num || idx + 1;
   return (
     <div>
       <div style={{
-        aspectRatio: "1/1", background: T.base, display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", padding: 24, position: "relative",
+        aspectRatio: "1/1", background: bgColor, display: "flex", flexDirection: "column",
+        justifyContent: "flex-start", padding: 24, position: "relative",
       }}>
-        {s.destaque && (
-          <div style={{ width: 40, height: 3, background: T.accent, marginBottom: 12 }} />
+        {/* Eyebrow */}
+        <div style={{ fontSize: 9, fontWeight: 800, color: subColor, letterSpacing: "0.1em", textTransform: "uppercase", fontFamily: F, marginBottom: 6 }}>VOKU</div>
+        {/* Divider */}
+        <div style={{ width: 30, height: 2, background: accentColor, marginBottom: 16 }} />
+        {/* Title */}
+        {(s.destaque || !s.texto) && (
+          <div style={{ width: 30, height: 2, background: accentColor, marginBottom: 12, display: "none" }} />
         )}
         <div style={{
-          color: T.white, fontSize: 15, fontWeight: 700, textAlign: "center", lineHeight: 1.5,
-          fontFamily: F, maxWidth: "90%",
-        }}>{s.texto}</div>
-        {s.destaque && (
-          <div style={{ color: T.accent, fontSize: 11, fontWeight: 800, marginTop: 12, fontFamily: F }}>VOKU</div>
+          color: textColor, fontSize: 15, fontWeight: 900, textAlign: "left", lineHeight: 1.15,
+          fontFamily: F, maxWidth: "95%",
+        }}>{slideText}</div>
+        {/* Subtitle */}
+        {s.subtitulo && (
+          <div style={{ color: subColor, fontSize: 10, fontWeight: 400, marginTop: 8, lineHeight: 1.4, fontFamily: F }}>{s.subtitulo}</div>
         )}
+        {/* List */}
+        {s.lista && (
+          <div style={{ marginTop: 10 }}>
+            {s.lista.map((item: string, i: number) => (
+              <div key={i} style={{ fontSize: 10, color: textColor, lineHeight: 1.6, fontFamily: F }}>
+                <span style={{ color: accentColor, fontWeight: 700 }}>→ </span>{item}
+              </div>
+            ))}
+          </div>
+        )}
+        {/* Footer */}
+        <div style={{ position: "absolute", bottom: 12, left: 24, right: 24 }}>
+          <div style={{ height: 2, background: accentColor, marginBottom: 6 }} />
+          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: F }}>
+            <span style={{ color: subColor }}>voku.one</span>
+            <span style={{ color: accentColor, fontWeight: 800 }}>VOKU</span>
+          </div>
+        </div>
       </div>
       {/* Nav */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}>
@@ -77,37 +111,54 @@ function CarrosselMockup({ slides }: { slides: any[] }) {
           style={{ width: 28, height: 28, border: `1px solid ${T.border}`, borderRadius: 0, background: T.white, cursor: idx === slides.length - 1 ? "default" : "pointer", opacity: idx === slides.length - 1 ? 0.3 : 1, fontSize: 14, color: T.base, fontFamily: F }}>→</button>
       </div>
       <div style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: T.faint, marginTop: 4, fontFamily: F, textTransform: "uppercase" }}>
-        {s.num}/{slides.length} — {s.label}
+        {slideNum}/{slides.length} — {slideLabel}
       </div>
     </div>
   );
 }
 
 /* ─── Reel Mockup (vertical) ─── */
-function ReelMockup({ cenas, duracao }: { cenas: any[]; duracao?: string }) {
+function ReelMockup({ cenas, duracao, titulo }: { cenas: any[] | string; duracao?: string; titulo?: string }) {
+  const isString = typeof cenas === "string";
   return (
     <div style={{
       aspectRatio: "9/16", background: T.base, padding: 16, display: "flex", flexDirection: "column",
       justifyContent: "center", gap: 10, position: "relative", overflow: "hidden",
     }}>
-      {duracao && (
-        <div style={{
-          position: "absolute", top: 10, right: 10, background: T.accent, color: T.base,
-          fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 0, fontFamily: F,
-        }}>{duracao}</div>
-      )}
-      {cenas.map((c, i) => (
-        <div key={i} style={{ marginBottom: 4 }}>
-          <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
-            <span style={{
-              fontSize: 9, fontWeight: 800, background: T.accent, color: T.base,
-              padding: "1px 5px", borderRadius: 0, fontFamily: F,
-            }}>{c.tempo}</span>
-            <span style={{ fontSize: 10, fontWeight: 800, color: T.accent, fontFamily: F, textTransform: "uppercase" }}>{c.label}</span>
+      {/* Pill tag */}
+      <div style={{
+        position: "absolute", top: 10, left: 10, background: T.accent, color: T.base,
+        fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 0, fontFamily: F,
+      }}>{duracao || "REEL"}</div>
+      {isString ? (
+        <>
+          {titulo && (
+            <div style={{ color: T.white, fontSize: 16, fontWeight: 900, lineHeight: 1.15, fontFamily: F, marginBottom: 8 }}>{titulo}</div>
+          )}
+          <div style={{ fontSize: 11, color: "#666666", lineHeight: 1.5, fontFamily: F, whiteSpace: "pre-line" }}>{cenas}</div>
+        </>
+      ) : (
+        Array.isArray(cenas) && cenas.map((c, i) => (
+          <div key={i} style={{ marginBottom: 4 }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 2 }}>
+              <span style={{
+                fontSize: 9, fontWeight: 800, background: T.accent, color: T.base,
+                padding: "1px 5px", borderRadius: 0, fontFamily: F,
+              }}>{c.tempo}</span>
+              <span style={{ fontSize: 10, fontWeight: 800, color: T.accent, fontFamily: F, textTransform: "uppercase" }}>{c.label}</span>
+            </div>
+            <div style={{ fontSize: 11, color: T.white, lineHeight: 1.4, fontFamily: F, opacity: 0.9 }}>{c.fala}</div>
           </div>
-          <div style={{ fontSize: 11, color: T.white, lineHeight: 1.4, fontFamily: F, opacity: 0.9 }}>{c.fala}</div>
+        ))
+      )}
+      {/* Footer */}
+      <div style={{ position: "absolute", bottom: 12, left: 16, right: 16 }}>
+        <div style={{ height: 2, background: T.accent, marginBottom: 6 }} />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, fontFamily: F }}>
+          <span style={{ color: "#444444" }}>voku.one</span>
+          <span style={{ color: T.accent, fontWeight: 800 }}>VOKU</span>
         </div>
-      ))}
+      </div>
     </div>
   );
 }
@@ -145,7 +196,7 @@ function ExpandedPost({ post, comment, onComment }: { post: any; comment: string
         {isCarrossel && post.slides_conteudo ? (
           <CarrosselMockup slides={post.slides_conteudo} />
         ) : post.roteiro_reel ? (
-          <ReelMockup cenas={post.roteiro_reel} duracao={post.duracao} />
+          <ReelMockup cenas={post.roteiro_reel} duracao={post.duracao} titulo={post.titulo} />
         ) : null}
       </div>
 
@@ -372,7 +423,7 @@ export default function AprovacaoPage() {
 
           {/* Seletor de semana */}
           {semanas.length > 0 && (
-            <div style={{ display: "flex", gap: 4 }}>
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
               {semanas.map((sem) => (
                 <button key={sem.semana_key} onClick={() => selectSemana(sem.semana_key)}
                   style={{
@@ -380,8 +431,8 @@ export default function AprovacaoPage() {
                     border: selected === sem.semana_key ? `2px solid ${T.accent}` : `1px solid ${T.border}`,
                     background: selected === sem.semana_key ? T.base : T.white,
                     color: selected === sem.semana_key ? T.accent : T.secondary,
-                    fontFamily: F,
-                  }}>{sem.semana_key}</button>
+                    fontFamily: F, whiteSpace: "nowrap",
+                  }}>{sem.semana_label || sem.semana_key}</button>
               ))}
             </div>
           )}
