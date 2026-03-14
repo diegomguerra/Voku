@@ -163,27 +163,47 @@ function ReelMockup({ cenas, duracao, titulo }: { cenas: any[] | string; duracao
   );
 }
 
-/* ─── Visual Mockup (preview da imagem) ─── */
-function VisualMockup({ titulo, tipo }: { titulo: string; tipo: string }) {
+const STORAGE_BASE = "https://movfynswogmookzcjijt.supabase.co/storage/v1/object/public/imagens";
+
+/* ─── Visual Mockup (preview da imagem PNG do Storage) ─── */
+function VisualMockup({ postId, semanaKey, tipo }: { postId: string; semanaKey: string; tipo: string }) {
+  const [slideIdx, setSlideIdx] = useState(0);
+  const [errored, setErrored] = useState<Record<number, boolean>>({});
   const isReel = tipo === "REEL";
+  const src = `${STORAGE_BASE}/${semanaKey}/${postId}-slide-${slideIdx + 1}.png`;
   return (
-    <div style={{
-      aspectRatio: isReel ? "9/16" : "1/1", background: T.base, display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center", padding: 24,
-    }}>
-      <div style={{ width: 40, height: 3, background: T.accent, marginBottom: 16 }} />
+    <div>
       <div style={{
-        color: T.white, fontSize: 14, fontWeight: 700, textAlign: "center", lineHeight: 1.5,
-        fontFamily: F, maxWidth: "85%",
-      }}>{titulo}</div>
-      <div style={{ width: 40, height: 3, background: T.accent, marginTop: 16 }} />
-      <div style={{ color: T.accent, fontSize: 13, fontWeight: 800, marginTop: 12, fontFamily: F, letterSpacing: "0.1em" }}>VOKU</div>
+        aspectRatio: isReel ? "9/16" : "1/1", background: T.base, display: "flex",
+        alignItems: "center", justifyContent: "center", overflow: "hidden", position: "relative",
+      }}>
+        {errored[slideIdx] ? (
+          <div style={{ color: T.faint, fontSize: 12, fontFamily: F, textAlign: "center", padding: 16 }}>
+            Imagem não encontrada
+          </div>
+        ) : (
+          <img
+            src={src}
+            alt={`Slide ${slideIdx + 1}`}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            onError={() => setErrored((prev) => ({ ...prev, [slideIdx]: true }))}
+          />
+        )}
+      </div>
+      {/* Nav para múltiplos slides */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 8 }}>
+        <button onClick={() => { setSlideIdx((i) => Math.max(0, i - 1)); }} disabled={slideIdx === 0}
+          style={{ width: 28, height: 28, border: `1px solid ${T.border}`, borderRadius: 0, background: T.white, cursor: slideIdx === 0 ? "default" : "pointer", opacity: slideIdx === 0 ? 0.3 : 1, fontSize: 14, color: T.base, fontFamily: F }}>←</button>
+        <span style={{ fontSize: 10, fontWeight: 700, color: T.faint, fontFamily: F }}>{slideIdx + 1}</span>
+        <button onClick={() => { setSlideIdx((i) => i + 1); }}
+          style={{ width: 28, height: 28, border: `1px solid ${T.border}`, borderRadius: 0, background: T.white, cursor: "pointer", fontSize: 14, color: T.base, fontFamily: F }}>→</button>
+      </div>
     </div>
   );
 }
 
 /* ─── Expanded Post (3 columns) ─── */
-function ExpandedPost({ post, comment, onComment }: { post: any; comment: string; onComment: (c: string) => void }) {
+function ExpandedPost({ post, comment, onComment, semanaKey }: { post: any; comment: string; onComment: (c: string) => void; semanaKey: string }) {
   const isCarrossel = post.tipo === "CARROSSEL";
   return (
     <div style={{
@@ -236,7 +256,7 @@ function ExpandedPost({ post, comment, onComment }: { post: any; comment: string
       {/* Col 3 — Visual / Prompt */}
       <div>
         <div style={{ fontSize: 10, fontWeight: 800, color: T.faint, textTransform: "uppercase", marginBottom: 8, fontFamily: F }}>Preview</div>
-        <VisualMockup titulo={post.titulo} tipo={post.tipo} />
+        <VisualMockup postId={post.id} semanaKey={semanaKey} tipo={post.tipo} />
         {post.prompt_dalle && (
           <div style={{ marginTop: 8, fontSize: 11, color: T.faint, fontStyle: "italic", lineHeight: 1.4, fontFamily: F }}>
             {post.prompt_dalle}
@@ -248,9 +268,9 @@ function ExpandedPost({ post, comment, onComment }: { post: any; comment: string
 }
 
 /* ─── Post Row ─── */
-function PostRow({ post, status, comment, onToggle, onComment }: {
+function PostRow({ post, status, comment, onToggle, onComment, semanaKey }: {
   post: any; status: "pendente" | "aprovado" | "rejeitado";
-  comment: string; onToggle: (s: "aprovado" | "rejeitado") => void; onComment: (c: string) => void;
+  comment: string; onToggle: (s: "aprovado" | "rejeitado") => void; onComment: (c: string) => void; semanaKey: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const pilar = PILAR[post.pilar] || { color: T.base, bg: "#F3F3F3" };
@@ -288,7 +308,7 @@ function PostRow({ post, status, comment, onToggle, onComment }: {
       {/* Expanded */}
       {expanded && (
         <div style={{ padding: "0 16px 20px" }}>
-          <ExpandedPost post={post} comment={comment} onComment={onComment} />
+          <ExpandedPost post={post} comment={comment} onComment={onComment} semanaKey={semanaKey} />
         </div>
       )}
     </div>
@@ -514,6 +534,7 @@ export default function AprovacaoPage() {
                 comment={comments[post.id] || ""}
                 onToggle={(s) => toggleStatus(post.id, s)}
                 onComment={(c) => setComments((prev) => ({ ...prev, [post.id]: c }))}
+                semanaKey={selected}
               />
             ))}
           </div>
