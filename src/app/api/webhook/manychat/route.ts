@@ -117,6 +117,9 @@ async function sendManyChatReply(
 
 export async function POST(req: NextRequest) {
   try {
+    console.log("WEBHOOK RECEIVED:", new Date().toISOString());
+    console.log("HEADERS:", JSON.stringify(Object.fromEntries(req.headers)));
+
     const secret = req.headers.get("x-manychat-secret");
     if (
       process.env.MANYCHAT_WEBHOOK_SECRET &&
