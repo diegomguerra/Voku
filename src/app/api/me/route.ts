@@ -1,11 +1,16 @@
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase";
 
-export async function GET() {
-  const supabase = createRouteHandlerClient({ cookies });
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = supabaseAdmin();
+
+  const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

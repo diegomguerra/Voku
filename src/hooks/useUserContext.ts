@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { supabase } from "@/lib/supabase";
 
 export interface UserContext {
   id: string;
@@ -12,22 +12,22 @@ export interface UserContext {
 }
 
 export function useUserContext() {
-  const supabase = createClientComponentClient();
   const [ctx, setCtx] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const sb = supabase();
+      const { data: { user } } = await sb.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data: profile } = await supabase
+      const { data: profile } = await sb
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
         .single();
 
-      const { data: credits } = await supabase
+      const { data: credits } = await sb
         .from("credits")
         .select("balance, plan")
         .eq("user_id", user.id)
