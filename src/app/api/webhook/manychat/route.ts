@@ -126,6 +126,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload: ManyChatPayload = await req.json();
+    console.log("MANYCHAT PAYLOAD:", JSON.stringify(payload, null, 2));
 
     const contactId = payload.contact?.id;
     const messageText = payload.message?.text;
