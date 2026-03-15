@@ -91,6 +91,18 @@ async function sendManyChatReply(
   const token = process.env.MANYCHAT_API_TOKEN;
   if (!token) return false;
 
+  const payload = {
+    subscriber_id: contactId,
+    data: {
+      version: "v2",
+      content: {
+        messages: [{ type: "text", text: message }],
+      },
+    },
+    message_tag: "ACCOUNT_UPDATE",
+  };
+  console.log("MANYCHAT SEND PAYLOAD:", JSON.stringify(payload));
+
   const res = await fetch(
     "https://api.manychat.com/fb/sending/sendContent",
     {
@@ -99,18 +111,12 @@ async function sendManyChatReply(
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({
-        subscriber_id: contactId,
-        data: {
-          version: "v2",
-          content: {
-            messages: [{ type: "text", text: message }],
-          },
-        },
-        message_tag: "ACCOUNT_UPDATE",
-      }),
+      body: JSON.stringify(payload),
     }
   );
+
+  const resBody = await res.text();
+  console.log("MANYCHAT SEND RESPONSE:", res.status, resBody);
 
   return res.ok;
 }
@@ -150,14 +156,18 @@ export async function POST(req: NextRequest) {
       { role: "user", content: messageText },
     ];
 
+    console.log("CALLING VOKU AGENT for:", contactName, "message:", messageText);
     const reply = await callVokuAgent(messages, contactName);
+    console.log("VOKU AGENT REPLY:", reply ? reply.substring(0, 200) : "(empty)");
 
     if (!reply) {
+      console.log("NO REPLY — skipping sendManyChatReply");
       return NextResponse.json({ ok: true });
     }
 
     await saveMessage(contactId, reply, "outbound", "instagram", contactName);
-    await sendManyChatReply(contactId, reply);
+    const sent = await sendManyChatReply(contactId, reply);
+    console.log("MANYCHAT REPLY SENT:", sent);
 
     return NextResponse.json({ ok: true, reply });
   } catch (error) {
