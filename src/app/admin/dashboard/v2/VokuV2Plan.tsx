@@ -288,6 +288,21 @@ const PHASES: Phase[] = [
           { label: "Onboarding automatizado para novos usuários via e-mail (Resend)", detail: "Dia 0: boas-vindas / Dia 1: dica de uso / Dia 3: caso de sucesso", type: "biz" },
         ],
       },
+      {
+        index: 3, indexColor: "red", title: "Automação de DMs e Comentários — ManyChat", status: "Pendente", statusColor: "amber",
+        desc: "Usar ManyChat como camada de automação do Instagram enquanto o Meta App (VokuApp ID: 1157744663009370) aguarda aprovação de permissões avançadas. ManyChat já tem app verificado pela Meta — sem review, sem espera.",
+        items: [
+          { label: "Criar conta ManyChat e conectar Página do Facebook da Voku", detail: "manychat.com → plano Free resolve até 1.000 contatos. Pro ($15/mês) depois", type: "biz" },
+          { label: "Ativar Instagram Direct Messages + Instagram Comments no ManyChat", detail: "Instagram vincula automaticamente via Página do Facebook", type: "infra" },
+          { label: "Configurar gatilhos — qualquer DM nova + palavras-chave (preço, plano, quero, como funciona)", detail: "Também: gatilho em comentários de qualquer post → dispara DM automática", type: "infra" },
+          { label: "Criar fluxo de boas-vindas — captura nome e qualifica o perfil do lead", detail: "4 opções: MEI/negócio próprio / Startup / Criador de conteúdo / Agência", type: "biz" },
+          { label: "Criar fluxo de preços — explica modelo de créditos e planos Starter/Pro/Business", detail: "Starter R$97 / Pro R$197 / Business R$497. CTA final: voku.one", type: "biz" },
+          { label: "Criar fluxo de dúvidas frequentes — keywords: grátis, cancelar, como funciona, humano", detail: "Keyword humano/atendente notifica Diego para assumir a conversa", type: "biz" },
+          { label: "Configurar resposta automática em comentários — manda DM com detalhes", detail: '"Oi! Que bom que curtiu 😊 Te mandei uma mensagem no direct com mais detalhes!"', type: "biz" },
+          { label: "Configurar tags de segmentação — lead_instagram, mei, startup, criador, agencia, interesse_preco, convertido", detail: "Permite filtrar e segmentar contatos para campanhas futuras", type: "biz" },
+          { label: "Submeter VokuApp para revisão na Meta em paralelo — permissões: instagram_business_messaging, pages_messaging", detail: "Prazo típico: 5–10 dias úteis. Quando aprovado, avaliar migração da API própria", type: "infra" },
+        ],
+      },
     ],
   },
 ];
