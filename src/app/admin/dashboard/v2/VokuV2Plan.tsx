@@ -365,7 +365,8 @@ export default function VokuV2Plan() {
     supabase()
       .from("tasks_status")
       .select("id, done")
-      .then(({ data }: { data: { id: string; done: boolean }[] | null }) => {
+      .then(({ data, error }: { data: { id: string; done: boolean }[] | null; error: unknown }) => {
+        if (error) { console.error("tasks_status load error:", error); return; }
         if (data) {
           const saved: Record<string, boolean> = {};
           data.forEach(row => { saved[row.id] = row.done; });
@@ -389,7 +390,7 @@ export default function VokuV2Plan() {
     supabase()
       .from("tasks_status")
       .upsert({ id: key, done: newDone, updated_at: new Date().toISOString() })
-      .then();
+      .then(({ error }: { error: unknown }) => { if (error) console.error("tasks_status save error:", error); });
   }, [checked]);
 
   const phase = PHASES[activePhase];

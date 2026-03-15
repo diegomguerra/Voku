@@ -410,7 +410,8 @@ export default function VokuStatusUnified() {
     supabase()
       .from("tasks_status")
       .select("id, done")
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { console.error("tasks_status load error:", error); return; }
         if (data) {
           const saved = {};
           data.forEach(row => { saved[row.id] = row.done; });
@@ -636,7 +637,7 @@ export default function VokuStatusUnified() {
                               supabase()
                                 .from("tasks_status")
                                 .upsert({ id: task.id, done: newDone, updated_at: new Date().toISOString() })
-                                .then();
+                                .then(({ error }) => { if (error) console.error("tasks_status save error:", error); });
                             }}
                               style={{
                                 width: 20, height: 20, borderRadius: 5, flexShrink: 0,
