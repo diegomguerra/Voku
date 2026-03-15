@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { waitUntil } from "@vercel/functions";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,6 @@ interface ManyChatPayload {
     text?: string;
     mid?: string;
   };
-  // ManyChat custom fields / flat format
   subscriber_id?: string;
   first_name?: string;
   last_name?: string;
@@ -130,10 +130,40 @@ async function sendManyChatReply(
   return res.ok;
 }
 
+async function processInBackground(
+  contactId: string,
+  messageText: string,
+  contactName: string
+) {
+  try {
+    await saveMessage(contactId, messageText, "inbound", "instagram", contactName);
+
+    const history = await getContactHistory(contactId);
+    const messages = [
+      ...history.slice(0, -1),
+      { role: "user", content: messageText },
+    ];
+
+    console.log("BG: CALLING VOKU AGENT for:", contactName, "message:", messageText);
+    const reply = await callVokuAgent(messages, contactName);
+    console.log("BG: VOKU AGENT REPLY:", reply ? reply.substring(0, 200) : "(empty)");
+
+    if (!reply) {
+      console.log("BG: NO REPLY — skipping sendManyChatReply");
+      return;
+    }
+
+    await saveMessage(contactId, reply, "outbound", "instagram", contactName);
+    const sent = await sendManyChatReply(contactId, reply);
+    console.log("BG: MANYCHAT REPLY SENT:", sent);
+  } catch (error) {
+    console.error("BG: processInBackground error:", error);
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     console.log("WEBHOOK RECEIVED:", new Date().toISOString());
-    console.log("URL:", req.url);
     console.log("HEADERS:", JSON.stringify(Object.fromEntries(req.headers)));
 
     // Secret: accept via header OR query param
@@ -141,7 +171,6 @@ export async function POST(req: NextRequest) {
       req.headers.get("x-manychat-secret") ||
       req.nextUrl.searchParams.get("secret");
     const expected = (process.env.MANYCHAT_WEBHOOK_SECRET || "").trim();
-    console.log("SECRET CHECK:", { received: secret, expected, match: secret?.trim() === expected });
     if (expected && secret?.trim() !== expected) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -157,7 +186,6 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.log("BODY PARSE ERROR:", e);
     }
-    console.log("PARSED PAYLOAD:", JSON.stringify(payload, null, 2));
 
     // Extract contact ID: body → header → query
     const contactId =
@@ -191,28 +219,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, skipped: true, reason: "missing contact_id or text" });
     }
 
-    await saveMessage(contactId, messageText, "inbound", "instagram", contactName);
+    // Process in background — return 200 immediately
+    waitUntil(processInBackground(contactId, messageText, contactName));
 
-    const history = await getContactHistory(contactId);
-    const messages = [
-      ...history.slice(0, -1),
-      { role: "user", content: messageText },
-    ];
-
-    console.log("CALLING VOKU AGENT for:", contactName, "message:", messageText);
-    const reply = await callVokuAgent(messages, contactName);
-    console.log("VOKU AGENT REPLY:", reply ? reply.substring(0, 200) : "(empty)");
-
-    if (!reply) {
-      console.log("NO REPLY — skipping sendManyChatReply");
-      return NextResponse.json({ ok: true });
-    }
-
-    await saveMessage(contactId, reply, "outbound", "instagram", contactName);
-    const sent = await sendManyChatReply(contactId, reply);
-    console.log("MANYCHAT REPLY SENT:", sent);
-
-    return NextResponse.json({ ok: true, reply });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("ManyChat webhook error:", error);
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
@@ -220,7 +230,6 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  // Health check + accept test via query params
   const text = req.nextUrl.searchParams.get("text");
   if (text) {
     console.log("GET TEST:", { text, subscriber_id: req.nextUrl.searchParams.get("subscriber_id") });
