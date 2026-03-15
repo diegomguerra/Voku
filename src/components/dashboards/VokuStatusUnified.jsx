@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const T = {
   sand: "#FAF8F3", white: "#FFFFFF", ink: "#111111",
@@ -403,6 +404,20 @@ export default function VokuStatusUnified() {
   const [activePhase, setActivePhase] = useState(null);
   const [taskDone, setTaskDone]   = useState({});
   const [expanded, setExpanded]   = useState(null);
+
+  // Carregar estados salvos do Supabase
+  useEffect(() => {
+    supabase
+      .from("tasks_status")
+      .select("id, done")
+      .then(({ data }) => {
+        if (data) {
+          const saved = {};
+          data.forEach(row => { saved[row.id] = row.done; });
+          setTaskDone(saved);
+        }
+      });
+  }, []);
   const [modal, setModal]         = useState(null);
   const [copied, setCopied]       = useState(null);
 
@@ -614,7 +629,15 @@ export default function VokuStatusUnified() {
                           >
                             {/* Checkbox */}
                             <button
-                              onClick={e => { e.stopPropagation(); setTaskDone(prev => ({ ...prev, [task.id]: !prev[task.id] })); }}
+                              onClick={e => {
+                              e.stopPropagation();
+                              const newDone = !taskDone[task.id];
+                              setTaskDone(prev => ({ ...prev, [task.id]: newDone }));
+                              supabase
+                                .from("tasks_status")
+                                .upsert({ id: task.id, done: newDone, updated_at: new Date().toISOString() })
+                                .then();
+                            }}
                               style={{
                                 width: 20, height: 20, borderRadius: 5, flexShrink: 0,
                                 background: isDone ? TD.green : "transparent",
