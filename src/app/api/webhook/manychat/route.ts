@@ -121,11 +121,9 @@ export async function POST(req: NextRequest) {
     console.log("HEADERS:", JSON.stringify(Object.fromEntries(req.headers)));
 
     const secret = req.headers.get("x-manychat-secret");
-    console.log("SECRET CHECK:", { received: secret, expected: process.env.MANYCHAT_WEBHOOK_SECRET, match: secret === process.env.MANYCHAT_WEBHOOK_SECRET });
-    if (
-      process.env.MANYCHAT_WEBHOOK_SECRET &&
-      secret !== process.env.MANYCHAT_WEBHOOK_SECRET
-    ) {
+    const expected = (process.env.MANYCHAT_WEBHOOK_SECRET || "").trim();
+    console.log("SECRET CHECK:", { received: secret, expected, match: secret === expected });
+    if (expected && secret?.trim() !== expected) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
