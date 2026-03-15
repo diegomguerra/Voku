@@ -495,7 +495,11 @@ export default function VokuV2Plan() {
             const stepKey = `${phase.id}-${si}`;
             const isOpen = openSteps[stepKey];
             const idxStyle = tagStyle(step.indexColor);
-            const statusStyle = tagStyle(step.statusColor);
+            const itemKeys = step.items.map((_, ii) => `${phase.id}-${si}-${ii}`);
+            const allDone = itemKeys.length > 0 && itemKeys.every(k => checked[k]);
+            const stepStatus = allDone ? "Concluído" : step.status;
+            const stepStatusColor = allDone ? "green" : step.statusColor;
+            const statusStyle = tagStyle(stepStatusColor);
             return (
               <div key={si} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden" }}>
 
@@ -503,7 +507,7 @@ export default function VokuV2Plan() {
                 <div onClick={() => toggleStep(stepKey)} style={{ display: "flex", alignItems: "center", gap: 16, padding: "18px 20px", cursor: "pointer" }}>
                   <div style={{ width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, background: idxStyle.bg, color: idxStyle.color, border: `1px solid ${idxStyle.border}`, flexShrink: 0 }}>{step.index}</div>
                   <div style={{ flex: 1, fontSize: 14, fontWeight: 600 }}>{step.title}</div>
-                  <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, flexShrink: 0 }}>{step.status}</span>
+                  <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`, flexShrink: 0 }}>{stepStatus}</span>
                   <svg style={{ width: 16, height: 16, color: C.muted2, transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", flexShrink: 0 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
                 </div>
 
