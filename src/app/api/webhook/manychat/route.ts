@@ -4,20 +4,26 @@ import { supabaseAdmin } from "@/lib/supabase";
 export const dynamic = "force-dynamic";
 
 interface ManyChatPayload {
-  id: string;
-  page_id: string;
-  contact: {
-    id: string;
+  id?: string;
+  page_id?: string;
+  contact?: {
+    id?: string;
     first_name?: string;
     last_name?: string;
     name?: string;
     instagram_username?: string;
   };
-  message: {
-    text: string;
+  message?: {
+    text?: string;
     mid?: string;
   };
-  timestamp: number;
+  // ManyChat custom fields / flat format
+  subscriber_id?: string;
+  first_name?: string;
+  last_name?: string;
+  name?: string;
+  text?: string;
+  timestamp?: number;
 }
 
 async function getContactHistory(contactId: string) {
@@ -89,7 +95,10 @@ async function sendManyChatReply(
   message: string
 ): Promise<boolean> {
   const token = process.env.MANYCHAT_API_TOKEN;
-  if (!token) return false;
+  if (!token) {
+    console.log("MANYCHAT SEND: no API token configured");
+    return false;
+  }
 
   const payload = {
     subscriber_id: contactId,
@@ -124,28 +133,62 @@ async function sendManyChatReply(
 export async function POST(req: NextRequest) {
   try {
     console.log("WEBHOOK RECEIVED:", new Date().toISOString());
+    console.log("URL:", req.url);
     console.log("HEADERS:", JSON.stringify(Object.fromEntries(req.headers)));
 
-    const secret = req.headers.get("x-manychat-secret");
+    // Secret: accept via header OR query param
+    const secret =
+      req.headers.get("x-manychat-secret") ||
+      req.nextUrl.searchParams.get("secret");
     const expected = (process.env.MANYCHAT_WEBHOOK_SECRET || "").trim();
-    console.log("SECRET CHECK:", { received: secret, expected, match: secret === expected });
+    console.log("SECRET CHECK:", { received: secret, expected, match: secret?.trim() === expected });
     if (expected && secret?.trim() !== expected) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload: ManyChatPayload = await req.json();
-    console.log("MANYCHAT PAYLOAD:", JSON.stringify(payload, null, 2));
+    // Parse body — handle empty body gracefully
+    let payload: ManyChatPayload = {};
+    try {
+      const rawBody = await req.text();
+      console.log("RAW BODY:", rawBody || "(empty)");
+      if (rawBody && rawBody.trim()) {
+        payload = JSON.parse(rawBody);
+      }
+    } catch (e) {
+      console.log("BODY PARSE ERROR:", e);
+    }
+    console.log("PARSED PAYLOAD:", JSON.stringify(payload, null, 2));
 
-    const contactId = payload.contact?.id;
-    const messageText = payload.message?.text;
+    // Extract contact ID: body → header → query
+    const contactId =
+      payload.contact?.id ||
+      payload.subscriber_id ||
+      req.headers.get("x-manychat-subscriber-id") ||
+      req.nextUrl.searchParams.get("subscriber_id") ||
+      "";
+
+    // Extract message text: body → query
+    const messageText =
+      payload.message?.text ||
+      payload.text ||
+      req.nextUrl.searchParams.get("text") ||
+      "";
+
+    // Extract contact name
     const contactName =
       payload.contact?.first_name ||
       payload.contact?.name ||
       payload.contact?.instagram_username ||
+      payload.first_name ||
+      payload.name ||
+      req.nextUrl.searchParams.get("name") ||
       "você";
 
+    console.log("RESOLVED:", { contactId, messageText: messageText.substring(0, 100), contactName });
+
     if (!contactId || !messageText || messageText.trim().length < 2) {
-      return NextResponse.json({ ok: true });
+      console.log("SKIPPING: missing contactId or messageText");
+      return NextResponse.json({ ok: true, skipped: true, reason: "missing contact_id or text" });
     }
 
     await saveMessage(contactId, messageText, "inbound", "instagram", contactName);
@@ -176,6 +219,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // Health check + accept test via query params
+  const text = req.nextUrl.searchParams.get("text");
+  if (text) {
+    console.log("GET TEST:", { text, subscriber_id: req.nextUrl.searchParams.get("subscriber_id") });
+  }
   return NextResponse.json({ ok: true, service: "voku-manychat-webhook" });
 }
