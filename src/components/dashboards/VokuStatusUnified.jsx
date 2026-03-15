@@ -407,7 +407,7 @@ export default function VokuStatusUnified() {
 
   // Carregar estados salvos do Supabase
   useEffect(() => {
-    supabase
+    supabase()
       .from("tasks_status")
       .select("id, done")
       .then(({ data }) => {
@@ -633,7 +633,7 @@ export default function VokuStatusUnified() {
                               e.stopPropagation();
                               const newDone = !taskDone[task.id];
                               setTaskDone(prev => ({ ...prev, [task.id]: newDone }));
-                              supabase
+                              supabase()
                                 .from("tasks_status")
                                 .upsert({ id: task.id, done: newDone, updated_at: new Date().toISOString() })
                                 .then();

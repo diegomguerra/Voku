@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface CheckItem {
@@ -359,6 +360,20 @@ export default function VokuV2Plan() {
   const [openSteps, setOpenSteps] = useState<Record<string, boolean>>({});
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
+  // Carregar estados salvos do Supabase
+  useEffect(() => {
+    supabase()
+      .from("tasks_status")
+      .select("id, done")
+      .then(({ data }: { data: { id: string; done: boolean }[] | null }) => {
+        if (data) {
+          const saved: Record<string, boolean> = {};
+          data.forEach(row => { saved[row.id] = row.done; });
+          setChecked(saved);
+        }
+      });
+  }, []);
+
   const totalItems = PHASES.flatMap(p => p.steps.flatMap(s => s.items)).length;
   const doneItems = Object.values(checked).filter(Boolean).length;
   const pct = totalItems ? Math.round((doneItems / totalItems) * 100) : 0;
@@ -369,8 +384,13 @@ export default function VokuV2Plan() {
 
   const toggleCheck = useCallback((key: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setChecked(prev => ({ ...prev, [key]: !prev[key] }));
-  }, []);
+    const newDone = !checked[key];
+    setChecked(prev => ({ ...prev, [key]: newDone }));
+    supabase()
+      .from("tasks_status")
+      .upsert({ id: key, done: newDone, updated_at: new Date().toISOString() })
+      .then();
+  }, [checked]);
 
   const phase = PHASES[activePhase];
 
