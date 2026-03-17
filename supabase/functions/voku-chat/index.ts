@@ -1,19 +1,36 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept",
 };
 
-function buildSystemPrompt(user_context: any): string {
+function buildSystemPrompt(user_context: any, brand?: any): string {
+  let brandSection = "";
+  if (brand) {
+    const parts: string[] = [];
+    if (brand.nome_marca) parts.push(`- Marca: ${brand.nome_marca}`);
+    if (brand.tom) parts.push(`- Tom configurado: ${brand.tom}`);
+    if (brand.personalidade) parts.push(`- Personalidade: ${brand.personalidade}`);
+    if (brand.palavras_chave?.length) parts.push(`- Palavras que a marca USA: ${brand.palavras_chave.join(", ")}`);
+    if (brand.palavras_proibidas?.length) parts.push(`- Palavras que a marca NUNCA usa: ${brand.palavras_proibidas.join(", ")}`);
+    if (brand.exemplos_conteudo) parts.push(`- Exemplos de conteúdo da marca:\n${brand.exemplos_conteudo.slice(0, 1000)}`);
+    if (parts.length > 0) {
+      brandSection = `\n\n## Brand Voice do cliente (USE SEMPRE)\n${parts.join("\n")}`;
+    }
+  }
+
   return `Você é a Voku — assistente de marketing com IA da plataforma Voku.
 
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
 - Plano: ${user_context?.plan || "free"}
-- Créditos disponíveis: ${user_context?.credits ?? 0}
+- Créditos disponíveis: ${user_context?.credits ?? 0}${brandSection}
 
 ## Sua personalidade
 - Tom descontraído mas profissional — como um amigo que entende muito de marketing
@@ -23,6 +40,7 @@ function buildSystemPrompt(user_context: any): string {
 - Celebra pequenas vitórias ("Boa escolha!", "Isso vai arrasar!")
 - Respostas curtas e diretas — sem enrolação
 - Nunca usa jargão técnico
+- Se o cliente tem Brand Voice configurada, RESPEITE o tom, palavras e personalidade definidas
 
 ## O que você pode fazer
 1. COPY — anúncios, e-mails, bio, pitch, VSL
@@ -62,7 +80,18 @@ serve(async (req) => {
   }
 
   const { messages, user_context } = await req.json();
-  const systemPrompt = buildSystemPrompt(user_context);
+
+  // Fetch brand context if user_id is available
+  let brand = null;
+  if (user_context?.user_id) {
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+      const { data } = await sb.from("brand_contexts").select("*").eq("user_id", user_context.user_id).single();
+      if (data) brand = data;
+    } catch { /* no brand context — that's fine */ }
+  }
+
+  const systemPrompt = buildSystemPrompt(user_context, brand);
   const wantsStream = req.headers.get("accept") === "text/event-stream";
 
   // ── STREAMING ──

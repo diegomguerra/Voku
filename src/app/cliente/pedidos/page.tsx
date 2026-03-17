@@ -206,6 +206,7 @@ export default function PedidosPage() {
             plan: ctx?.plan || "free",
             credits: ctx?.credits ?? 0,
             channel: "dashboard",
+            user_id: userIdRef.current,
           },
         }),
       });
