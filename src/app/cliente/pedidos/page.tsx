@@ -539,6 +539,7 @@ export default function PedidosPage() {
               <a href="/vitrine/apps" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Apps</a>
               <a href="/cliente/marca" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Marca</a>
               <a href="/vitrine" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Vitrine</a>
+              <a href="/cliente/afiliados" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Afiliados</a>
             </>
           )}
         </div>

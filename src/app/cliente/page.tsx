@@ -22,9 +22,25 @@ export default function ClienteLoginPage(){
       if(error){setError("E-mail ou senha incorretos.");}
       else{window.location.href="/cliente/pedidos";}
     } else {
-      const {error}=await sb.auth.signUp({email,password,options:{data:{name}}});
+      const referredBy = typeof window !== "undefined" ? localStorage.getItem("voku_ref") : null;
+      const {error,data:signUpData}=await sb.auth.signUp({email,password,options:{data:{name,referred_by:referredBy||undefined}}});
       if(error){setError(error.message);}
-      else{setSuccess("Conta criada! Verifique seu e-mail para confirmar.");}
+      else{
+        setSuccess("Conta criada! Verifique seu e-mail para confirmar.");
+        // Trigger onboarding emails
+        if(signUpData?.user){
+          fetch("/api/onboarding",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:signUpData.user.id,email,name})}).catch(()=>{});
+          // Save referral
+          if(referredBy){
+            sb.from("profiles").update({referred_by:referredBy}).eq("id",signUpData.user.id).then(()=>{});
+            // Create referral record
+            sb.from("affiliates").select("id").eq("codigo",referredBy).single().then(({data:aff})=>{
+              if(aff) sb.from("affiliate_referrals").insert({affiliate_id:aff.id,referred_user_id:signUpData.user.id}).then(()=>{});
+            });
+            localStorage.removeItem("voku_ref");
+          }
+        }
+      }
     }
     setLoading(false);
   };

@@ -893,6 +893,14 @@ export default function VokuLanding() {
   const [heroVisible, setHeroVisible] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
+  // Capture referral code from URL
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) localStorage.setItem("voku_ref", ref);
+  }, []);
+
   const t = T[lang];
   const services = SVC[lang];
 
