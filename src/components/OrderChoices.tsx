@@ -63,6 +63,9 @@ export default function OrderChoices({ order, choices, deliverables, iterationId
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(order.status === "delivered");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [showOptIn, setShowOptIn] = useState(false);
+  const [optInDone, setOptInDone] = useState(false);
+  const [optInLoading, setOptInLoading] = useState(false);
 
   const isPending = order.status === "in_production" && choices.length > 0 && !choices.some((c) => c.is_selected);
   const isWaiting = (order.status === "briefing" || order.status === "in_production") && choices.length === 0;
@@ -116,7 +119,46 @@ export default function OrderChoices({ order, choices, deliverables, iterationId
     if (urlData?.signedUrl) setDownloadUrl(urlData.signedUrl);
 
     setDone(true);
+    setShowOptIn(true);
     setSubmitting(false);
+  };
+
+  const PRODUCT_TO_VITRINE_TYPE: Record<string, string> = {
+    landing_page_copy: "landing_page", content_pack: "post", email_sequence: "email",
+    post_instagram: "post", carrossel: "carrossel", reels_script: "reels", ad_copy: "copy", app: "app",
+  };
+
+  const handleOptIn = async () => {
+    setOptInLoading(true);
+    const sb = supabase();
+    const { data: userData } = await sb.auth.getUser();
+    if (!userData?.user) { setOptInLoading(false); return; }
+
+    const chosenChoice = choices.find((c) => c.id === selected);
+    const previewText = chosenChoice ? (chosenChoice.content?.text || chosenChoice.content?.body || "").slice(0, 300) : "";
+
+    await sb.from("vitrine_items").insert({
+      user_id: userData.user.id,
+      order_id: order.id,
+      tipo: PRODUCT_TO_VITRINE_TYPE[order.product] || "copy",
+      titulo: PRODUCT_NAMES[order.product] || order.product,
+      conteudo_preview: previewText,
+      credits_bonus_paid: true,
+    });
+
+    // Credit 5 bonus
+    const { data: creditRow } = await sb.from("credits").select("balance").eq("user_id", userData.user.id).single();
+    if (creditRow) {
+      await sb.from("credits").update({ balance: creditRow.balance + 5 }).eq("user_id", userData.user.id);
+      await sb.from("credit_transactions").insert({
+        user_id: userData.user.id, amount: 5, type: "credit",
+        description: "Bônus por publicação na vitrine", order_id: order.id,
+      });
+    }
+
+    setOptInDone(true);
+    setOptInLoading(false);
+    setShowOptIn(false);
   };
 
   const handleDownload = async () => {
@@ -131,20 +173,55 @@ export default function OrderChoices({ order, choices, deliverables, iterationId
   // ─── SUCCESS STATE ───
   if (done) {
     return (
-      <div style={{ textAlign: "center", padding: "60px 24px" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
-        <h2 style={{ fontFamily: FF, fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 8 }}>
-          Choice approved!
-        </h2>
-        <p style={{ fontFamily: FF, fontSize: 14, color: C.sub, marginBottom: 32 }}>
-          Your material is ready for download.
-        </p>
-        <button onClick={handleDownload} style={{
-          fontFamily: FF, background: C.lime, color: C.dark, border: "none", borderRadius: 10,
-          padding: "14px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer",
-        }}>
-          ⬇ Download
-        </button>
+      <div style={{ padding: "40px 24px" }}>
+        {/* Opt-in banner */}
+        {showOptIn && !optInDone && (
+          <div style={{ background: "#F0FDF4", border: "1px solid #86EFAC", borderRadius: 14, padding: "20px 24px", marginBottom: 28 }}>
+            <div style={{ fontFamily: FF, fontSize: 15, fontWeight: 700, color: "#166534", marginBottom: 6 }}>
+              ✦ Quer compartilhar na vitrine da Voku?
+            </div>
+            <div style={{ fontFamily: FF, fontSize: 13, color: "#3D3D3D", marginBottom: 16, lineHeight: 1.5 }}>
+              Ganhe 5 créditos bônus e ajude outros criadores a se inspirar.
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={handleOptIn} disabled={optInLoading} style={{
+                fontFamily: FF, background: "#C8F135", color: "#111", border: "none", borderRadius: 10,
+                padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+              }}>
+                {optInLoading ? "Publicando..." : "Sim, compartilhar (+5 créditos)"}
+              </button>
+              <button onClick={() => setShowOptIn(false)} style={{
+                fontFamily: FF, background: "transparent", border: "1.5px solid #D1CCBF", color: "#3D3D3D",
+                borderRadius: 10, padding: "10px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}>
+                Não, obrigado
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Opt-in success toast */}
+        {optInDone && (
+          <div style={{ background: "#DCFCE7", border: "1px solid #86EFAC", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontFamily: FF, fontSize: 13, fontWeight: 700, color: "#166534", textAlign: "center" }}>
+            ✓ Publicado! +5 créditos adicionados
+          </div>
+        )}
+
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
+          <h2 style={{ fontFamily: FF, fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 8 }}>
+            Choice approved!
+          </h2>
+          <p style={{ fontFamily: FF, fontSize: 14, color: C.sub, marginBottom: 32 }}>
+            Your material is ready for download.
+          </p>
+          <button onClick={handleDownload} style={{
+            fontFamily: FF, background: C.lime, color: C.dark, border: "none", borderRadius: 10,
+            padding: "14px 32px", fontSize: 15, fontWeight: 700, cursor: "pointer",
+          }}>
+            ⬇ Download
+          </button>
+        </div>
       </div>
     );
   }
