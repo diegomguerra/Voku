@@ -2,19 +2,13 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const ANTHROPIC_API_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
-  }
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept",
+};
 
-  const { messages, user_context } = await req.json();
-
-  const systemPrompt = `Você é a Voku — assistente de marketing com IA da plataforma Voku.
+function buildSystemPrompt(user_context: any): string {
+  return `Você é a Voku — assistente de marketing com IA da plataforma Voku.
 
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
@@ -47,7 +41,107 @@ serve(async (req) => {
 ## Tom
 ❌ "Para prosseguir com a geração do asset..."
 ✅ "Legal! Me conta — qual é o maior problema que seu produto resolve?"`;
+}
 
+function extractAction(text: string): { cleanText: string; action: any | null } {
+  const match = text.match(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/);
+  if (!match) return { cleanText: text, action: null };
+
+  try {
+    const action = JSON.parse(match[0]);
+    const cleanText = text.replace(match[0], "").trim();
+    return { cleanText, action };
+  } catch {
+    return { cleanText: text, action: null };
+  }
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS });
+  }
+
+  const { messages, user_context } = await req.json();
+  const systemPrompt = buildSystemPrompt(user_context);
+  const wantsStream = req.headers.get("accept") === "text/event-stream";
+
+  // ── STREAMING ──
+  if (wantsStream) {
+    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 1024,
+        stream: true,
+        system: systemPrompt,
+        messages,
+      }),
+    });
+
+    // Collect full text to detect action at the end
+    let fullText = "";
+
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = anthropicRes.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const payload = line.slice(6).trim();
+              if (payload === "[DONE]") continue;
+
+              try {
+                const event = JSON.parse(payload);
+
+                if (event.type === "content_block_delta" && event.delta?.text) {
+                  fullText += event.delta.text;
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text: event.delta.text })}\n\n`));
+                }
+
+                if (event.type === "message_stop") {
+                  // Check for action in full accumulated text
+                  const { cleanText, action } = extractAction(fullText);
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, ...(action ? { action } : {}) })}\n\n`));
+                }
+              } catch {
+                // skip malformed events
+              }
+            }
+          }
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        ...CORS,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
+    });
+  }
+
+  // ── NON-STREAMING ──
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -65,10 +159,17 @@ serve(async (req) => {
 
   const data = await response.json();
 
-  return new Response(JSON.stringify(data), {
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-    },
+  // Extract action from response text
+  const rawText = data?.content?.[0]?.text || "";
+  const { cleanText, action } = extractAction(rawText);
+
+  const result: any = {
+    ...data,
+    content: [{ type: "text", text: cleanText }],
+  };
+  if (action) result.action = action;
+
+  return new Response(JSON.stringify(result), {
+    headers: { ...CORS, "Content-Type": "application/json" },
   });
 });

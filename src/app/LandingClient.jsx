@@ -637,12 +637,6 @@ function RegisterFlow({ t, lang, onClose }) {
   const [briefing, setBriefing] = useState(null);
   const chatRef = useRef(null);
 
-  const systemPrompt = lang === "PT"
-    ? `Você é o assistente de qualificação da Voku, uma micro-agência digital especializada em marketing, automação e conteúdo. Seu papel é conversar naturalmente com o cliente para entender o projeto e montar um briefing estruturado. Seja direto, profissional e amigável. Faça perguntas uma de cada vez. Após 4-5 trocas, apresente um resumo do briefing e confirme com o cliente. Quando o cliente confirmar, responda APENAS com um JSON no formato: {"briefingConfirmado": true, "servico": "...", "objetivo": "...", "prazo": "...", "orcamento": "...", "resumo": "..."}`
-    : lang === "EN"
-    ? `You are Voku's qualification assistant, a digital micro-agency specializing in marketing, automation and content. Your role is to naturally converse with the client to understand the project and build a structured brief. Be direct, professional and friendly. Ask one question at a time. After 4-5 exchanges, present a briefing summary and confirm with the client. When confirmed, respond ONLY with JSON: {"briefingConfirmado": true, "servico": "...", "objetivo": "...", "prazo": "...", "orcamento": "...", "resumo": "..."}`
-    : `Eres el asistente de calificación de Voku, una micro-agencia digital especializada en marketing, automatización y contenido. Tu papel es conversar naturalmente con el cliente para entender el proyecto y armar un briefing estructurado. Sé directo, profesional y amigable. Haz una pregunta a la vez. Después de 4-5 intercambios, presenta un resumen del briefing y confirma con el cliente. Cuando confirme, responde SOLO con JSON: {"briefingConfirmado": true, "servico": "...", "objetivo": "...", "prazo": "...", "orcamento": "...", "resumo": "..."}`;
-
   const firstMessage = lang === "PT"
     ? `Olá, ${name || "seja bem-vindo"}! 👋 Sou a IA da Voku. Vou te ajudar a montar o briefing do seu projeto — rápido e sem formulário longo.\n\nPara começar: **o que você precisa?** Marketing e copy, automação, conteúdo — ou uma combinação?`
     : lang === "EN"
@@ -668,12 +662,22 @@ function RegisterFlow({ t, lang, onClose }) {
 
     try {
       const apiMessages = newMessages.map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.text }));
-      const res = await fetch("https://movfynswogmookzcjijt.supabase.co/functions/v1/chat-briefing", {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const res = await fetch(`${supabaseUrl}/functions/v1/voku-chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${supabaseKey}`,
+        },
         body: JSON.stringify({
-          system: systemPrompt,
           messages: apiMessages,
+          user_context: {
+            name: name || "cliente",
+            plan: "free",
+            credits: 0,
+            channel: "landing",
+          },
         }),
       });
       const data = await res.json();

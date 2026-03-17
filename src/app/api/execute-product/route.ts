@@ -45,6 +45,152 @@ Estrutura:
 - E-MAIL 5 (Dia 8): Oferta + urgência
 
 Para cada e-mail: ASSUNTO, PRÉ-HEADER, CORPO completo, CTA. Tom e idioma do briefing.`,
+
+  post_instagram: `Você é RORDENS, o motor de execução da Voku. Crie 3 variações de post para Instagram.
+
+FORMATO OBRIGATÓRIO para cada variação:
+**VARIAÇÃO [A/B/C] — Tom [Direto/Inspiracional/Educativo]**
+LEGENDA:
+[texto completo da legenda, máximo 2200 caracteres]
+HASHTAGS:
+[20-30 hashtags relevantes separadas por espaço]
+CALL TO ACTION:
+[CTA final da legenda]
+
+REGRAS:
+- Variação A: tom direto e objetivo, foco no resultado
+- Variação B: tom inspiracional, foco na transformação
+- Variação C: tom educativo, foco no aprendizado
+- Cada legenda deve ter hook forte na primeira linha
+- Use quebras de linha estratégicas para leitura mobile`,
+
+  carrossel: `Você é RORDENS, o motor de execução da Voku. Crie 3 variações de carrossel para Instagram.
+
+FORMATO OBRIGATÓRIO para cada variação:
+**VARIAÇÃO [A/B/C] — Ângulo [Nome do ângulo]**
+CAPA:
+Título: [headline impactante]
+Subtítulo: [complemento em até 10 palavras]
+
+SLIDE 1: [tema]
+Headline: [frase curta e impactante]
+Texto: [2 linhas explicando o ponto]
+
+SLIDE 2: [tema]
+Headline: [frase curta e impactante]
+Texto: [2 linhas explicando o ponto]
+
+SLIDE 3: [tema]
+Headline: [frase curta e impactante]
+Texto: [2 linhas explicando o ponto]
+
+SLIDE 4: [tema]
+Headline: [frase curta e impactante]
+Texto: [2 linhas explicando o ponto]
+
+SLIDE 5: [tema]
+Headline: [frase curta e impactante]
+Texto: [2 linhas explicando o ponto]
+
+CTA FINAL:
+[chamada para ação do último slide]
+
+REGRAS:
+- 5 slides de conteúdo + capa + CTA final = 7 slides no total
+- Cada variação deve ter ângulo diferente (problema, solução, resultados)
+- Headlines curtas — máximo 6 palavras`,
+
+  reels_script: `Você é RORDENS, o motor de execução da Voku. Crie 3 roteiros de Reels.
+
+FORMATO OBRIGATÓRIO para cada variação:
+**VARIAÇÃO [A/B/C] — Duração: [30s/60s/90s]**
+
+HOOK (0-3s):
+[frase de abertura que para o scroll — máximo 10 palavras]
+[indicação visual: o que mostrar na tela]
+
+DESENVOLVIMENTO:
+[segundo a segundo, com indicações de corte]
+[ex: 0:03-0:15 — Explique X mostrando Y]
+[ex: 0:15-0:25 — Mostre resultado Z com legenda "texto"]
+
+CTA (últimos 5s):
+[chamada para ação falada]
+[texto na tela]
+[indicação de CTA no sticker/link]
+
+LEGENDA DO POST:
+[legenda para acompanhar o Reels]
+
+REGRAS:
+- Variação A: 30 segundos — direto ao ponto
+- Variação B: 60 segundos — com desenvolvimento
+- Variação C: 90 segundos — storytelling completo
+- Sempre incluir indicações de corte e elementos visuais`,
+
+  ad_copy: `Você é RORDENS, o motor de execução da Voku. Crie 3 variações de copy para Meta Ads.
+
+FORMATO OBRIGATÓRIO para cada variação:
+**VARIAÇÃO [A/B/C] — Ângulo [Nome do ângulo]**
+
+HEADLINE PRIMÁRIO:
+[até 40 caracteres — aparece em destaque]
+
+HEADLINE SECUNDÁRIO:
+[até 40 caracteres — variação do primário]
+
+HEADLINE TERCIÁRIO:
+[até 40 caracteres — terceira opção]
+
+TEXTO PRIMÁRIO:
+[corpo do anúncio, até 125 caracteres ideais, máximo 500]
+
+DESCRIÇÃO:
+[até 30 caracteres — aparece abaixo do criativo]
+
+CALL TO ACTION:
+[botão: Saiba Mais / Comprar Agora / Cadastre-se / etc]
+
+ÂNGULO:
+- Variação A: dor — foca no problema que o produto resolve
+- Variação B: benefício — foca na transformação positiva
+- Variação C: prova social — foca em resultados e credibilidade
+
+REGRAS:
+- Respeitar limites de caracteres do Meta rigorosamente
+- Headline deve parar o scroll em 2 segundos
+- Texto primário deve qualificar e converter`,
+
+  app: `Você é RORDENS, o motor de execução da Voku. Gere a especificação completa de um app web simples focado em marketing.
+
+FORMATO OBRIGATÓRIO — retorne 3 variações:
+**VARIAÇÃO A — [tipo: calculadora/quiz/formulario/gerador/captura]**
+TÍTULO: [nome do app]
+TIPO: [tipo técnico]
+DESCRIÇÃO: [o que o app faz em 2-3 frases]
+FUNCIONALIDADES:
+- [funcionalidade 1]
+- [funcionalidade 2]
+- [funcionalidade 3]
+CTA_PRINCIPAL: [ação principal do botão]
+COR_DESTAQUE: [cor hex sugerida para o negócio]
+
+VARIAÇÃO B — [tipo diferente]
+[mesma estrutura]
+
+VARIAÇÃO C — [tipo diferente]
+[mesma estrutura]`,
+}
+
+const CREDIT_COST: Record<string, number> = {
+  landing_page_copy: 40,
+  content_pack: 25,
+  email_sequence: 25,
+  post_instagram: 8,
+  carrossel: 15,
+  reels_script: 10,
+  ad_copy: 10,
+  app: 20,
 }
 
 const TONE_INSTRUCTIONS = [
@@ -57,6 +203,11 @@ const PRODUCT_NAMES: Record<ProductId, string> = {
   landing_page_copy: 'Landing Page Copy',
   content_pack: 'Content Pack',
   email_sequence: 'Email Sequence',
+  post_instagram: 'Post para Instagram',
+  carrossel: 'Carrossel para Instagram',
+  reels_script: 'Roteiro de Reels',
+  ad_copy: 'Copy para Meta Ads',
+  app: 'App Web',
 }
 
 export async function POST(req: NextRequest) {
@@ -128,6 +279,33 @@ Each variation must be complete and production-ready. Only output the JSON array
 
     // Do NOT update orders.status — it stays as 'in_production'
     // Do NOT insert into deliverables — client must choose first
+
+    // Deduct credits
+    const cost = CREDIT_COST[product] || 0
+    if (cost > 0) {
+      const { data: creditRow, error: creditError } = await supabase
+        .from('credits')
+        .select('balance')
+        .eq('user_id', user_id)
+        .single()
+
+      if (creditError || !creditRow || creditRow.balance < cost) {
+        return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 402 })
+      }
+
+      await supabase
+        .from('credits')
+        .update({ balance: creditRow.balance - cost })
+        .eq('user_id', user_id)
+
+      await supabase.from('credit_transactions').insert({
+        user_id,
+        amount: -cost,
+        type: 'debit',
+        description: `Geração de ${PRODUCT_NAMES[product as ProductId] || product}`,
+        order_id,
+      })
+    }
 
     // Get order number for email
     const { data: order } = await supabase
