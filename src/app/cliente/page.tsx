@@ -28,14 +28,13 @@ export default function ClienteLoginPage(){
       else{
         setSuccess("Conta criada! Verifique seu e-mail para confirmar.");
         // Trigger onboarding emails
-        if(signUpData?.user){
-          fetch("/api/onboarding",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:signUpData.user.id,email,name})}).catch(()=>{});
-          // Save referral
+        const uid = signUpData?.user?.id;
+        if(uid){
+          fetch("/api/onboarding",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({user_id:uid,email,name})}).catch(()=>{});
           if(referredBy){
-            sb.from("profiles").update({referred_by:referredBy}).eq("id",signUpData.user.id).then(()=>{});
-            // Create referral record
+            sb.from("profiles").update({referred_by:referredBy}).eq("id",uid).then(()=>{});
             sb.from("affiliates").select("id").eq("codigo",referredBy).single().then(({data:aff})=>{
-              if(aff) sb.from("affiliate_referrals").insert({affiliate_id:aff.id,referred_user_id:signUpData.user.id}).then(()=>{});
+              if(aff) sb.from("affiliate_referrals").insert({affiliate_id:aff.id,referred_user_id:uid}).then(()=>{});
             });
             localStorage.removeItem("voku_ref");
           }
