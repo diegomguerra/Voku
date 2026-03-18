@@ -336,12 +336,20 @@ function ChatDemo() {
   );
 }
 
+const BETA_MODE = true;
+const IF = "'Inter', sans-serif";
+
 /* ─── MAIN ──────────────────────────────────────── */
 export default function VokuLanding() {
   const [lang, setLang] = useState("PT");
   const [navSolid, setNavSolid] = useState(false);
   const [heroVisible, setHeroVisible] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [betaModal, setBetaModal] = useState(false);
+
+  const handleCta = (e) => {
+    if (BETA_MODE) { e.preventDefault(); setBetaModal(true); }
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -392,7 +400,7 @@ export default function VokuLanding() {
             ))}
           </div>
           <a href="/cliente" style={{ fontFamily: FF, fontSize: 13, fontWeight: 600, color: "#888", textDecoration: "none" }}>{t.navLogin}</a>
-          <a href="/cliente" style={{ background: "#C8F135", color: "#111", borderRadius: 8, padding: "10px 20px", fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{t.navCta}</a>
+          <a href="/cliente" onClick={handleCta} style={{ background: "#C8F135", color: "#111", borderRadius: 8, padding: "10px 20px", fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{t.navCta}</a>
         </div>
       </nav>
 
@@ -423,7 +431,7 @@ export default function VokuLanding() {
             </div>
 
             <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(20px)", transition: "all 0.65s ease 0.44s", display: "flex", gap: 14, flexWrap: "wrap" }}>
-              <a href="/cliente" style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 10, padding: "18px 40px", fontFamily: FF, fontSize: 15, fontWeight: 700, textDecoration: "none", transition: "all 0.3s" }}>{t.cta}</a>
+              <a href="/cliente" onClick={handleCta} style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 10, padding: "18px 40px", fontFamily: FF, fontSize: 15, fontWeight: 700, textDecoration: "none", transition: "all 0.3s", cursor: "pointer" }}>{t.cta}</a>
               <a href="#produtos" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "18px 28px", borderRadius: 10, border: "1.5px solid #2a2a2a", fontFamily: FF, fontSize: 15, fontWeight: 600, color: "#888", textDecoration: "none", transition: "all 0.2s" }}>{t.ctaSec} ↓</a>
             </div>
           </div>
@@ -573,11 +581,11 @@ export default function VokuLanding() {
                     </div>
                   ))}
                 </div>
-                <a href={plan.id === "free" ? "/cliente" : `/api/checkout?plan=${plan.id}&billing=monthly`} style={{
+                <a href={plan.id === "free" ? "/cliente" : `/api/checkout?plan=${plan.id}&billing=monthly`} onClick={handleCta} style={{
                   display: "block", textAlign: "center", padding: "14px 24px", borderRadius: 10,
                   background: plan.highlight ? "#C8F135" : "#1e1e1e",
                   color: plan.highlight ? "#111" : "#FAF8F3",
-                  fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.2s",
+                  fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.2s", cursor: "pointer",
                 }}>{plan.cta}</a>
               </div>
             ))}
@@ -638,7 +646,7 @@ export default function VokuLanding() {
             <span style={{ textDecoration: "underline", textDecorationColor: "#C8F135", textDecorationThickness: 4, textUnderlineOffset: 6 }}>{t.finalHighlight}</span>
           </h2>
           <p style={{ ...rv(ctaVis, 0.1), fontFamily: FF, fontSize: 16, color: "#888", lineHeight: 1.7, marginBottom: 40 }}>{t.finalSub}</p>
-          <a href="/cliente" style={{ ...rv(ctaVis, 0.18), display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 12, padding: "20px 52px", fontFamily: FF, fontSize: 16, fontWeight: 700, textDecoration: "none", boxShadow: "0 8px 48px rgba(200,241,53,0.15)", transition: "all 0.3s" }}>{t.finalCta}</a>
+          <a href="/cliente" onClick={handleCta} style={{ ...rv(ctaVis, 0.18), display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 12, padding: "20px 52px", fontFamily: FF, fontSize: 16, fontWeight: 700, textDecoration: "none", boxShadow: "0 8px 48px rgba(200,241,53,0.15)", transition: "all 0.3s", cursor: "pointer" }}>{t.finalCta}</a>
         </div>
       </section>
 
@@ -658,11 +666,37 @@ export default function VokuLanding() {
         <div style={{ fontFamily: FF, fontSize: 10, color: "#777" }}>Voku LLC · Wyoming, USA · voku.one · © 2025</div>
       </footer>
 
+      {/* Beta Modal */}
+      {betaModal && (
+        <div onClick={(e) => { if (e.target === e.currentTarget) setBetaModal(false); }} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div style={{ background: "#111111", border: "1.5px solid #C8F135", borderRadius: 20, padding: "48px 40px", maxWidth: 440, width: "100%", textAlign: "center", position: "relative", animation: "modalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }}>
+            <button onClick={() => setBetaModal(false)} style={{ position: "absolute", top: 16, right: 20, background: "none", border: "none", color: "#444", fontSize: 22, cursor: "pointer" }}>×</button>
+            <div style={{ fontSize: 40, color: "#C8F135", marginBottom: 16, animation: "betaPulse 2s ease-in-out infinite" }}>✦</div>
+            <span style={{ display: "inline-block", background: "#C8F135", color: "#111", fontFamily: IF, fontWeight: 800, fontSize: 10, letterSpacing: 3, padding: "6px 16px", borderRadius: 20, marginBottom: 24 }}>ACESSO BETA LIBERADO</span>
+            <div style={{ fontFamily: IF, fontWeight: 900, fontSize: 32, color: "#ffffff", lineHeight: 1.1, marginBottom: 12 }}>Você ganhou 7 dias grátis.</div>
+            <div style={{ fontFamily: IF, fontWeight: 400, fontSize: 14, color: "#888", lineHeight: 1.7, marginBottom: 32 }}>Acesso completo à plataforma, sem cartão, sem compromisso.<br/>Explore tudo antes de escolher seu plano.</div>
+            <div style={{ height: 1, background: "#222", marginBottom: 28 }} />
+            <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
+              {["Créditos ilimitados por 7 dias", "Todos os produtos desbloqueados", "Chat com agente IA", "Landing pages, posts, e-mails, apps", "Sem limite de projetos"].map(item => (
+                <div key={item} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <span style={{ color: "#C8F135", fontFamily: IF, fontWeight: 700, fontSize: 14 }}>→</span>
+                  <span style={{ color: "#ffffff", fontFamily: IF, fontWeight: 400, fontSize: 14 }}>{item}</span>
+                </div>
+              ))}
+            </div>
+            <a href="/cliente" style={{ display: "block", marginTop: 36, width: "100%", background: "#C8F135", color: "#111", fontFamily: IF, fontWeight: 800, fontSize: 16, padding: 18, borderRadius: 10, border: "none", textDecoration: "none", textAlign: "center", boxSizing: "border-box" }}>Ativar agora →</a>
+            <div style={{ fontFamily: IF, fontWeight: 400, fontSize: 11, color: "#444", marginTop: 14 }}>Sem cartão de crédito. Cancele quando quiser.</div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes ping { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.3; } }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
         @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        @keyframes betaPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
         ::selection { background: #C8F135; color: #111; }
