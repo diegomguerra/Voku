@@ -582,9 +582,23 @@ export default function VokuLanding() {
               </div>
             ))}
           </div>
+          {/* Credit pack callout */}
+          <div style={{ ...rv(pricingVis, 0.5), marginTop: 32, background: "#141414", border: "1px solid #1e1e1e", borderRadius: 16, padding: "24px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+            <div>
+              <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: "#FAF8F3", marginBottom: 4 }}>
+                {lang === "PT" ? "Precisa de mais créditos sem mudar de plano?" : lang === "EN" ? "Need more credits without changing plans?" : "Necesitas más créditos sin cambiar de plan?"}
+              </div>
+              <div style={{ fontFamily: FF, fontSize: 12, color: "#888" }}>
+                {lang === "PT" ? "Pacotes avulsos: 50 créditos por R$49 · 200 por R$149 · 500 por R$297" : lang === "EN" ? "Add-on packs: 50 credits for R$49 · 200 for R$149 · 500 for R$297" : "Paquetes adicionales: 50 créditos por R$49 · 200 por R$149 · 500 por R$297"}
+              </div>
+            </div>
+            <a href="/precos" style={{ background: "#1e1e1e", color: "#FAF8F3", border: "1px solid #333", borderRadius: 10, padding: "10px 20px", fontFamily: FF, fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
+              {lang === "PT" ? "Ver pacotes →" : lang === "EN" ? "See packs →" : "Ver paquetes →"}
+            </a>
+          </div>
           <div style={{ textAlign: "center", marginTop: 20 }}>
             <a href="/precos" style={{ fontFamily: FF, fontSize: 13, color: "#888", textDecoration: "none" }}>
-              {lang === "PT" ? "Ver todos os planos e toggle anual →" : lang === "EN" ? "See all plans and annual toggle →" : "Ver todos los planes y toggle anual →"}
+              {lang === "PT" ? "Ver todos os planos e pacotes avulsos →" : lang === "EN" ? "See all plans and add-on packs →" : "Ver todos los planes y paquetes →"}
             </a>
           </div>
         </div>

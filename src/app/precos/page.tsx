@@ -73,7 +73,7 @@ const FAQ = [
 ];
 
 export default function PrecosPage() {
-  const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const [billing, setBilling] = useState<"monthly" | "annual" | "addons">("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const handleCheckout = (planKey: string) => {
@@ -111,32 +111,89 @@ export default function PrecosPage() {
           Escolha seu plano e comece a criar conteúdo profissional em minutos. Sem contratos, cancele quando quiser.
         </p>
 
-        {/* Toggle mensal/anual */}
+        {/* Toggle 3 tabs */}
         <div style={{ display: "inline-flex", background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, padding: 4 }}>
-          <button onClick={() => setBilling("monthly")} style={{
-            padding: "10px 24px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700,
-            fontFamily: "inherit", cursor: "pointer",
-            background: billing === "monthly" ? T.ink : "transparent",
-            color: billing === "monthly" ? T.lime : T.inkMid,
-          }}>Mensal</button>
-          <button onClick={() => setBilling("annual")} style={{
-            padding: "10px 24px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700,
-            fontFamily: "inherit", cursor: "pointer", position: "relative",
-            background: billing === "annual" ? T.ink : "transparent",
-            color: billing === "annual" ? T.lime : T.inkMid,
-          }}>
-            Anual
-            <span style={{
-              position: "absolute", top: -8, right: -12,
-              background: T.green, color: T.white, fontSize: 9, fontWeight: 800,
-              padding: "2px 6px", borderRadius: 6,
-            }}>-17%</span>
-          </button>
+          {([
+            { key: "monthly", label: "Mensal" },
+            { key: "annual", label: "Anual", badge: "-17%" },
+            { key: "addons", label: "Avulsos" },
+          ] as const).map(tab => (
+            <button key={tab.key} onClick={() => setBilling(tab.key)} style={{
+              padding: "10px 24px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700,
+              fontFamily: "inherit", cursor: "pointer", position: "relative",
+              background: billing === tab.key ? T.ink : "transparent",
+              color: billing === tab.key ? T.lime : T.inkMid,
+            }}>
+              {tab.label}
+              {tab.badge && (
+                <span style={{ position: "absolute", top: -8, right: -12, background: T.green, color: T.white, fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 6 }}>{tab.badge}</span>
+              )}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Grid de planos */}
+      {/* Content */}
       <div style={{ padding: "0 40px 60px", maxWidth: 1200, margin: "0 auto" }}>
+
+        {/* ── AVULSOS ── */}
+        {billing === "addons" && (
+          <div>
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <h2 style={{ fontSize: 22, fontWeight: 800, color: T.ink, margin: "0 0 8px" }}>Pacotes de créditos avulsos</h2>
+              <p style={{ fontSize: 14, color: T.inkMid, margin: 0 }}>Compre créditos extras sem mudar de plano. Créditos avulsos nunca expiram.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, maxWidth: 800, margin: "0 auto" }}>
+              {[
+                { credits: 50, price: 49, perCredit: "R$0,98" },
+                { credits: 200, price: 149, perCredit: "R$0,75", popular: true },
+                { credits: 500, price: 297, perCredit: "R$0,59" },
+              ].map(pack => (
+                <div key={pack.credits} style={{
+                  background: pack.popular ? T.ink : T.white,
+                  border: pack.popular ? `2px solid ${T.lime}` : `1px solid ${T.border}`,
+                  borderRadius: 20, padding: "32px 24px", textAlign: "center",
+                  boxShadow: pack.popular ? "0 8px 40px rgba(0,0,0,0.15)" : "0 2px 12px rgba(0,0,0,0.04)",
+                  position: "relative",
+                }}>
+                  {pack.popular && (
+                    <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: T.lime, color: T.ink, fontSize: 10, fontWeight: 800, padding: "4px 14px", borderRadius: 20, letterSpacing: 1, whiteSpace: "nowrap" }}>MELHOR CUSTO</div>
+                  )}
+                  <div style={{ fontSize: 40, fontWeight: 800, color: pack.popular ? T.lime : T.ink, marginBottom: 4 }}>{pack.credits}</div>
+                  <div style={{ fontSize: 13, color: pack.popular ? "#888" : T.inkMid, fontWeight: 600, marginBottom: 20 }}>créditos</div>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: pack.popular ? T.white : T.ink, marginBottom: 4 }}>R${pack.price}</div>
+                  <div style={{ fontSize: 12, color: pack.popular ? "#666" : T.inkFaint, marginBottom: 20 }}>{pack.perCredit} por crédito</div>
+                  <div style={{ marginBottom: 20, textAlign: "left", padding: "0 8px" }}>
+                    {[
+                      `${Math.floor(pack.credits / 8)} posts Instagram`,
+                      `${Math.floor(pack.credits / 15)} carrosséis`,
+                      `${Math.floor(pack.credits / 10)} roteiros de Reels`,
+                      `${Math.floor(pack.credits / 40)} landing pages`,
+                    ].map(item => (
+                      <div key={item} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                        <span style={{ color: pack.popular ? T.lime : T.green, fontSize: 11, flexShrink: 0 }}>✓</span>
+                        <span style={{ fontSize: 12, color: pack.popular ? "#ccc" : T.inkSub }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <a href={`/api/checkout?credits=${pack.credits}`} style={{
+                    display: "block", textAlign: "center", padding: "14px", borderRadius: 10,
+                    background: pack.popular ? T.lime : T.sand,
+                    color: pack.popular ? T.ink : T.inkSub,
+                    border: pack.popular ? "none" : `1px solid ${T.borderMd}`,
+                    fontSize: 14, fontWeight: 700, textDecoration: "none", fontFamily: "inherit",
+                  }}>
+                    Comprar {pack.credits} créditos
+                  </a>
+                  <div style={{ fontSize: 11, color: pack.popular ? "#555" : T.inkFaint, marginTop: 10 }}>pagamento único · sem expiração</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── PLANOS (MENSAL / ANUAL) ── */}
+        {billing !== "addons" && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, alignItems: "start" }}>
           {PLANS.map(plan => {
             const price = billing === "monthly" ? plan.monthly : plan.annual;
@@ -202,6 +259,7 @@ export default function PrecosPage() {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* FAQ */}
