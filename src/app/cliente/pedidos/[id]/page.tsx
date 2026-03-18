@@ -90,7 +90,7 @@ export default function OrderDetailPage() {
       <div style={{ borderBottom: `1px solid ${C.border}`, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <a href="/cliente/pedidos" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
-            <div style={{ background: C.lime, color: C.dark, fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 18, padding: "3px 12px", borderRadius: 6 }}>Voku</div>
+            <div style={{ background: C.lime, color: C.dark, fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 18, letterSpacing: "-0.5px", padding: "3px 12px", borderRadius: 6, textTransform: "uppercase" as const }}>VOKU</div>
             <span style={{ color: C.sub, fontSize: 13 }}>←</span>
             <span style={{ color: C.sub, fontSize: 13 }}>My Orders</span>
           </a>

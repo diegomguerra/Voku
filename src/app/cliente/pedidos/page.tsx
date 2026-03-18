@@ -425,7 +425,7 @@ export default function PedidosPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.ink, color: T.lime, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800 }}>V</div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: T.ink }}>Voku</div>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 14, letterSpacing: "-0.5px", color: T.ink, textTransform: "uppercase" as const }}>VOKU</span>
             <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E" }} />
               <span style={{ fontSize: 11, color: T.inkMid }}>online</span>
@@ -536,7 +536,7 @@ export default function PedidosPage() {
       {/* Header */}
       <div style={{ background: T.white, borderBottom: `1px solid ${T.border}`, padding: isMobile ? "0 16px" : "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 16 }}>
-          <div style={{ background: T.ink, color: T.lime, fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: isMobile ? 16 : 20, padding: "4px 14px", borderRadius: 6 }}>Voku</div>
+          <div style={{ background: T.ink, color: "#fff", fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: isMobile ? 16 : 20, letterSpacing: "-0.5px", padding: "4px 14px", borderRadius: 6, textTransform: "uppercase" as const }}>VOKU</div>
           {!isMobile && (
             <>
               <span style={{ color: T.borderMd, fontSize: 20 }}>|</span>

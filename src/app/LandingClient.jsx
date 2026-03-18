@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const FONTS = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&family=DM+Serif+Display:ital@0;1&display=swap";
+const FONTS = "https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&family=DM+Serif+Display:ital@0;1&display=swap";
 const FF = "'Plus Jakarta Sans', sans-serif";
 const FFS = "'DM Serif Display', serif";
 
@@ -305,7 +305,7 @@ function ChatDemo() {
       <div style={{ background: "#111", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#111", flexShrink: 0 }}>V</div>
         <div>
-          <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Voku</div>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 13, letterSpacing: "-0.5px", color: "#fff", textTransform: "uppercase" }}>VOKU</span>
           <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
             <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#C8F135" }} />
             <span style={{ color: "#888", fontSize: 11 }}>online</span>
@@ -378,7 +378,7 @@ export default function VokuLanding() {
       {/* ══ NAV ══ */}
       <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 500, height: 64, background: navSolid ? "rgba(10,10,10,0.96)" : "transparent", backdropFilter: navSolid ? "blur(18px)" : "none", borderBottom: navSolid ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent", padding: "0 52px", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.4s ease" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 400, fontSize: 22, color: "#C8F135", letterSpacing: -0.5 }}>Voku</div>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 20, letterSpacing: "-0.5px", color: "#ffffff", textTransform: "uppercase" }}>VOKU</span>
           <div style={{ display: "flex", gap: 24 }}>
             {t.nav.map((item, i) => (
               <a key={i} href={["#produtos", "#como-funciona", "#precos", "/vitrine"][i]} style={{ fontFamily: FF, fontSize: 13, fontWeight: 500, color: "#888", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "#FAF8F3"} onMouseLeave={e => e.target.style.color = "#888"}>{item}</a>
@@ -504,7 +504,7 @@ export default function VokuLanding() {
                 transform: col.highlight ? "scaleY(1.04)" : "none",
                 position: "relative",
               }}>
-                {col.highlight && <div style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#C8F135", fontFamily: FF, fontSize: 10, fontWeight: 700, letterSpacing: 2, padding: "4px 14px", borderRadius: 20 }}>VOKU</div>}
+                {col.highlight && <div style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 900, letterSpacing: "-0.3px", padding: "4px 14px", borderRadius: 20 }}>VOKU</div>}
                 <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: col.highlight ? "#111" : "#555", marginBottom: 20 }}>{col.label}</div>
                 {col.points.map((p, j) => (
                   <div key={j} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
@@ -558,10 +558,10 @@ export default function VokuLanding() {
                 {plan.badge && (
                   <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#C8F135", color: "#111", fontFamily: FF, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge.toUpperCase()}</div>
                 )}
-                <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 700, color: "#555", letterSpacing: 1, marginBottom: 16 }}>{plan.name.toUpperCase()}</div>
+                <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 700, color: "#777", letterSpacing: 1, marginBottom: 16 }}>{plan.name.toUpperCase()}</div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
                   <span style={{ fontFamily: FF, fontSize: 36, fontWeight: 800, color: "#FAF8F3" }}>{plan.price}</span>
-                  <span style={{ fontFamily: FF, fontSize: 14, color: "#555" }}>{plan.period}</span>
+                  <span style={{ fontFamily: FF, fontSize: 14, color: "#777" }}>{plan.period}</span>
                 </div>
                 <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: "#C8F135", marginBottom: 8 }}>{plan.credits}</div>
                 <p style={{ fontFamily: FF, fontSize: 12, color: "#888", lineHeight: 1.6, marginBottom: 24 }}>{plan.desc}</p>
@@ -616,7 +616,7 @@ export default function VokuLanding() {
               <div key={i} style={{ ...rv(faqVis, 0.1 + i * 0.05), background: "#141414", border: "1px solid #1e1e1e", borderRadius: 14, overflow: "hidden" }}>
                 <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", background: "transparent", border: "none", cursor: "pointer", fontFamily: FF, textAlign: "left" }}>
                   <span style={{ fontSize: 14, fontWeight: 700, color: "#FAF8F3" }}>{item.q}</span>
-                  <span style={{ fontSize: 18, color: "#555", transform: openFaq === i ? "rotate(45deg)" : "none", transition: "transform 0.2s", flexShrink: 0, marginLeft: 16 }}>+</span>
+                  <span style={{ fontSize: 18, color: "#777", transform: openFaq === i ? "rotate(45deg)" : "none", transition: "transform 0.2s", flexShrink: 0, marginLeft: 16 }}>+</span>
                 </button>
                 {openFaq === i && (
                   <div style={{ padding: "0 24px 18px" }}>
@@ -644,7 +644,7 @@ export default function VokuLanding() {
 
       {/* ══ FOOTER ══ */}
       <footer style={{ background: "#0A0A0A", padding: "28px 52px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, borderTop: "1px solid #161616" }}>
-        <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontSize: 18, color: "#C8F135" }}>Voku</div>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 18, letterSpacing: "-0.5px", color: "#ffffff", textTransform: "uppercase" }}>VOKU</span>
         <div style={{ display: "flex", gap: 24 }}>
           {[
             { label: lang === "PT" ? "Vitrine" : "Showcase", href: "/vitrine" },
@@ -652,10 +652,10 @@ export default function VokuLanding() {
             { label: lang === "PT" ? "Preços" : "Pricing", href: "/precos" },
             { label: lang === "PT" ? "Afiliados" : "Affiliates", href: "/cliente/afiliados" },
           ].map(l => (
-            <a key={l.label} href={l.href} style={{ fontFamily: FF, fontSize: 12, color: "#555", textDecoration: "none" }}>{l.label}</a>
+            <a key={l.label} href={l.href} style={{ fontFamily: FF, fontSize: 12, color: "#777", textDecoration: "none" }}>{l.label}</a>
           ))}
         </div>
-        <div style={{ fontFamily: FF, fontSize: 10, color: "#333" }}>Voku LLC · Wyoming, USA · voku.one · © 2025</div>
+        <div style={{ fontFamily: FF, fontSize: 10, color: "#777" }}>Voku LLC · Wyoming, USA · voku.one · © 2025</div>
       </footer>
 
       <style>{`

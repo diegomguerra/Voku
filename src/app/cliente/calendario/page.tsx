@@ -226,7 +226,7 @@ export default function CalendarioPage() {
       <div style={{ background: T.white, borderBottom: `1px solid ${T.border}`, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <a href="/cliente/pedidos" style={{ textDecoration: "none" }}>
-            <div style={{ background: T.ink, color: T.lime, fontFamily: "Georgia,serif", fontStyle: "italic", fontSize: 20, padding: "4px 14px", borderRadius: 6 }}>Voku</div>
+            <div style={{ background: T.ink, color: "#fff", fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 20, letterSpacing: "-0.5px", padding: "4px 14px", borderRadius: 6, textTransform: "uppercase" as const }}>VOKU</div>
           </a>
           <span style={{ color: T.borderMd, fontSize: 20 }}>|</span>
           <span style={{ fontSize: 15, fontWeight: 700, color: T.inkSub }}>Calendário Editorial</span>

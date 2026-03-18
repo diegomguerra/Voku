@@ -47,7 +47,7 @@ export default function ClienteLoginPage(){
     <div style={{background:T.sand,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'Plus Jakarta Sans',sans-serif",backgroundImage:"radial-gradient(circle at 70% 20%, #e9f59e33 0%, transparent 60%)"}}>
       <div style={{background:T.white,border:`1px solid ${T.border}`,borderRadius:20,padding:"48px 44px",width:"100%",maxWidth:440,boxShadow:"0 8px 40px rgba(0,0,0,0.08)"}}>
         <div style={{textAlign:"center",marginBottom:36}}>
-          <div style={{display:"inline-block",background:T.ink,color:T.lime,fontFamily:"Georgia,serif",fontStyle:"italic",fontSize:28,padding:"6px 20px",borderRadius:10,marginBottom:16}}>Voku</div>
+          <div style={{display:"inline-block",background:T.ink,color:"#fff",fontFamily:"'Inter', sans-serif",fontWeight:900,fontSize:28,letterSpacing:"-1px",padding:"6px 20px",borderRadius:10,marginBottom:16,textTransform:"uppercase" as const}}>VOKU</div>
           <div style={{fontSize:22,fontWeight:700,color:T.ink,marginBottom:6,letterSpacing:"-0.02em"}}>{mode==="login"?"Bem-vindo de volta":"Crie sua conta"}</div>
           <div style={{fontSize:14,color:T.inkMid}}>{mode==="login"?"Acesse seus pedidos e faça downloads":"Comece a receber seus projetos em 24h"}</div>
         </div>
