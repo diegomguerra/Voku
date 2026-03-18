@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
 import OrderChoices from "@/components/OrderChoices";
+import ProjectTracker from "@/components/ProjectTracker";
 
 const T = {
   sand:"#FAF8F3",white:"#FFFFFF",ink:"#111111",inkSub:"#3D3D3D",inkMid:"#6B6B6B",inkFaint:"#A0A0A0",
@@ -402,6 +403,10 @@ export default function PedidosPage() {
                   {order.status === "briefing" && (
                     <div style={{ color: T.amber, fontSize: 13, fontWeight: 600 }}>📋 Aguardando confirmação do briefing</div>
                   )}
+                </div>
+                {/* Project Tracker */}
+                <div style={{ padding: isMobile ? "0 12px 12px" : "0 24px 16px" }}>
+                  <ProjectTracker order={order} />
                 </div>
               </div>
             );
