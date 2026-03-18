@@ -315,7 +315,7 @@ export default function PedidosPage() {
         <div style={{ background: `linear-gradient(135deg, ${T.ink}, #1a1a2e)`, borderRadius: 14, padding: "18px 24px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.lime, marginBottom: 2 }}>Créditos acabando!</div>
-            <div style={{ fontSize: 12, color: "#A0A0A0" }}>Você tem {ctx.credits} créditos restantes. Faça upgrade para continuar criando.</div>
+            <div style={{ fontSize: 12, color: "#A0A0A0" }}>Você tem {ctx?.credits ?? 0} créditos restantes. Faça upgrade para continuar criando.</div>
           </div>
           <a href="/precos" style={{ background: T.lime, color: T.ink, border: "none", borderRadius: 10, padding: "10px 20px", fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>Fazer upgrade →</a>
         </div>
