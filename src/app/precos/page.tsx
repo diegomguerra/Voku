@@ -10,40 +10,35 @@ const T = {
 const PLANS = [
   {
     key: "free", name: "Free", popular: false,
-    monthly_usd: 0, monthly_brl: 0,
-    annual_usd: 0, annual_brl: 0,
+    monthly: 0, annual: 0,
     credits: 20,
     features: ["20 créditos/mês", "Chat com agente IA", "1 projeto por vez", "Suporte por e-mail"],
     cta: "Começar grátis",
   },
   {
     key: "starter", name: "Starter", popular: false,
-    monthly_usd: 29, monthly_brl: 149,
-    annual_usd: 24, annual_brl: 124,
+    monthly: 149, annual: 124,
     credits: 100,
     features: ["100 créditos/mês", "Chat com agente IA", "Projetos ilimitados", "Calendário editorial", "Suporte prioritário"],
     cta: "Assinar Starter",
   },
   {
     key: "pro", name: "Pro", popular: true,
-    monthly_usd: 79, monthly_brl: 397,
-    annual_usd: 66, annual_brl: 331,
+    monthly: 397, annual: 331,
     credits: 300,
     features: ["300 créditos/mês", "Chat com agente IA", "Projetos ilimitados", "Calendário editorial", "Landing pages com IA", "Geração em batch", "Suporte prioritário"],
     cta: "Assinar Pro",
   },
   {
     key: "business", name: "Business", popular: false,
-    monthly_usd: 179, monthly_brl: 897,
-    annual_usd: 149, annual_brl: 748,
+    monthly: 897, annual: 748,
     credits: 800,
     features: ["800 créditos/mês", "Tudo do Pro", "API de integração", "Múltiplos usuários", "Account manager dedicado"],
     cta: "Assinar Business",
   },
   {
     key: "enterprise", name: "Enterprise", popular: false,
-    monthly_usd: 399, monthly_brl: 1997,
-    annual_usd: 333, annual_brl: 1664,
+    monthly: 1997, annual: 1664,
     credits: 2000,
     features: ["2.000 créditos/mês", "Tudo do Business", "SLA garantido", "White-label disponível", "Onboarding personalizado"],
     cta: "Falar com vendas",
@@ -144,7 +139,7 @@ export default function PrecosPage() {
       <div style={{ padding: "0 40px 60px", maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, alignItems: "start" }}>
           {PLANS.map(plan => {
-            const price = billing === "monthly" ? plan.monthly_brl : plan.annual_brl;
+            const price = billing === "monthly" ? plan.monthly : plan.annual;
             return (
               <div key={plan.key} style={{
                 background: plan.popular ? T.ink : T.white,

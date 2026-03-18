@@ -10,18 +10,18 @@ const T = {
   red: "#DC2626", redBg: "#FEE2E2",
 };
 
-const PLANS: Record<string, { name: string; credits: number; price_usd: number; price_brl: number }> = {
-  free: { name: "Free", credits: 20, price_usd: 0, price_brl: 0 },
-  starter: { name: "Starter", credits: 100, price_usd: 29, price_brl: 149 },
-  pro: { name: "Pro", credits: 300, price_usd: 79, price_brl: 397 },
-  business: { name: "Business", credits: 800, price_usd: 179, price_brl: 897 },
-  enterprise: { name: "Enterprise", credits: 2000, price_usd: 399, price_brl: 1997 },
+const PLANS: Record<string, { name: string; credits: number; price: number }> = {
+  free: { name: "Free", credits: 20, price: 0 },
+  starter: { name: "Starter", credits: 100, price: 149 },
+  pro: { name: "Pro", credits: 300, price: 397 },
+  business: { name: "Business", credits: 800, price: 897 },
+  enterprise: { name: "Enterprise", credits: 2000, price: 1997 },
 };
 
 const CREDIT_PACKS = [
-  { credits: 50, price_usd: 19, price_brl: 97 },
-  { credits: 200, price_usd: 59, price_brl: 297 },
-  { credits: 500, price_usd: 119, price_brl: 597 },
+  { credits: 50, price: 49 },
+  { credits: 200, price: 149 },
+  { credits: 500, price: 297 },
 ];
 
 type Transaction = {
@@ -122,7 +122,7 @@ export default function PlanoPage() {
               </div>
             </div>
             <div style={{ fontSize: 13, color: T.inkMid, marginBottom: 16 }}>
-              {currentPlan.credits} créditos/mês · {currentPlan.price_usd > 0 ? `$${currentPlan.price_usd}/mês` : "Grátis"}
+              {currentPlan.credits} créditos/mês · {currentPlan.price > 0 ? `R$${currentPlan.price}/mês` : "Grátis"}
             </div>
             {ctx?.plan !== "enterprise" && (
               <button onClick={() => {
@@ -174,8 +174,8 @@ export default function PlanoPage() {
               <div key={pack.credits} style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
                 <div style={{ fontSize: 32, fontWeight: 800, color: T.ink, marginBottom: 4 }}>{pack.credits}</div>
                 <div style={{ fontSize: 12, color: T.inkMid, fontWeight: 600, marginBottom: 12 }}>créditos</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: T.teal, marginBottom: 4 }}>R$ {pack.price_brl}</div>
-                <div style={{ fontSize: 11, color: T.inkFaint, marginBottom: 16 }}>ou ${pack.price_usd} USD</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: T.teal, marginBottom: 4 }}>R${pack.price}</div>
+                <div style={{ fontSize: 11, color: T.inkFaint, marginBottom: 16 }}>pagamento único</div>
                 <button onClick={() => handleBuyCredits(pack)} style={{
                   width: "100%", background: T.sand, border: `1.5px solid ${T.borderMd}`, color: T.ink,
                   borderRadius: 10, padding: "10px", fontSize: 13, fontWeight: 700,
@@ -204,7 +204,7 @@ export default function PlanoPage() {
                   {isCurrent && <div style={{ fontSize: 9, fontWeight: 800, color: T.lime, textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>Seu plano</div>}
                   <div style={{ fontSize: 16, fontWeight: 800, color: isCurrent ? T.white : T.ink, marginBottom: 4 }}>{plan.name}</div>
                   <div style={{ fontSize: 22, fontWeight: 800, color: isCurrent ? T.lime : T.teal, marginBottom: 2 }}>
-                    {plan.price_usd > 0 ? `$${plan.price_usd}` : "Grátis"}
+                    {plan.price > 0 ? `R$${plan.price}` : "Grátis"}
                   </div>
                   <div style={{ fontSize: 11, color: isCurrent ? "#888" : T.inkFaint, marginBottom: 8 }}>/mês</div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: isCurrent ? T.lime : T.ink, marginBottom: 12 }}>{plan.credits} créditos</div>
