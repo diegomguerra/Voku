@@ -22,6 +22,7 @@ const PRODUCT_NAME: Record<string,string> = {
 };
 
 const UPGRADE_THRESHOLD = 0.2; // 20%
+const PLAN_MAX_CREDITS: Record<string, number> = { free: 20, starter: 100, pro: 300, business: 800, enterprise: 2000 };
 
 const STATUS: Record<string,{label:string;color:string;bg:string;dot:string}> = {
   briefing:{label:"Briefing",color:T.amber,bg:T.amberBg,dot:"#F59E0B"},
@@ -310,7 +311,7 @@ export default function PedidosPage() {
       </div>
 
       {/* Banner de upgrade */}
-      {ctx?.plan_credits && ctx.credits <= ctx.plan_credits * UPGRADE_THRESHOLD && ctx.credits > 0 && (
+      {(PLAN_MAX_CREDITS[ctx?.plan || "free"] || 20) > 0 && (ctx?.credits ?? 0) <= (PLAN_MAX_CREDITS[ctx?.plan || "free"] || 20) * UPGRADE_THRESHOLD && (ctx?.credits ?? 0) > 0 && (
         <div style={{ background: `linear-gradient(135deg, ${T.ink}, #1a1a2e)`, borderRadius: 14, padding: "18px 24px", marginBottom: 20, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
             <div style={{ fontSize: 14, fontWeight: 700, color: T.lime, marginBottom: 2 }}>Créditos acabando!</div>
