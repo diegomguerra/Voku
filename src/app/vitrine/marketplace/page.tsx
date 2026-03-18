@@ -32,7 +32,7 @@ export default function MarketplacePage() {
   const [filterNicho, setFilterNicho] = useState("");
   const [sortPrice, setSortPrice] = useState<"asc" | "desc" | "none">("none");
   const [buying, setBuying] = useState<string | null>(null);
-  const [boughtIds, setBoughtIds] = useState<Set<string>>(new Set());
+  const [boughtIds, setBoughtIds] = useState<string[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -54,7 +54,7 @@ export default function MarketplacePage() {
           .select("template_id")
           .eq("buyer_user_id", data.user.id)
           .then(({ data: purchases }) => {
-            if (purchases) setBoughtIds(new Set(purchases.map((p: any) => p.template_id)));
+            if (purchases) setBoughtIds(purchases.map((p: any) => p.template_id));
           });
       }
     });
@@ -62,7 +62,7 @@ export default function MarketplacePage() {
 
   const handleBuy = async (template: Template) => {
     if (!userId || buying) return;
-    if (boughtIds.has(template.id)) return;
+    if (boughtIds.includes(template.id)) return;
     if (!confirm(`Comprar "${template.titulo}" por ${template.preco_creditos} créditos?`)) return;
 
     setBuying(template.id);
@@ -91,7 +91,7 @@ export default function MarketplacePage() {
     // Increment vendas
     await sb.from("marketplace_templates").update({ vendas: (template.vendas || 0) + 1 }).eq("id", template.id);
 
-    setBoughtIds(prev => new Set([...prev, template.id]));
+    setBoughtIds(prev => [...prev, template.id]);
     setBuying(null);
   };
 
@@ -154,7 +154,7 @@ export default function MarketplacePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
             {filtered.map(t => {
               const badge = TYPE_BADGE[t.tipo] || TYPE_BADGE.copy;
-              const bought = boughtIds.has(t.id);
+              const bought = boughtIds.includes(t.id);
               return (
                 <div key={t.id} style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 18, padding: "24px 22px 20px", boxShadow: "0 2px 12px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>

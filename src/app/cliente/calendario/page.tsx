@@ -57,7 +57,7 @@ export default function CalendarioPage() {
   const [tom, setTom] = useState("");
   const [selectedPost, setSelectedPost] = useState<CalendarPost | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
-  const [generatedDias, setGeneratedDias] = useState<Set<number>>(new Set());
+  const [generatedDias, setGeneratedDias] = useState<number[]>([]);
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number; running: boolean; currentDia: number }>({ current: 0, total: 0, running: false, currentDia: -1 });
   const [batchDone, setBatchDone] = useState(false);
 
@@ -142,7 +142,7 @@ export default function CalendarioPage() {
 
   const handleBatchGenerate = async () => {
     if (!calendar || !userId || batchProgress.running) return;
-    const postsToGenerate = calendar.posts.filter(p => !generatedDias.has(p.dia));
+    const postsToGenerate = calendar.posts.filter(p => !generatedDias.includes(p.dia));
     if (postsToGenerate.length === 0) return;
     const totalCredits = calcTotalCredits(postsToGenerate);
     if (!confirm(`Isso vai usar ${totalCredits} créditos do seu saldo. Confirmar?`)) return;
@@ -171,7 +171,7 @@ export default function CalendarioPage() {
         });
         const data = await res.json();
         if (data?.order_id) {
-          setGeneratedDias(prev => new Set([...prev, post.dia]));
+          setGeneratedDias(prev => prev.includes(post.dia) ? prev : [...prev, post.dia]);
         }
       } catch {
         // continue to next
@@ -299,15 +299,15 @@ export default function CalendarioPage() {
                 }}>{pilar}</span>
               ))}
               <div style={{ marginLeft: "auto", display: "flex", gap: 10 }}>
-                {calendar.posts.some(p => !generatedDias.has(p.dia)) && !batchProgress.running && (
+                {calendar.posts.some(p => !generatedDias.includes(p.dia)) && !batchProgress.running && (
                   <button onClick={handleBatchGenerate} style={{
                     background: T.ink, color: T.lime, border: "none", borderRadius: 8,
                     padding: "6px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
                   }}>
-                    Gerar tudo ({calcTotalCredits(calendar.posts.filter(p => !generatedDias.has(p.dia)))} créditos)
+                    Gerar tudo ({calcTotalCredits(calendar.posts.filter(p => !generatedDias.includes(p.dia)))} créditos)
                   </button>
                 )}
-                <button onClick={() => { setCalendar(null); setNicho(""); setObjetivo(""); setTom(""); setGeneratedDias(new Set()); setBatchDone(false); }} style={{
+                <button onClick={() => { setCalendar(null); setNicho(""); setObjetivo(""); setTom(""); setGeneratedDias([]); setBatchDone(false); }} style={{
                   background: "transparent", border: `1.5px solid ${T.borderMd}`,
                   color: T.inkSub, borderRadius: 8, padding: "6px 16px", fontSize: 12, fontWeight: 600,
                   cursor: "pointer", fontFamily: "inherit",
@@ -350,7 +350,7 @@ export default function CalendarioPage() {
               {getWeeks().map((week, wi) => (
                 <div key={wi} style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 2 }}>
                   {week.map((post, di) => {
-                    const isGenerated = post ? generatedDias.has(post.dia) : false;
+                    const isGenerated = post ? generatedDias.includes(post.dia) : false;
                     const isCurrentBatch = post ? batchProgress.running && batchProgress.currentDia === post.dia : false;
                     return (
                     <div key={`${wi}-${di}`} onClick={() => post && setSelectedPost(post)} style={{
