@@ -148,6 +148,13 @@ export default function PedidosPage() {
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
+  // Persiste mensagem no banco
+  const persistMessage = useCallback(async (role: "user" | "assistant", content: string) => {
+    if (!userIdRef.current) return;
+    const sb = supabase();
+    await sb.from("chat_messages").insert({ user_id: userIdRef.current, role, content });
+  }, []);
+
   // Watch for order approval (OrderChoices sets status to "delivered")
   useEffect(() => {
     if (!pendingOrder || choicesApproved) return;
@@ -168,13 +175,6 @@ export default function PedidosPage() {
     }, 2000);
     return () => clearInterval(interval);
   }, [pendingOrder, choicesApproved, persistMessage]);
-
-  // Persiste mensagem no banco
-  const persistMessage = useCallback(async (role: "user" | "assistant", content: string) => {
-    if (!userIdRef.current) return;
-    const sb = supabase();
-    await sb.from("chat_messages").insert({ user_id: userIdRef.current, role, content });
-  }, []);
 
   const sendMessage = useCallback(async (text?: string) => {
     const userText = text || input.trim();
