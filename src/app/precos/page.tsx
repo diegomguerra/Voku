@@ -113,11 +113,11 @@ export default function PrecosPage() {
 
         {/* Toggle 3 tabs */}
         <div style={{ display: "inline-flex", background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, padding: 4 }}>
-          {([
-            { key: "monthly", label: "Mensal" },
-            { key: "annual", label: "Anual", badge: "-17%" },
-            { key: "addons", label: "Avulsos" },
-          ] as const).map(tab => (
+          {[
+            { key: "monthly" as const, label: "Mensal", badge: "" },
+            { key: "annual" as const, label: "Anual", badge: "-17%" },
+            { key: "addons" as const, label: "Avulsos", badge: "" },
+          ].map(tab => (
             <button key={tab.key} onClick={() => setBilling(tab.key)} style={{
               padding: "10px 24px", borderRadius: 10, border: "none", fontSize: 13, fontWeight: 700,
               fontFamily: "inherit", cursor: "pointer", position: "relative",
