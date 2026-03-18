@@ -54,16 +54,16 @@ export default function ClienteLoginPage(){
         {mode==="register"&&(
           <div style={{marginBottom:18}}>
             <label style={{display:"block",fontSize:13,fontWeight:600,color:T.inkSub,marginBottom:7}}>Nome completo</label>
-            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Diego Guerra" style={inputStyle}/>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder="Seu nome completo" style={inputStyle}/>
           </div>
         )}
         <div style={{marginBottom:18}}>
           <label style={{display:"block",fontSize:13,fontWeight:600,color:T.inkSub,marginBottom:7}}>E-mail</label>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="diego@email.com" style={inputStyle}/>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com" style={inputStyle}/>
         </div>
         <div style={{marginBottom:mode==="login"?8:24}}>
           <label style={{display:"block",fontSize:13,fontWeight:600,color:T.inkSub,marginBottom:7}}>Senha</label>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={inputStyle}/>
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" onKeyDown={e=>e.key==="Enter"&&handleSubmit()} style={inputStyle}/>
         </div>
         {mode==="login"&&<div style={{textAlign:"right",marginBottom:20}}><button style={{background:"none",border:"none",color:T.teal,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Esqueci minha senha</button></div>}
         {error&&<div style={{color:T.red,fontSize:13,marginBottom:16,padding:"10px 14px",background:"#FEE2E2",borderRadius:8}}>{error}</div>}
