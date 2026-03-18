@@ -144,9 +144,7 @@ export default function PrecosPage() {
       <div style={{ padding: "0 40px 60px", maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, alignItems: "start" }}>
           {PLANS.map(plan => {
-            const price = billing === "monthly"
-              ? { usd: plan.monthly_usd, brl: plan.monthly_brl }
-              : { usd: plan.annual_usd, brl: plan.annual_brl };
+            const price = billing === "monthly" ? plan.monthly_brl : plan.annual_brl;
             return (
               <div key={plan.key} style={{
                 background: plan.popular ? T.ink : T.white,
@@ -171,20 +169,14 @@ export default function PrecosPage() {
 
                 <div style={{ marginBottom: 4 }}>
                   <span style={{ fontSize: 36, fontWeight: 800, color: plan.popular ? T.lime : T.ink }}>
-                    {price.usd > 0 ? `$${price.usd}` : "Grátis"}
+                    {price > 0 ? `R$${price}` : "Grátis"}
                   </span>
-                  {price.usd > 0 && <span style={{ fontSize: 14, color: plan.popular ? "#888" : T.inkFaint }}>/mês</span>}
+                  {price > 0 && <span style={{ fontSize: 14, color: plan.popular ? "#888" : T.inkFaint }}>/mês</span>}
                 </div>
 
-                {price.brl > 0 && (
-                  <div style={{ fontSize: 12, color: plan.popular ? "#888" : T.inkFaint, marginBottom: 4 }}>
-                    ou R$ {price.brl}/mês
-                  </div>
-                )}
-
-                {billing === "annual" && price.usd > 0 && (
-                  <div style={{ fontSize: 11, color: T.green, fontWeight: 700, marginBottom: 8 }}>
-                    2 meses grátis no anual
+                {billing === "annual" && price > 0 && (
+                  <div style={{ fontSize: 11, color: T.green, fontWeight: 700, marginBottom: 4 }}>
+                    cobrado anualmente · 2 meses grátis
                   </div>
                 )}
 

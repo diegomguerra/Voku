@@ -5,6 +5,20 @@ const FONTS = "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,w
 const FF = "'Plus Jakarta Sans', sans-serif";
 const FFS = "'DM Serif Display', serif";
 
+/* ─── SVG ICONS ──────────────────────────────────── */
+const S = { w: 24, h: 24, vb: "0 0 24 24", f: "none", s: "currentColor", sw: 1.5, lc: "round", lj: "round" };
+const Icon = ({ children }) => <svg width={S.w} height={S.h} viewBox={S.vb} fill={S.f} stroke={S.s} strokeWidth={S.sw} strokeLinecap={S.lc} strokeLinejoin={S.lj}>{children}</svg>;
+const ICONS = {
+  post: <Icon><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/></Icon>,
+  carrossel: <Icon><rect x="2" y="5" width="14" height="14" rx="2"/><rect x="6" y="3" width="14" height="14" rx="2" opacity=".5"/><path d="M20 10l2 2-2 2"/></Icon>,
+  reels: <Icon><rect x="6" y="3" width="12" height="18" rx="2"/><polygon points="10,9 10,15 15,12"/></Icon>,
+  ads: <Icon><path d="M3 12l6-8v5h6v6h-6v5z"/><path d="M17 8l2-1m0 4h2m-2 4l2 1" opacity=".6"/></Icon>,
+  email: <Icon><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 5l10 7 10-7"/><path d="M18 13l3 3" opacity=".6"/></Icon>,
+  pack: <Icon><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></Icon>,
+  lp: <Icon><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18"/><circle cx="5.5" cy="5.5" r=".8" fill="currentColor" stroke="none"/><circle cx="8" cy="5.5" r=".8" fill="currentColor" stroke="none"/><path d="M7 13h10"/></Icon>,
+  app: <Icon><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M13 8l-2 4h4l-2 4"/></Icon>,
+};
+
 /* ─── COPY (trilingual) ─────────────────────────── */
 const T = {
   PT: {
@@ -29,14 +43,14 @@ const T = {
     productsTitle: "8 produtos. Um agente.",
     productsSub: "Descreva no chat e receba em minutos.",
     products: [
-      { icon: "📱", name: "Post Instagram", credits: 8, desc: "Legenda + hashtags + CTA" },
-      { icon: "📑", name: "Carrossel", credits: 15, desc: "7 slides com copy completa" },
-      { icon: "🎬", name: "Roteiro Reels", credits: 10, desc: "30s, 60s ou 90s com cortes" },
-      { icon: "📣", name: "Copy Meta Ads", credits: 10, desc: "3 ângulos: dor, benefício, prova" },
-      { icon: "📧", name: "Sequência E-mails", credits: 25, desc: "5 e-mails dia 0 a dia 8" },
-      { icon: "📝", name: "Pack Conteúdo", credits: 25, desc: "12 posts prontos para publicar" },
-      { icon: "🖥️", name: "Landing Page", credits: 40, desc: "HTML publicado com URL real" },
-      { icon: "⚡", name: "App Web", credits: 20, desc: "Calculadora, quiz, formulário" },
+      { icon: "post", name: "Post Instagram", credits: 8, desc: "Legenda + hashtags + CTA" },
+      { icon: "carrossel", name: "Carrossel", credits: 15, desc: "7 slides com copy completa" },
+      { icon: "reels", name: "Roteiro Reels", credits: 10, desc: "30s, 60s ou 90s com cortes" },
+      { icon: "ads", name: "Copy Meta Ads", credits: 10, desc: "3 ângulos: dor, benefício, prova" },
+      { icon: "email", name: "Sequência E-mails", credits: 25, desc: "5 e-mails dia 0 a dia 8" },
+      { icon: "pack", name: "Pack Conteúdo", credits: 25, desc: "12 posts prontos para publicar" },
+      { icon: "lp", name: "Landing Page", credits: 40, desc: "HTML publicado com URL real" },
+      { icon: "app", name: "App Web", credits: 20, desc: "Calculadora, quiz, formulário" },
     ],
     howLabel: "COMO FUNCIONA",
     howTitle: "3 passos. Sem reunião.",
@@ -108,14 +122,14 @@ const T = {
     productsTitle: "8 products. One agent.",
     productsSub: "Describe it in the chat and receive in minutes.",
     products: [
-      { icon: "📱", name: "Instagram Post", credits: 8, desc: "Caption + hashtags + CTA" },
-      { icon: "📑", name: "Carousel", credits: 15, desc: "7 slides with full copy" },
-      { icon: "🎬", name: "Reels Script", credits: 10, desc: "30s, 60s or 90s with cuts" },
-      { icon: "📣", name: "Meta Ad Copy", credits: 10, desc: "3 angles: pain, benefit, proof" },
-      { icon: "📧", name: "Email Sequence", credits: 25, desc: "5 emails day 0 to day 8" },
-      { icon: "📝", name: "Content Pack", credits: 25, desc: "12 posts ready to publish" },
-      { icon: "🖥️", name: "Landing Page", credits: 40, desc: "Published HTML with real URL" },
-      { icon: "⚡", name: "Web App", credits: 20, desc: "Calculator, quiz, form" },
+      { icon: "post", name: "Instagram Post", credits: 8, desc: "Caption + hashtags + CTA" },
+      { icon: "carrossel", name: "Carousel", credits: 15, desc: "7 slides with full copy" },
+      { icon: "reels", name: "Reels Script", credits: 10, desc: "30s, 60s or 90s with cuts" },
+      { icon: "ads", name: "Meta Ad Copy", credits: 10, desc: "3 angles: pain, benefit, proof" },
+      { icon: "email", name: "Email Sequence", credits: 25, desc: "5 emails day 0 to day 8" },
+      { icon: "pack", name: "Content Pack", credits: 25, desc: "12 posts ready to publish" },
+      { icon: "lp", name: "Landing Page", credits: 40, desc: "Published HTML with real URL" },
+      { icon: "app", name: "Web App", credits: 20, desc: "Calculator, quiz, form" },
     ],
     howLabel: "HOW IT WORKS",
     howTitle: "3 steps. No meetings.",
@@ -129,7 +143,7 @@ const T = {
     gapItems: [
       { label: "Generic tools", icon: "🤖", points: ["Templates without context", "You do everything alone", "No strategy, just execution", "Mediocre results"], highlight: false },
       { label: "VOKU", icon: "✦", points: ["Agent that understands your business", "Asks the right questions", "3 strategic variations", "Delivery in minutes, not days"], highlight: true },
-      { label: "Traditional agencies", icon: "🏢", points: ["$3,000+/mo minimum", "Weekly mandatory meetings", "Delivery in weeks", "6-month contracts"], highlight: false },
+      { label: "Traditional agencies", icon: "🏢", points: ["R$3.000+/mo minimum", "Weekly mandatory meetings", "Delivery in weeks", "6-month contracts"], highlight: false },
     ],
     proofLabel: "WHO ALREADY USES IT",
     proofQuote: "I asked for a landing page via chat and in 2 minutes had a published LP with a real URL. Never going back to agencies.",
@@ -140,10 +154,10 @@ const T = {
     pricingTitle: "Simple. No surprises.",
     pricingSub: "Start free. Upgrade when you need to.",
     plans: [
-      { id: "free", name: "Free", price: "$0", period: "", credits: "20 credits", desc: "To test the platform", items: ["20 credits/month", "AI agent chat", "1 project at a time", "Email support"], cta: "Start free", highlight: false },
-      { id: "starter", name: "Starter", price: "$29", period: "/mo", credits: "100 credits", desc: "For getting started", items: ["100 credits/month", "Unlimited projects", "Editorial calendar", "Priority support"], cta: "Subscribe Starter", highlight: false },
-      { id: "pro", name: "Pro", price: "$79", period: "/mo", credits: "300 credits", desc: "For growing businesses", items: ["300 credits/month", "AI landing pages", "Batch generation", "Custom brand voice", "Priority support"], cta: "Subscribe Pro", highlight: true, badge: "Most popular" },
-      { id: "business", name: "Business", price: "$179", period: "/mo", credits: "800 credits", desc: "For teams and agencies", items: ["800 credits/month", "Everything in Pro", "API integration", "Multiple users", "Account manager"], cta: "Subscribe Business", highlight: false },
+      { id: "free", name: "Free", price: "R$0", period: "", credits: "20 credits", desc: "To test the platform", items: ["20 credits/month", "AI agent chat", "1 project at a time", "Email support"], cta: "Start free", highlight: false },
+      { id: "starter", name: "Starter", price: "R$149", period: "/mo", credits: "100 credits", desc: "For getting started", items: ["100 credits/month", "Unlimited projects", "Editorial calendar", "Priority support"], cta: "Subscribe Starter", highlight: false },
+      { id: "pro", name: "Pro", price: "R$397", period: "/mo", credits: "300 credits", desc: "For growing businesses", items: ["300 credits/month", "AI landing pages", "Batch generation", "Custom brand voice", "Priority support"], cta: "Subscribe Pro", highlight: true, badge: "Most popular" },
+      { id: "business", name: "Business", price: "R$897", period: "/mo", credits: "800 credits", desc: "For teams and agencies", items: ["800 credits/month", "Everything in Pro", "API integration", "Multiple users", "Account manager"], cta: "Subscribe Business", highlight: false },
     ],
     vitrineLabel: "SHOWCASE",
     vitrineTitle: "See what others created.",
@@ -187,14 +201,14 @@ const T = {
     productsTitle: "8 productos. Un agente.",
     productsSub: "Describe en el chat y recibe en minutos.",
     products: [
-      { icon: "📱", name: "Post Instagram", credits: 8, desc: "Leyenda + hashtags + CTA" },
-      { icon: "📑", name: "Carrusel", credits: 15, desc: "7 slides con copy completo" },
-      { icon: "🎬", name: "Guión Reels", credits: 10, desc: "30s, 60s o 90s con cortes" },
-      { icon: "📣", name: "Copy Meta Ads", credits: 10, desc: "3 ángulos: dolor, beneficio, prueba" },
-      { icon: "📧", name: "Secuencia Emails", credits: 25, desc: "5 emails día 0 a día 8" },
-      { icon: "📝", name: "Pack Contenido", credits: 25, desc: "12 posts listos para publicar" },
-      { icon: "🖥️", name: "Landing Page", credits: 40, desc: "HTML publicado con URL real" },
-      { icon: "⚡", name: "App Web", credits: 20, desc: "Calculadora, quiz, formulario" },
+      { icon: "post", name: "Post Instagram", credits: 8, desc: "Leyenda + hashtags + CTA" },
+      { icon: "carrossel", name: "Carrusel", credits: 15, desc: "7 slides con copy completo" },
+      { icon: "reels", name: "Guión Reels", credits: 10, desc: "30s, 60s o 90s con cortes" },
+      { icon: "ads", name: "Copy Meta Ads", credits: 10, desc: "3 ángulos: dolor, beneficio, prueba" },
+      { icon: "email", name: "Secuencia Emails", credits: 25, desc: "5 emails día 0 a día 8" },
+      { icon: "pack", name: "Pack Contenido", credits: 25, desc: "12 posts listos para publicar" },
+      { icon: "lp", name: "Landing Page", credits: 40, desc: "HTML publicado con URL real" },
+      { icon: "app", name: "App Web", credits: 20, desc: "Calculadora, quiz, formulario" },
     ],
     howLabel: "CÓMO FUNCIONA",
     howTitle: "3 pasos. Sin reuniones.",
@@ -208,7 +222,7 @@ const T = {
     gapItems: [
       { label: "Herramientas genéricas", icon: "🤖", points: ["Templates sin contexto", "Haces todo solo", "Sin estrategia, solo ejecución", "Resultados medianos"], highlight: false },
       { label: "VOKU", icon: "✦", points: ["Agente que entiende tu negocio", "Hace las preguntas correctas", "3 variaciones estratégicas", "Entrega en minutos, no días"], highlight: true },
-      { label: "Agencias tradicionales", icon: "🏢", points: ["$3.000+/mes mínimo", "Reuniones semanales obligatorias", "Entrega en semanas", "Contratos de 6 meses"], highlight: false },
+      { label: "Agencias tradicionales", icon: "🏢", points: ["R$3.000+/mes mínimo", "Reuniones semanales obligatorias", "Entrega en semanas", "Contratos de 6 meses"], highlight: false },
     ],
     proofLabel: "QUIÉNES YA LO USAN",
     proofQuote: "Pedí una landing page por el chat y en 2 minutos tenía una LP publicada con URL real. Nunca más volví a una agencia.",
@@ -219,10 +233,10 @@ const T = {
     pricingTitle: "Simple. Sin sorpresas.",
     pricingSub: "Empieza gratis. Mejora cuando necesites.",
     plans: [
-      { id: "free", name: "Free", price: "$0", period: "", credits: "20 créditos", desc: "Para probar la plataforma", items: ["20 créditos/mes", "Chat con agente IA", "1 proyecto a la vez", "Soporte por email"], cta: "Empezar gratis", highlight: false },
-      { id: "starter", name: "Starter", price: "$29", period: "/mes", credits: "100 créditos", desc: "Para empezar", items: ["100 créditos/mes", "Proyectos ilimitados", "Calendario editorial", "Soporte prioritario"], cta: "Suscribir Starter", highlight: false },
-      { id: "pro", name: "Pro", price: "$79", period: "/mes", credits: "300 créditos", desc: "Para negocios en crecimiento", items: ["300 créditos/mes", "Landing pages con IA", "Generación en batch", "Voz de marca personalizada", "Soporte prioritario"], cta: "Suscribir Pro", highlight: true, badge: "Más popular" },
-      { id: "business", name: "Business", price: "$179", period: "/mes", credits: "800 créditos", desc: "Para equipos y agencias", items: ["800 créditos/mes", "Todo del Pro", "API de integración", "Múltiples usuarios", "Account manager"], cta: "Suscribir Business", highlight: false },
+      { id: "free", name: "Free", price: "R$0", period: "", credits: "20 créditos", desc: "Para probar la plataforma", items: ["20 créditos/mes", "Chat con agente IA", "1 proyecto a la vez", "Soporte por email"], cta: "Empezar gratis", highlight: false },
+      { id: "starter", name: "Starter", price: "R$149", period: "/mes", credits: "100 créditos", desc: "Para empezar", items: ["100 créditos/mes", "Proyectos ilimitados", "Calendario editorial", "Soporte prioritario"], cta: "Suscribir Starter", highlight: false },
+      { id: "pro", name: "Pro", price: "R$397", period: "/mes", credits: "300 créditos", desc: "Para negocios en crecimiento", items: ["300 créditos/mes", "Landing pages con IA", "Generación en batch", "Voz de marca personalizada", "Soporte prioritario"], cta: "Suscribir Pro", highlight: true, badge: "Más popular" },
+      { id: "business", name: "Business", price: "R$897", period: "/mes", credits: "800 créditos", desc: "Para equipos y agencias", items: ["800 créditos/mes", "Todo del Pro", "API de integración", "Múltiples usuarios", "Account manager"], cta: "Suscribir Business", highlight: false },
     ],
     vitrineLabel: "VITRINA",
     vitrineTitle: "Mira lo que otros crearon.",
@@ -268,61 +282,54 @@ const rv = (vis, delay = 0) => ({
   transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
 });
 
-/* ─── CHAT DEMO ─────────────────────────────────── */
-function ChatDemo({ messages }) {
-  const [visibleCount, setVisibleCount] = useState(0);
+/* ─── CHAT DEMO (animated loop) ──────────────────── */
+function ChatDemo() {
+  const [step, setStep] = useState(-1);
   useEffect(() => {
-    if (visibleCount >= messages.length) return;
-    const t = setTimeout(() => setVisibleCount(c => c + 1), visibleCount === 0 ? 600 : 1200);
-    return () => clearTimeout(t);
-  }, [visibleCount, messages.length]);
+    const delays = [0, 800, 1600, 2600, 4000, 4900, 6600, 8400, 11000];
+    const timers = [];
+    function run() {
+      delays.forEach((d, i) => { timers.push(setTimeout(() => setStep(i), d)); });
+      timers.push(setTimeout(() => { setStep(-1); setTimeout(run, 400); }, 11000));
+    }
+    const init = setTimeout(run, 300);
+    timers.push(init);
+    return () => timers.forEach(clearTimeout);
+  }, []);
+  const show = (n) => ({ opacity: step >= n ? 1 : 0, transform: step >= n ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.4s ease, transform 0.4s ease" });
+  const VA = { width: 26, height: 26, borderRadius: "50%", background: "#111", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#C8F135", flexShrink: 0 };
+  const MB = (isUser) => ({ padding: "9px 13px", borderRadius: isUser ? "14px 14px 4px 14px" : "14px 14px 14px 4px", fontSize: 12.5, lineHeight: 1.55, maxWidth: "75%", ...(isUser ? { background: "#111", color: "#fff" } : { background: "#fff", border: "1px solid #E8E5DE", color: "#111" }) });
 
   return (
-    <div style={{ background: "#FAF8F3", borderRadius: 20, border: "1px solid #E8E5DE", overflow: "hidden", boxShadow: "0 32px 80px rgba(0,0,0,0.5)" }}>
-      {/* Chat header */}
-      <div style={{ padding: "16px 20px", borderBottom: "1px solid #E8E5DE", display: "flex", alignItems: "center", gap: 10, background: "#fff" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#111", color: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800 }}>V</div>
+    <div style={{ background: "#fff", border: "1px solid #E8E5DE", borderRadius: 20, width: 340, overflow: "hidden", fontFamily: FF, boxShadow: "0 8px 40px rgba(0,0,0,0.08)" }}>
+      <div style={{ background: "#111", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#111", flexShrink: 0 }}>V</div>
         <div>
-          <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: "#111" }}>Voku</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E" }} />
-            <span style={{ fontFamily: FF, fontSize: 10, color: "#6B6B6B" }}>online</span>
+          <div style={{ color: "#fff", fontSize: 13, fontWeight: 600 }}>Voku</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#C8F135" }} />
+            <span style={{ color: "#888", fontSize: 11 }}>online</span>
           </div>
         </div>
       </div>
-      {/* Messages */}
-      <div style={{ padding: "20px", minHeight: 280, display: "flex", flexDirection: "column", gap: 12 }}>
-        {messages.slice(0, visibleCount).map((msg, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", opacity: 0, animation: `fadeSlideIn 0.4s ease ${i * 0.1}s forwards` }}>
-            {msg.role === "assistant" && (
-              <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#111", color: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0, marginRight: 8, marginTop: 2 }}>V</div>
-            )}
-            <div style={{
-              maxWidth: "75%", padding: "10px 14px",
-              background: msg.role === "user" ? "#111" : "#FAF8F3",
-              color: msg.role === "user" ? "#FAF8F3" : "#3D3D3D",
-              border: msg.role === "assistant" ? "1px solid #E8E5DE" : "none",
-              borderRadius: msg.role === "user" ? "14px 14px 4px 14px" : "4px 14px 14px 14px",
-              fontFamily: FF, fontSize: 13, lineHeight: 1.6,
-            }}>
-              {msg.text}
-            </div>
+      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10, minHeight: 280, background: "#FAFAF8" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", ...show(0) }}><div style={VA}>V</div><div style={MB(false)}>Oi! O que você precisa criar hoje?</div></div>
+        <div style={{ display: "flex", justifyContent: "flex-end", ...show(1) }}><div style={MB(true)}>Preciso de 5 posts sobre nutrição para Instagram</div></div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", opacity: step === 2 ? 1 : 0, transition: "opacity 0.3s" }}><div style={VA}>V</div><div style={{ ...MB(false), display: "flex", gap: 4, padding: "10px 13px" }}>{[0,1,2].map(i=><div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "#bbb", animation: `bounce 1.2s ease-in-out ${i*0.2}s infinite` }}/>)}</div></div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", ...show(3) }}><div style={VA}>V</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: "80%" }}>
+            <div style={MB(false)}>Legal! Qual o tom da marca?</div>
+            {step >= 3 && step < 5 && <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{["Técnico","Acessível e próximo","Inspiracional"].map(c=><span key={c} style={{ padding: "5px 12px", borderRadius: 20, background: "#f0f0e8", border: "1px solid #e0e0d8", fontSize: 11.5, fontWeight: 600, color: "#444" }}>{c}</span>)}</div>}
           </div>
-        ))}
-        {visibleCount === messages.length && (
-          <div style={{ display: "flex", gap: 8, opacity: 0, animation: "fadeSlideIn 0.5s ease 0.3s forwards" }}>
-            <div style={{ width: 24, height: 24, borderRadius: "50%", background: "#111", color: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, flexShrink: 0 }}>V</div>
-            <div style={{ display: "flex", gap: 4, paddingTop: 8 }}>
-              {[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#A0A0A0", animation: `pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />)}
-            </div>
-          </div>
-        )}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", ...show(4) }}><div style={MB(true)}>Acessível e próximo</div></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 13px", background: "#f8f8f0", border: "1px solid #d8e8a0", borderRadius: 12, fontSize: 12, color: "#556", fontWeight: 500, opacity: step >= 5 && step < 7 ? 1 : 0, transition: "opacity 0.3s" }}><span style={{ color: "#C8F135", fontSize: 14 }}>✦</span>Criando 3 variações...</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", ...show(6) }}><div style={VA}>V</div><div style={MB(false)}>Pronto! 3 variações geradas. Escolha a que mais combina.</div></div>
       </div>
-      {/* Input bar */}
-      <div style={{ padding: "12px 20px", borderTop: "1px solid #E8E5DE", background: "#fff" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#FAF8F3", border: "1px solid #D1CCBF", borderRadius: 10, padding: "8px 12px" }}>
-          <div style={{ flex: 1, fontFamily: FF, fontSize: 12, color: "#A0A0A0" }}>O que você precisa criar hoje?</div>
-          <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#D1CCBF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "#fff" }}>↑</div>
+      <div style={{ padding: "10px 12px", borderTop: "1px solid #E8E5DE", display: "flex", gap: 8, alignItems: "center", background: "#fff" }}>
+        <div style={{ flex: 1, padding: "9px 13px", background: "#f5f5f0", borderRadius: 20, fontSize: 12, color: "#aaa", fontFamily: FF }}>O que você precisa criar hoje?</div>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </div>
       </div>
     </div>
@@ -423,7 +430,7 @@ export default function VokuLanding() {
 
           {/* RIGHT — chat demo */}
           <div className="hero-right-panel" style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(32px)", transition: "all 0.9s ease 0.3s" }}>
-            <ChatDemo messages={t.chatDemo} />
+            <ChatDemo />
           </div>
         </div>
       </section>
@@ -447,7 +454,7 @@ export default function VokuLanding() {
                 onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.transform = "translateY(-4px)"; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = "#1e1e1e"; e.currentTarget.style.transform = "translateY(0)"; }}
               >
-                <div style={{ fontSize: 28, marginBottom: 14 }}>{p.icon}</div>
+                <div style={{ marginBottom: 14, color: "#C8F135" }}>{ICONS[p.icon] || p.icon}</div>
                 <div style={{ fontFamily: FF, fontSize: 15, fontWeight: 700, color: "#FAF8F3", marginBottom: 4 }}>{p.name}</div>
                 <div style={{ fontFamily: FF, fontSize: 12, color: "#888", lineHeight: 1.5, marginBottom: 12 }}>{p.desc}</div>
                 <div style={{ display: "inline-block", background: "rgba(200,241,53,0.1)", border: "1px solid rgba(200,241,53,0.2)", borderRadius: 20, padding: "3px 10px" }}>
@@ -640,6 +647,7 @@ export default function VokuLanding() {
       <style>{`
         @keyframes ping { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.3; } }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
         @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         * { box-sizing: border-box; }
         html { scroll-behavior: smooth; }
