@@ -32,43 +32,132 @@ function timeAgo(dateStr: string): string {
   return `${Math.floor(days / 30)} meses atrás`;
 }
 
+/* ─── BROWSER MOCKUP ──────────────────────────────── */
+function BrowserFrame({ url, children }: { url: string; children: any }) {
+  return (
+    <div style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #ddd", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
+      <div style={{ background: "#f1f1f1", padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
+        <div style={{ display: "flex", gap: 5 }}>{["#FF5F57","#FEBC2E","#28C840"].map((c,i)=><div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c }}/>)}</div>
+        <div style={{ flex: 1, background: "#fff", borderRadius: 4, padding: "3px 10px", fontSize: 11, color: "#999", fontFamily: FF, marginLeft: 8 }}>{url}</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+/* ─── LP CAROUSEL ────────────────────────────────── */
+function LPCarousel() {
+  const [active, setActive] = useState(0);
+  useEffect(() => { const t = setInterval(() => setActive(a => (a + 1) % 3), 4000); return () => clearInterval(t); }, []);
+  const lps = [
+    { url: "clinicabelavida.com.br", bg: "linear-gradient(135deg, #1a3a2a, #0d1f15)", accent: "#4ADE80", headline: "Sua pele merece cuidado profissional.", sub: "Agende sua avaliação gratuita e descubra o tratamento ideal para você.", cta: "Agendar avaliação grátis", nicho: "Clínica de Estética", logo: "Bela Vida" },
+    { url: "controlefacil.app", bg: "linear-gradient(135deg, #1e1b4b, #312e81)", accent: "#818CF8", headline: "Chega de planilha. Seu financeiro no automático.", sub: "Para MEIs e autônomos que querem controle sem complicação.", cta: "Testar grátis 14 dias", nicho: "Fintech / SaaS", logo: "ControleFácil" },
+    { url: "chefemcasa.com.br", bg: "linear-gradient(135deg, #451a03, #78350f)", accent: "#FB923C", headline: "Refeições saudáveis entregues na sua porta.", sub: "Cardápio semanal personalizado por nutricionista. Sem esforço, sem desperdício.", cta: "Ver cardápio da semana", nicho: "Food Delivery", logo: "Chef em Casa" },
+  ];
+  const lp = lps[active];
+  return (
+    <div>
+      <BrowserFrame url={lp.url}>
+        <div style={{ background: lp.bg, padding: "36px 28px 32px", transition: "all 0.5s", minHeight: 200 }}>
+          <div style={{ fontFamily: FF, fontSize: 10, fontWeight: 700, letterSpacing: 2, color: lp.accent, marginBottom: 16, opacity: 0.8 }}>{lp.logo.toUpperCase()}</div>
+          <div style={{ fontFamily: FF, fontSize: 24, fontWeight: 800, color: "#fff", lineHeight: 1.15, marginBottom: 10, maxWidth: 340 }}>{lp.headline}</div>
+          <div style={{ fontFamily: FF, fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.6, marginBottom: 20, maxWidth: 320 }}>{lp.sub}</div>
+          <div style={{ display: "inline-block", background: lp.accent, color: "#111", padding: "12px 24px", borderRadius: 8, fontFamily: FF, fontSize: 13, fontWeight: 700 }}>{lp.cta}</div>
+        </div>
+      </BrowserFrame>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+        {lps.map((_, i) => (
+          <button key={i} onClick={() => setActive(i)} style={{ width: active === i ? 24 : 8, height: 8, borderRadius: 4, background: active === i ? T.ink : T.borderMd, border: "none", cursor: "pointer", transition: "all 0.3s" }} />
+        ))}
+      </div>
+      <div style={{ textAlign: "center", marginTop: 6, fontFamily: FF, fontSize: 11, color: T.inkFaint }}>{lp.nicho}</div>
+    </div>
+  );
+}
+
+/* ─── INSTAGRAM FEED ─────────────────────────────── */
+function InstaFeed() {
+  const posts = [
+    { bg: "linear-gradient(135deg, #065f46, #047857)", emoji: "🥗", hook: "Você sabia que 70% das pessoas desistem da dieta na semana 2?", caption: "O problema não é falta de vontade — é falta de planejamento. Vou te mostrar como manter a consistência sem sofrimento.\n\n1. Prepare as refeições no domingo\n2. Tenha 3 lanches saudáveis sempre à mão\n3. Permita 1 refeição livre por semana\n\nSalve esse post e comece hoje 👇", hashtags: "#nutrição #dietaflexível #vidasaudável #emagrecimento #dica", likes: "847", comments: "63" },
+    { bg: "linear-gradient(135deg, #7c2d12, #c2410c)", emoji: "🍫", hook: "3 substitutos do açúcar que realmente funcionam", caption: "Se você acha que precisa cortar o doce pra emagrecer, leia isso:\n\n1. Xilitol — mesma doçura, metade das calorias\n2. Stevia — zero calorias, sabor neutro\n3. Eritritol — não altera glicemia\n\nQual você já testou? Me conta nos comentários!", hashtags: "#semacucar #saudavel #alimentaçãoconsciente #nutricionista", likes: "1.2k", comments: "124" },
+    { bg: "linear-gradient(135deg, #1e3a5f, #2563eb)", emoji: "⏱️", hook: "5 refeições em 15 min que me salvam na correria", caption: "Não ter tempo NÃO é desculpa.\n\nOvo mexido + pão integral + abacate → 5min\nBowl de iogurte + granola + fruta → 3min\nWrap de frango + salada → 10min\nSopa de legumes (congelada) → 8min\nSmoothie proteico → 5min\n\nCompartilha com quem vive dizendo que não tem tempo 😉", hashtags: "#mealprep #refeicaorapida #fitness #praticidade", likes: "2.1k", comments: "187" },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+      {posts.map((p, i) => (
+        <div key={i} style={{ borderRadius: 12, overflow: "hidden", border: "1px solid #e5e5e5", background: "#fff" }}>
+          <div style={{ background: p.bg, padding: "20px 14px", minHeight: 110, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+            <div style={{ fontSize: 24, marginBottom: 6 }}>{p.emoji}</div>
+            <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 700, color: "#fff", lineHeight: 1.35 }}>{p.hook}</div>
+          </div>
+          <div style={{ padding: "10px 12px" }}>
+            <div style={{ display: "flex", gap: 10, marginBottom: 6 }}>
+              <span style={{ fontFamily: FF, fontSize: 10, color: "#111", fontWeight: 700 }}>♡ {p.likes}</span>
+              <span style={{ fontFamily: FF, fontSize: 10, color: "#888" }}>💬 {p.comments}</span>
+            </div>
+            <div style={{ fontFamily: FF, fontSize: 10.5, color: "#333", lineHeight: 1.5, maxHeight: 52, overflow: "hidden" }}>{p.caption.slice(0, 90)}...</div>
+            <div style={{ fontFamily: FF, fontSize: 9, color: "#3b82f6", marginTop: 4 }}>{p.hashtags}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── IMC CALCULATOR ─────────────────────────────── */
+function IMCCalculator() {
+  const [peso, setPeso] = useState("72");
+  const [altura, setAltura] = useState("175");
+  const [resultado, setResultado] = useState<{imc:string;cat:string;cor:string}|null>(null);
+  const calcular = () => {
+    const p = parseFloat(peso); const a = parseFloat(altura) / 100;
+    if (!p || !a) return;
+    const imc = p / (a * a);
+    const cat = imc < 18.5 ? "Abaixo do peso" : imc < 25 ? "Peso normal" : imc < 30 ? "Sobrepeso" : "Obesidade";
+    const cor = imc < 18.5 ? "#3b82f6" : imc < 25 ? "#22c55e" : imc < 30 ? "#f59e0b" : "#ef4444";
+    setResultado({ imc: imc.toFixed(1), cat, cor });
+  };
+  const inp = { fontFamily: FF, fontSize: 14, color: "#111", background: "#f8f8f8", border: "1.5px solid #e0e0e0", borderRadius: 8, padding: "10px 14px", width: "100%", outline: "none", boxSizing: "border-box" as const };
+  return (
+    <BrowserFrame url="meuapp.voku.one/imc">
+      <div style={{ background: "#fff", padding: "28px 24px" }}>
+        <div style={{ fontFamily: FF, fontSize: 18, fontWeight: 800, color: "#111", marginBottom: 4 }}>Calculadora de IMC</div>
+        <div style={{ fontFamily: FF, fontSize: 12, color: "#888", marginBottom: 20 }}>Descubra se você está no peso ideal</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          <div>
+            <label style={{ fontFamily: FF, fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 4 }}>Peso (kg)</label>
+            <input value={peso} onChange={e => setPeso(e.target.value)} style={inp} />
+          </div>
+          <div>
+            <label style={{ fontFamily: FF, fontSize: 11, fontWeight: 600, color: "#555", display: "block", marginBottom: 4 }}>Altura (cm)</label>
+            <input value={altura} onChange={e => setAltura(e.target.value)} style={inp} />
+          </div>
+        </div>
+        <button onClick={calcular} style={{ width: "100%", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, padding: "12px", fontFamily: FF, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>Calcular meu IMC</button>
+        {resultado && (
+          <div style={{ marginTop: 16, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 10, padding: "16px 18px", textAlign: "center" }}>
+            <div style={{ fontFamily: FF, fontSize: 36, fontWeight: 800, color: resultado.cor }}>{resultado.imc}</div>
+            <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 600, color: resultado.cor, marginTop: 2 }}>{resultado.cat}</div>
+            <div style={{ fontFamily: FF, fontSize: 11, color: "#999", marginTop: 8 }}>IMC = peso ÷ altura²</div>
+          </div>
+        )}
+      </div>
+    </BrowserFrame>
+  );
+}
+
 /* ─── SHOWCASE EXAMPLES ──────────────────────────── */
 const EXAMPLES = [
   {
-    id: "ex-lp", tipo: "landing_page", titulo: "Landing Page — Clínica de Estética",
-    content: (
-      <div>
-        <div style={{ background: T.ink, borderRadius: "12px 12px 0 0", padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-          {[T.inkFaint, T.inkFaint, T.inkFaint].map((c, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.4 }} />)}
-          <div style={{ flex: 1, background: "#1a1a1a", borderRadius: 4, padding: "3px 8px", fontSize: 10, color: "#888", fontFamily: FF, marginLeft: 8 }}>voku.one/lp/nutri-pro</div>
-        </div>
-        <div style={{ background: "#fff", padding: 20, borderRadius: "0 0 12px 12px", border: `1px solid ${T.border}`, borderTop: "none" }}>
-          <div style={{ fontSize: 20, fontWeight: 800, color: T.ink, marginBottom: 6, fontFamily: FF, lineHeight: 1.2 }}>Chega de planilha. Seu financeiro no automático.</div>
-          <div style={{ fontSize: 13, color: T.inkMid, marginBottom: 14, fontFamily: FF }}>Para MEIs e autônomos que querem controle sem complicação.</div>
-          <div style={{ display: "inline-block", background: T.lime, color: T.ink, padding: "10px 20px", borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: FF }}>Testar grátis 14 dias</div>
-        </div>
-      </div>
-    ),
+    id: "ex-lp", tipo: "landing_page", titulo: "Landing Pages — 3 mercados diferentes",
+    content: <LPCarousel />,
     badges: ["3 variações de headline", "HTML publicado", "mobile responsive"],
-    nicho: "Fintech / MEI", created_at: "2026-03-15",
+    nicho: "Vários", created_at: "2026-03-15",
   },
   {
     id: "ex-posts", tipo: "post", titulo: "Pack Instagram — Nutricionista",
-    content: (
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6 }}>
-        {[
-          { hook: "Você sabia que 70% das pessoas desistem da dieta na semana 2? Aqui está o motivo.", tags: "#nutrição #dieta #saúde" },
-          { hook: "3 substitutos do açúcar que realmente funcionam (o terceiro vai te surpreender)", tags: "#saudavel #alimentação" },
-          { hook: "5 refeições que preparo em 15 min e me mantêm na dieta", tags: "#mealprep #fitness" },
-        ].map((p, i) => (
-          <div key={i} style={{ background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, padding: 10, display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: T.ink, lineHeight: 1.4, fontFamily: FF }}>{p.hook}</div>
-            <div style={{ fontSize: 9, color: T.teal, fontFamily: FF }}>{p.tags}</div>
-          </div>
-        ))}
-      </div>
-    ),
-    badges: ["12 posts", "legendas + hashtags", "CTA incluso"],
+    content: <InstaFeed />,
+    badges: ["12 posts", "legendas completas", "hashtags + CTA"],
     nicho: "Nutrição", created_at: "2026-03-14",
   },
   {
@@ -76,16 +165,24 @@ const EXAMPLES = [
     content: (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {[
-          { day: "Dia 0", subject: "Seu guia chegou", open: "68%" },
-          { day: "Dia 2", subject: "O erro que trava o emagrecimento", open: "52%" },
-          { day: "Dia 4", subject: "Como Ana perdeu 8kg sem academia", open: "45%" },
-          { day: "Dia 6", subject: "Eu sei o que está te travando", open: "41%" },
-          { day: "Dia 8", subject: "Última chance: 30% off até meia-noite", open: "58%" },
+          { day: "Dia 0", subject: "Seu guia chegou 🎯", desc: "Boas-vindas + entrega do lead magnet", open: "68%" },
+          { day: "Dia 2", subject: "O erro que trava o emagrecimento", desc: "Conteúdo de valor — dica prática", open: "52%" },
+          { day: "Dia 4", subject: "Como Ana perdeu 8kg sem academia", desc: "Prova social — história de cliente", open: "45%" },
+          { day: "Dia 6", subject: "Eu sei o que está te travando", desc: "Quebra de objeção", open: "41%" },
+          { day: "Dia 8", subject: "Última chance: 30% off até meia-noite", desc: "CTA direto — oferta final", open: "58%" },
         ].map((e, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 12px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.teal, fontFamily: FF, width: 40, flexShrink: 0 }}>{e.day}</div>
-            <div style={{ flex: 1, fontSize: 12, fontWeight: 600, color: T.ink, fontFamily: FF }}>{e.subject}</div>
-            <div style={{ fontSize: 10, color: T.inkFaint, fontFamily: FF }}>~{e.open}</div>
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, background: "#fff", border: "1px solid #e5e5e5", borderRadius: 10, padding: "12px 16px" }}>
+            <div style={{ width: 44, textAlign: "center", flexShrink: 0 }}>
+              <div style={{ fontFamily: FF, fontSize: 9, fontWeight: 700, color: "#2563eb", textTransform: "uppercase", letterSpacing: 1 }}>{e.day}</div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 600, color: "#111" }}>{e.subject}</div>
+              <div style={{ fontFamily: FF, fontSize: 11, color: "#999", marginTop: 2 }}>{e.desc}</div>
+            </div>
+            <div style={{ textAlign: "right", flexShrink: 0 }}>
+              <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: "#22c55e" }}>{e.open}</div>
+              <div style={{ fontFamily: FF, fontSize: 9, color: "#bbb" }}>abertura</div>
+            </div>
           </div>
         ))}
       </div>
@@ -94,32 +191,29 @@ const EXAMPLES = [
     nicho: "Nutrição", created_at: "2026-03-13",
   },
   {
-    id: "ex-app", tipo: "app", titulo: "Calculadora de IMC Personalizada",
-    content: (
-      <div>
-        <div style={{ background: T.ink, borderRadius: "12px 12px 0 0", padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-          {[T.inkFaint, T.inkFaint, T.inkFaint].map((c, i) => <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: c, opacity: 0.4 }} />)}
-          <div style={{ flex: 1, background: "#1a1a1a", borderRadius: 4, padding: "3px 8px", fontSize: 10, color: "#888", fontFamily: FF, marginLeft: 8 }}>voku.one/app/imc-pro</div>
-        </div>
-        <div style={{ background: "#fff", padding: 16, borderRadius: "0 0 12px 12px", border: `1px solid ${T.border}`, borderTop: "none" }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 10, fontFamily: FF }}>Calculadora de IMC</div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            <div style={{ flex: 1, background: T.sand, borderRadius: 6, padding: "6px 10px", fontSize: 11, color: T.inkFaint, fontFamily: FF }}>Peso (kg)</div>
-            <div style={{ flex: 1, background: T.sand, borderRadius: 6, padding: "6px 10px", fontSize: 11, color: T.inkFaint, fontFamily: FF }}>Altura (cm)</div>
-          </div>
-          <div style={{ background: T.lime, color: T.ink, borderRadius: 6, padding: "8px", textAlign: "center", fontSize: 12, fontWeight: 700, fontFamily: FF }}>Calcular IMC</div>
-        </div>
-      </div>
-    ),
-    badges: ["HTML + JS + CSS", "publicado com URL", "100% client-side"],
+    id: "ex-app", tipo: "app", titulo: "Calculadora de IMC — App funcional",
+    content: <IMCCalculator />,
+    badges: ["HTML + JS + CSS", "publicado com URL", "100% interativo"],
     nicho: "Saúde", created_at: "2026-03-12",
   },
   {
     id: "ex-carrossel", tipo: "carrossel", titulo: "Carrossel — Marketing Digital",
     content: (
-      <div style={{ display: "flex", gap: 6, overflowX: "auto" }}>
-        {["CAPA: 5 erros que matam seu engajamento", "Slide 1: Postar sem estratégia", "Slide 2: Ignorar os comentários", "Slide 3: Não usar CTA", "Slide 4: Copiar concorrentes", "CTA: Salve para não esquecer"].map((s, i) => (
-          <div key={i} style={{ minWidth: 100, background: i === 0 ? T.ink : "#fff", color: i === 0 ? T.lime : T.ink, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 8px", fontSize: 10, fontWeight: i === 0 ? 700 : 500, fontFamily: FF, lineHeight: 1.4, flexShrink: 0 }}>{s}</div>
+      <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+        {[
+          { title: "5 erros que matam\nseu engajamento", bg: "linear-gradient(135deg, #0f172a, #1e293b)", color: "#fff", accent: "#38bdf8", isCover: true },
+          { title: "Postar sem estratégia", desc: "Conteúdo aleatório não gera resultado. Tenha um calendário editorial.", bg: "#fff", color: "#111" },
+          { title: "Ignorar os comentários", desc: "Engajamento é via dupla. Responda em até 1h para multiplicar o alcance.", bg: "#fff", color: "#111" },
+          { title: "Não usar CTA", desc: "Cada post precisa de uma ação clara: salvar, comentar, clicar no link.", bg: "#fff", color: "#111" },
+          { title: "Copiar concorrentes", desc: "Inspiração sim, cópia não. Seu público quer autenticidade.", bg: "#fff", color: "#111" },
+          { title: "Salve esse post\ne compartilha!", bg: "linear-gradient(135deg, #0f172a, #1e293b)", color: "#38bdf8", isCta: true },
+        ].map((s, i) => (
+          <div key={i} style={{ minWidth: 140, maxWidth: 140, background: s.bg, color: s.color, borderRadius: 10, padding: s.isCover || s.isCta ? "24px 14px" : "14px", border: s.bg === "#fff" ? "1px solid #e5e5e5" : "none", flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: s.isCover || s.isCta ? "flex-end" : "flex-start", minHeight: 160 }}>
+            {s.isCover && <div style={{ fontFamily: FF, fontSize: 8, fontWeight: 700, letterSpacing: 2, color: s.accent, marginBottom: 8 }}>CARROSSEL</div>}
+            <div style={{ fontFamily: FF, fontSize: s.isCover || s.isCta ? 15 : 12, fontWeight: 700, lineHeight: 1.3, whiteSpace: "pre-line" }}>{s.title}</div>
+            {s.desc && <div style={{ fontFamily: FF, fontSize: 10.5, color: "#888", marginTop: 6, lineHeight: 1.5 }}>{s.desc}</div>}
+            {s.isCta && <div style={{ marginTop: 12, background: s.color, color: "#0f172a", borderRadius: 6, padding: "6px 12px", textAlign: "center", fontFamily: FF, fontSize: 11, fontWeight: 700 }}>Compartilhar →</div>}
+          </div>
         ))}
       </div>
     ),
