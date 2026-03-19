@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase";
 const TYPES = [
   { product: "landing_page_copy", title: "Landing Page Copy", desc: "Do hero ao CTA. Estruturado para converter.", credits: "40 créditos",
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="7" cy="6" r="1" fill="#C8F135"/><circle cx="10" cy="6" r="1" fill="#C8F135"/></svg> },
-  { product: "content_pack", title: "Pack de Posts", desc: "Hook, legenda e hashtags prontos para publicar.", credits: "8 créditos/post",
+  { product: "content_pack", title: "Pack de Posts", desc: "Hook, legenda e hashtags prontos para publicar.", credits: "8 créditos/post", hasCalendar: true,
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> },
   { product: "carrossel", title: "Carrossel", desc: "7 slides com copy completa.", credits: "15 créditos",
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="2" y="4" width="14" height="16" rx="2"/><rect x="8" y="2" width="14" height="16" rx="2" opacity="0.5"/></svg> },
@@ -21,6 +21,7 @@ export default function NovoProjetoPage() {
   const [selected, setSelected] = useState(null);
   const [creating, setCreating] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [showCalendarOption, setShowCalendarOption] = useState(false);
 
   useEffect(() => {
     supabase().auth.getUser().then(({ data }) => {
@@ -28,6 +29,12 @@ export default function NovoProjetoPage() {
       setUserId(data.user.id);
     });
   }, []);
+
+  const handleSelect = (product) => {
+    setSelected(product);
+    const type = TYPES.find(t => t.product === product);
+    setShowCalendarOption(type?.hasCalendar || false);
+  };
 
   const handleCreate = async () => {
     if (!selected || !userId || creating) return;
@@ -60,7 +67,7 @@ export default function NovoProjetoPage() {
           return (
             <div
               key={t.product}
-              onClick={() => setSelected(t.product)}
+              onClick={() => handleSelect(t.product)}
               style={{
                 background: isActive ? "#fafff0" : "#fff",
                 border: `1.5px solid ${isActive ? "#C8F135" : "#E8E5DE"}`,
@@ -81,12 +88,40 @@ export default function NovoProjetoPage() {
         })}
       </div>
 
+      {/* Calendar suggestion for Pack de Posts */}
+      {showCalendarOption && (
+        <div style={{
+          marginTop: 24, background: "#fff", border: "1px solid #E8E5DE",
+          borderRadius: 12, padding: "20px 24px", display: "flex",
+          alignItems: "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span style={{ fontSize: 24 }}>📅</span>
+            <div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, color: "#111" }}>
+                Quer planejar um calendário de 30 dias primeiro?
+              </div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 12, color: "#888", marginTop: 2, lineHeight: 1.5 }}>
+                A IA planeja 30 posts com pilares, hooks e formatos. Depois você gera cada um como projeto individual.
+              </div>
+            </div>
+          </div>
+          <a href="/cliente/calendario" style={{
+            background: "#111", color: "#C8F135", fontFamily: "'Inter', sans-serif",
+            fontWeight: 800, fontSize: 12, padding: "10px 20px", borderRadius: 8,
+            border: "none", textDecoration: "none", whiteSpace: "nowrap",
+          }}>
+            Planejar calendário →
+          </a>
+        </div>
+      )}
+
       {selected && (
         <button
           onClick={handleCreate}
           disabled={creating}
           style={{
-            display: "block", width: "100%", marginTop: 32, padding: 16,
+            display: "block", width: "100%", marginTop: showCalendarOption ? 16 : 32, padding: 16,
             fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 16,
             background: creating ? "#aaa" : "#C8F135", color: "#111",
             border: "none", borderRadius: 10, cursor: creating ? "wait" : "pointer",

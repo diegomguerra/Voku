@@ -112,31 +112,44 @@ export default function CalendarioPage() {
     window.location.href = "/cliente";
   };
 
-  const handleExecutePost = async (post: CalendarPost) => {
-    if (!userId) return;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  const createProjectFromPost = async (post: CalendarPost): Promise<string | null> => {
+    if (!userId) return null;
+    const sb = supabase();
 
-    // Submit briefing to create order
-    const res = await fetch("/api/submit-briefing", {
+    // 1. Create order via new projects API
+    const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        product: post.formato,
-        structured_data: {
-          titulo: post.titulo,
-          descricao: post.descricao,
-          hook_sugerido: post.hook_sugerido,
-          pilar: post.pilar,
-          nicho,
-          objetivo,
-          tom,
-        },
-      }),
+      body: JSON.stringify({ user_id: userId, product: post.formato }),
     });
-    const data = await res.json();
-    if (data?.order_id) {
-      window.location.href = `/cliente/pedidos`;
+    const { orderId } = await res.json();
+    if (!orderId) return null;
+
+    // 2. Insert initial chat message with calendar context
+    const briefingMsg = `Briefing do calendário editorial:\n\n` +
+      `Título: ${post.titulo}\n` +
+      `Descrição: ${post.descricao}\n` +
+      `Hook sugerido: "${post.hook_sugerido}"\n` +
+      `Pilar: ${post.pilar}\n` +
+      `Nicho: ${nicho}\n` +
+      `Objetivo: ${objetivo}\n` +
+      (tom ? `Tom: ${tom}\n` : "") +
+      `\nPor favor, gere o conteúdo completo com base nesse briefing.`;
+
+    await sb.from("project_messages").insert([
+      { order_id: orderId, user_id: userId, role: "assistant",
+        content: `Vou criar o conteúdo para "${post.titulo}" do seu calendário editorial. O hook sugerido é "${post.hook_sugerido}". Me confirma se posso seguir com esse tom e ângulo, ou quer ajustar algo?` },
+      { order_id: orderId, user_id: userId, role: "user", content: briefingMsg },
+    ]);
+
+    return orderId;
+  };
+
+  const handleExecutePost = async (post: CalendarPost) => {
+    const orderId = await createProjectFromPost(post);
+    if (orderId) {
+      setGeneratedDias(prev => prev.includes(post.dia) ? prev : [...prev, post.dia]);
+      window.location.href = `/cliente/projetos/${orderId}`;
     }
   };
 
@@ -144,8 +157,7 @@ export default function CalendarioPage() {
     if (!calendar || !userId || batchProgress.running) return;
     const postsToGenerate = calendar.posts.filter(p => !generatedDias.includes(p.dia));
     if (postsToGenerate.length === 0) return;
-    const totalCredits = calcTotalCredits(postsToGenerate);
-    if (!confirm(`Isso vai usar ${totalCredits} créditos do seu saldo. Confirmar?`)) return;
+    if (!confirm(`Isso vai criar ${postsToGenerate.length} projetos. Cada um terá seu próprio chat e etapas. Confirmar?`)) return;
 
     setBatchDone(false);
     setBatchProgress({ current: 0, total: postsToGenerate.length, running: true, currentDia: -1 });
@@ -155,22 +167,8 @@ export default function CalendarioPage() {
       setBatchProgress(prev => ({ ...prev, current: i, currentDia: post.dia }));
 
       try {
-        const res = await fetch("/api/submit-briefing", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            product: post.formato,
-            structured_data: {
-              titulo: post.titulo,
-              descricao: post.descricao,
-              hook: post.hook_sugerido,
-              nicho,
-              objetivo,
-            },
-          }),
-        });
-        const data = await res.json();
-        if (data?.order_id) {
+        const orderId = await createProjectFromPost(post);
+        if (orderId) {
           setGeneratedDias(prev => prev.includes(post.dia) ? prev : [...prev, post.dia]);
         }
       } catch {
@@ -179,9 +177,8 @@ export default function CalendarioPage() {
 
       setBatchProgress(prev => ({ ...prev, current: i + 1 }));
 
-      // Wait 2s before next (except last)
       if (i < postsToGenerate.length - 1) {
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 500));
       }
     }
 
@@ -220,26 +217,7 @@ export default function CalendarioPage() {
   };
 
   return (
-    <div style={{ background: T.sand, minHeight: "100vh", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-
-      {/* Header */}
-      <div style={{ background: T.white, borderBottom: `1px solid ${T.border}`, padding: "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <a href="/cliente/pedidos" style={{ textDecoration: "none" }}>
-            <div style={{ background: T.ink, color: "#fff", fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 20, letterSpacing: "-0.5px", padding: "4px 14px", borderRadius: 6, textTransform: "uppercase" as const }}>VOKU</div>
-          </a>
-          <span style={{ color: T.borderMd, fontSize: 20 }}>|</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: T.inkSub }}>Calendário Editorial</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.sand, border: `1px solid ${T.border}`, borderRadius: 10, padding: "6px 14px" }}>
-            <span style={{ fontSize: 12, color: T.inkMid, fontWeight: 600 }}>Créditos</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: T.ink }}>{ctx?.credits ?? 0}</span>
-          </div>
-          <span style={{ color: T.inkMid, fontSize: 13 }}>{ctx?.name}</span>
-          <button onClick={handleLogout} style={{ background: "transparent", border: `1.5px solid ${T.borderMd}`, color: T.inkSub, borderRadius: 8, padding: "6px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Sair</button>
-        </div>
-      </div>
+    <div style={{ background: T.sand, minHeight: "calc(100vh - 64px)", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
 
       <div style={{ padding: "32px 40px", maxWidth: 1200, margin: "0 auto" }}>
 
@@ -333,8 +311,8 @@ export default function CalendarioPage() {
             {/* Batch done */}
             {batchDone && !batchProgress.running && (
               <div style={{ marginBottom: 16, background: T.greenBg, border: `1px solid ${T.green}30`, borderRadius: 12, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 14, fontWeight: 700, color: T.green }}>✓ Todos os conteúdos foram gerados! Veja em Pedidos.</span>
-                <a href="/cliente/pedidos" style={{ fontSize: 13, fontWeight: 700, color: T.green, textDecoration: "none" }}>Ver pedidos →</a>
+                <span style={{ fontSize: 14, fontWeight: 700, color: T.green }}>✓ Todos os conteúdos foram gerados! Veja em Projetos.</span>
+                <a href="/cliente/projetos" style={{ fontSize: 13, fontWeight: 700, color: T.green, textDecoration: "none" }}>Ver projetos →</a>
               </div>
             )}
 
