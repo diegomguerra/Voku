@@ -590,42 +590,7 @@ export default function PedidosPage() {
   );
 
   return (
-    <div style={{ background: T.sand, minHeight: "100vh", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
-
-      {/* Header */}
-      <div style={{ background: T.white, borderBottom: `1px solid ${T.border}`, padding: isMobile ? "0 16px" : "0 40px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 16 }}>
-          <div style={{ background: T.ink, color: "#fff", fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: isMobile ? 16 : 20, letterSpacing: "-0.5px", padding: "4px 14px", borderRadius: 6, textTransform: "uppercase" as const }}>VOKU</div>
-          {!isMobile && (
-            <>
-              <span style={{ color: T.borderMd, fontSize: 20 }}>|</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>Home</span>
-              <a href="/cliente/projetos" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Meus Projetos</a>
-              <a href="/cliente/calendario" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Calendário</a>
-              <a href="/cliente/plano" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Plano</a>
-              <a href="/vitrine/apps" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Apps</a>
-              <a href="/cliente/marca" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Marca</a>
-              <a href="/vitrine" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Vitrine</a>
-              <a href="/cliente/afiliados" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Afiliados</a>
-            </>
-          )}
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 16 }}>
-          {/* Créditos */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8, background: T.sand, border: `1px solid ${T.border}`, borderRadius: 10, padding: "6px 14px" }}>
-            <span style={{ fontSize: 12, color: T.inkMid, fontWeight: 600 }}>Créditos</span>
-            <span style={{ fontSize: 15, fontWeight: 800, color: T.ink }}>{ctx?.credits ?? 0}</span>
-          </div>
-          {/* Plano */}
-          {!isMobile && (
-            <div style={{ background: T.lime, color: T.ink, borderRadius: 8, padding: "4px 12px", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 1 }}>
-              {ctx?.plan || "free"}
-            </div>
-          )}
-          {!isMobile && <span style={{ color: T.inkMid, fontSize: 13 }}>{ctx?.name}</span>}
-          <button onClick={handleLogout} style={{ background: "transparent", border: `1.5px solid ${T.borderMd}`, color: T.inkSub, borderRadius: 8, padding: "6px 18px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Sair</button>
-        </div>
-      </div>
+    <div style={{ background: T.sand, minHeight: "calc(100vh - 64px)", fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
 
       {/* Mobile tabs */}
       {isMobile && (

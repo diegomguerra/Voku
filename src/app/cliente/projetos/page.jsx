@@ -848,8 +848,7 @@ export default function ProjetosPage() {
 
   /* ═══════════════ RENDER ═══════════════ */
   return (
-    <div style={{ background: T.sand, minHeight: "100vh", fontFamily: FF }}>
-      {renderHeader(ctx, isMobile, handleLogout)}
+    <div style={{ background: T.sand, minHeight: "calc(100vh - 64px)", fontFamily: FF }}>
 
       {isMobile ? (
         /* Mobile: stack sidebar then panel */
