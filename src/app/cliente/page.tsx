@@ -27,7 +27,7 @@ export default function ClienteLoginPage(){
     if(mode==="login"){
       const {error}=await sb.auth.signInWithPassword({email:trimmedEmail,password:trimmedPassword});
       if(error){setError("E-mail ou senha incorretos.");}
-      else{window.location.href="/cliente/pedidos";}
+      else{window.location.href="/cliente/home";}
     } else {
       const referredBy = typeof window !== "undefined" ? localStorage.getItem("voku_ref") : null;
       const {error,data:signUpData}=await sb.auth.signUp({email:trimmedEmail,password:trimmedPassword,options:{data:{name:name.trim(),referred_by:referredBy||undefined}}});
