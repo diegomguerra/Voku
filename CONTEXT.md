@@ -7,8 +7,8 @@
 - Engine de IA interna: RORDENS (Claude via Anthropic API)
 
 ## Credenciais e IDs
-- Supabase project_id: nbxsfsuiwvoriyfwzezs
-- Supabase URL: https://nbxsfsuiwvoriyfwzezs.supabase.co
+- Supabase project_id: movfynswogmookzcjijt
+- Supabase URL: https://movfynswogmookzcjijt.supabase.co
 - Vercel: projeto "voku" conectado ao GitHub main
 - Deploy automático: qualquer push em main → Vercel redeploy
 

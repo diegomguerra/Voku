@@ -43,6 +43,21 @@ interface ChatMessage {
   content: string;
 }
 
+function detectDeliverableType(content: string, product?: string): string {
+  const productMap: Record<string, string> = {
+    landing_page_copy: "landing_page", content_pack: "post", email_sequence: "email",
+    post_instagram: "post", carrossel: "carrossel", reels_script: "copy",
+    ad_copy: "copy", app: "copy",
+  };
+  if (product && productMap[product]) return productMap[product];
+  const lower = content.toLowerCase();
+  if (lower.includes("landing page") || lower.includes("<html")) return "landing_page";
+  if (lower.includes("assunto:") || lower.includes("subject:")) return "email";
+  if (lower.includes("slide") || lower.includes("carrossel")) return "carrossel";
+  if (lower.includes("legenda") || lower.includes("hashtag")) return "post";
+  return "copy";
+}
+
 export default function PedidosPage() {
   const { ctx, loading: ctxLoading } = useUserContext();
   const [orders, setOrders] = useState<any[]>([]);
@@ -216,12 +231,55 @@ export default function PedidosPage() {
       const data = await res.json();
       const reply = data?.content?.[0]?.text || "Ops, tive um problema. Pode repetir?";
 
-      // Remove JSON de action se vier na resposta
-      const cleanReply = reply.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+      // Parse ___DELIVERABLE___ block from response
+      const parseDeliverable = (text: string) => {
+        const match = text.match(/___DELIVERABLE___([\s\S]*?)___END___/);
+        if (!match) return null;
+        try { return JSON.parse(match[1].trim()); } catch { return null; }
+      };
+      const cleanText = (text: string) =>
+        text.replace(/___DELIVERABLE___[\s\S]*?___END___/g, "").replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+
+      const cleanReply = cleanText(reply);
+      // Check both: parsed from raw text OR extracted by edge function
+      const parsedDeliverable = parseDeliverable(reply) || data?.deliverable || null;
 
       const withReply: ChatMessage[] = [...newMessages, { role: "assistant", content: cleanReply }];
       setMessages(withReply);
       await persistMessage("assistant", cleanReply);
+
+      // SAVE DELIVERABLE if agent generated one
+      if (parsedDeliverable && parsedDeliverable.title && parsedDeliverable.content) {
+        try {
+          const activeOrderId = createdOrderId || orders.find((o: any) => o.status === "in_production")?.id;
+          await fetch("/api/deliverables", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              order_id: activeOrderId || null,
+              title: parsedDeliverable.title,
+              content: parsedDeliverable.content,
+              type: parsedDeliverable.type || "copy",
+              status: "pending",
+            }),
+          });
+          // Advance active step if order exists
+          if (activeOrderId) {
+            const sb = supabase();
+            const { data: activeStep } = await sb.from("project_steps").select("id").eq("order_id", activeOrderId).eq("status", "active").order("step_number").limit(1).single();
+            if (activeStep) {
+              await sb.from("project_steps").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", activeStep.id);
+              const { data: nextStep } = await sb.from("project_steps").select("id").eq("order_id", activeOrderId).eq("status", "pending").order("step_number").limit(1).single();
+              if (nextStep) await sb.from("project_steps").update({ status: "active" }).eq("id", nextStep.id);
+            }
+          }
+          const delMsg: ChatMessage = { role: "assistant", content: "✦ Entrega criada. Acesse Meus Projetos para revisar e aprovar." };
+          setMessages([...withReply, delMsg]);
+          await persistMessage("assistant", "✦ Entrega criada. Acesse Meus Projetos para revisar e aprovar.");
+        } catch (e) {
+          console.error("Deliverable save error:", e);
+        }
+      }
 
       // ACTION=EXECUTE — submete briefing e cria pedido
       if (data?.action?.action === "execute") {
@@ -541,6 +599,7 @@ export default function PedidosPage() {
             <>
               <span style={{ color: T.borderMd, fontSize: 20 }}>|</span>
               <span style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>Home</span>
+              <a href="/cliente/projetos" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Meus Projetos</a>
               <a href="/cliente/calendario" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Calendário</a>
               <a href="/cliente/plano" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Plano</a>
               <a href="/vitrine/apps" style={{ fontSize: 13, fontWeight: 600, color: T.inkMid, textDecoration: "none" }}>Apps</a>

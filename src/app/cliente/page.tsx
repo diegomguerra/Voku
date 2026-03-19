@@ -16,15 +16,28 @@ export default function ClienteLoginPage(){
   const [success,setSuccess]=useState("");
   const handleSubmit=async()=>{
     setLoading(true);setError("");setSuccess("");
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password;
+    // Validação client-side
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(trimmedEmail)){setError("Por favor, insira um e-mail válido.");setLoading(false);return;}
+    if(trimmedPassword.length<6){setError("A senha deve ter no mínimo 6 caracteres.");setLoading(false);return;}
+    if(mode==="register"&&!name.trim()){setError("Por favor, insira seu nome.");setLoading(false);return;}
     const sb = supabase();
     if(mode==="login"){
-      const {error}=await sb.auth.signInWithPassword({email,password});
+      const {error}=await sb.auth.signInWithPassword({email:trimmedEmail,password:trimmedPassword});
       if(error){setError("E-mail ou senha incorretos.");}
       else{window.location.href="/cliente/pedidos";}
     } else {
       const referredBy = typeof window !== "undefined" ? localStorage.getItem("voku_ref") : null;
-      const {error,data:signUpData}=await sb.auth.signUp({email,password,options:{data:{name,referred_by:referredBy||undefined}}});
-      if(error){setError(error.message);}
+      const {error,data:signUpData}=await sb.auth.signUp({email:trimmedEmail,password:trimmedPassword,options:{data:{name:name.trim(),referred_by:referredBy||undefined}}});
+      if(error){
+        const msg = error.message.toLowerCase();
+        if(msg.includes("email")){setError("E-mail inválido ou já cadastrado.");}
+        else if(msg.includes("password")){setError("A senha deve ter no mínimo 6 caracteres.");}
+        else if(msg.includes("rate")){setError("Muitas tentativas. Aguarde um momento.");}
+        else{setError(error.message);}
+      }
       else{
         setSuccess("Conta criada! Verifique seu e-mail para confirmar.");
         // Trigger onboarding emails

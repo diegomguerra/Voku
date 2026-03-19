@@ -25,53 +25,73 @@ function buildSystemPrompt(user_context: any, brand?: any): string {
     }
   }
 
-  return `Você é a Voku — assistente de marketing com IA da plataforma Voku.
+  return `Você é o agente da Voku — especialista sênior em marketing digital e copywriting.
 
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
 - Plano: ${user_context?.plan || "free"}
 - Créditos disponíveis: ${user_context?.credits ?? 0}${brandSection}
 
-## Sua personalidade
-- Tom descontraído mas profissional — como um amigo que entende muito de marketing
-- Usa o nome do cliente naturalmente na conversa
-- Faz UMA pergunta por vez — nunca sobrecarrega
-- Confirma antes de executar qualquer entrega: "Vou criar X para Y com foco em Z. Posso ir?"
-- Celebra pequenas vitórias ("Boa escolha!", "Isso vai arrasar!")
-- Respostas curtas e diretas — sem enrolação
-- Nunca usa jargão técnico
-- Se o cliente tem Brand Voice configurada, RESPEITE o tom, palavras e personalidade definidas
+## COMPORTAMENTO OBRIGATÓRIO
+- Tom direto e profissional. Máximo 1 emoji por mensagem, nunca no meio de frases.
+- Faça no máximo 2 perguntas por mensagem. Nunca uma de cada vez.
+- Quando tiver informação suficiente, execute sem pedir confirmação.
+- NUNCA entregue conteúdo apenas no chat. Todo conteúdo gerado deve ser materializado como deliverable e aparecer na área de projetos do cliente.
+- NUNCA diga que "o sistema não permite" algo.
+- Se o cliente tem Brand Voice configurada, RESPEITE o tom, palavras e personalidade definidas.
+- Nunca mencione Claude, Anthropic ou tecnologias internas.
 
-## O que você pode fazer
-1. COPY — anúncios, e-mails, bio, pitch, VSL
-2. POSTS — legendas Instagram, carrossel, roteiro de Reels
-3. LANDING PAGE — estrutura completa com headline, benefícios, CTA
-4. ESTRATÉGIA — calendário editorial, posicionamento, proposta de valor
-5. APPS — app simples baseado na ideia do cliente
+## FLUXO OBRIGATÓRIO A CADA ENTREGA
+1. Recebe o briefing (máximo 2 rodadas de perguntas)
+2. Gera o conteúdo completo
+3. Inclui o bloco ___DELIVERABLE___ — OBRIGATÓRIO
+4. Exibe no chat apenas um resumo: tipo, título, o que foi entregue
+5. Informa: "Sua entrega está em Meus Projetos → aba Aprovação."
 
-## Fluxo
-1. Entenda o negócio com 1–2 perguntas simples
-2. Confirme o que vai entregar antes de executar
-3. Quando confirmado, retorne JSON no fim da mensagem:
-   {"action":"execute","product":"copy","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"..."}}
-4. Nunca mencione Claude, Anthropic ou tecnologias internas
+## TIPOS DE ENTREGA
+- Posts Instagram: hook + legenda + hashtags + CTA (por post)
+- Carrossel: título + slide a slide (mínimo 5 slides)
+- Sequência de e-mails: subject + preview text + corpo (por e-mail)
+- Landing page copy: hero → problema → solução → benefícios → prova → CTA
+- Roteiro de Reels: cena a cena com timing e overlay de texto
+- Copy Meta Ads: 3 variações (dor, benefício, prova social)
 
-## Tom
-❌ "Para prosseguir com a geração do asset..."
-✅ "Legal! Me conta — qual é o maior problema que seu produto resolve?"`;
+## FORMATO DE RESPOSTA APÓS GERAR CONTEÚDO
+Sempre termine com exatamente este bloco (não mostrar ao usuário, incluir após o resumo):
+___DELIVERABLE___
+{
+  "title": "título curto do que foi entregue",
+  "type": "post|carrossel|email|landing_page|reels|copy",
+  "content": "conteúdo completo aqui"
+}
+___END___
+
+## QUANDO PRECISA CRIAR UM PEDIDO (order)
+Se o cliente quer um produto novo e você já tem informação suficiente, retorne JSON:
+{"action":"execute","product":"copy","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"..."}}`;
 }
 
-function extractAction(text: string): { cleanText: string; action: any | null } {
-  const match = text.match(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/);
-  if (!match) return { cleanText: text, action: null };
-
-  try {
-    const action = JSON.parse(match[0]);
-    const cleanText = text.replace(match[0], "").trim();
-    return { cleanText, action };
-  } catch {
-    return { cleanText: text, action: null };
+function extractAction(text: string): { cleanText: string; action: any | null; deliverable: any | null } {
+  // Extract ___DELIVERABLE___ block
+  let deliverable = null;
+  let cleaned = text;
+  const delMatch = text.match(/___DELIVERABLE___([\s\S]*?)___END___/);
+  if (delMatch) {
+    try { deliverable = JSON.parse(delMatch[1].trim()); } catch { /* ignore */ }
+    cleaned = cleaned.replace(/___DELIVERABLE___[\s\S]*?___END___/g, "").trim();
   }
+
+  // Extract action JSON
+  const actionMatch = cleaned.match(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/);
+  let action = null;
+  if (actionMatch) {
+    try {
+      action = JSON.parse(actionMatch[0]);
+      cleaned = cleaned.replace(actionMatch[0], "").trim();
+    } catch { /* ignore */ }
+  }
+
+  return { cleanText: cleaned, action, deliverable };
 }
 
 serve(async (req) => {
@@ -105,7 +125,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 1024,
+        max_tokens: 4096,
         stream: true,
         system: systemPrompt,
         messages,
@@ -145,9 +165,8 @@ serve(async (req) => {
                 }
 
                 if (event.type === "message_stop") {
-                  // Check for action in full accumulated text
-                  const { cleanText, action } = extractAction(fullText);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, ...(action ? { action } : {}) })}\n\n`));
+                  const { cleanText, action, deliverable } = extractAction(fullText);
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, ...(action ? { action } : {}), ...(deliverable ? { deliverable } : {}) })}\n\n`));
                 }
               } catch {
                 // skip malformed events
@@ -180,7 +199,7 @@ serve(async (req) => {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5",
-      max_tokens: 1024,
+      max_tokens: 4096,
       system: systemPrompt,
       messages,
     }),
@@ -188,15 +207,16 @@ serve(async (req) => {
 
   const data = await response.json();
 
-  // Extract action from response text
+  // Extract action and deliverable from response text
   const rawText = data?.content?.[0]?.text || "";
-  const { cleanText, action } = extractAction(rawText);
+  const { cleanText, action, deliverable } = extractAction(rawText);
 
   const result: any = {
     ...data,
     content: [{ type: "text", text: cleanText }],
   };
   if (action) result.action = action;
+  if (deliverable) result.deliverable = deliverable;
 
   return new Response(JSON.stringify(result), {
     headers: { ...CORS, "Content-Type": "application/json" },

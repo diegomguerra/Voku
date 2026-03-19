@@ -12,7 +12,7 @@ const TASKS = [
     url: "voku.one/cliente/pedidos", action: "claude-code",
     prompt: `Crie o componente Choices para voku.one/cliente/pedidos.
 
-Stack: Next.js + Supabase (nbxsfsuiwvoriyfwzezs · sa-east-1)
+Stack: Next.js + Supabase (movfynswogmookzcjijt · sa-east-1)
 Design system: dark #0a0a0a, lime #C8F135, Plus Jakarta Sans
 
 O componente deve:
@@ -104,7 +104,7 @@ git push origin main`,
     label: "RLS — choices / iterations / choice_feedback",
     detail: "Row Level Security desativado nas 3 tabelas. Ativar antes de ir para produção.",
     url: "supabase.com/dashboard", action: "claude",
-    prompt: `Ative RLS nas tabelas choices, iterations e choice_feedback no Supabase (projeto nbxsfsuiwvoriyfwzezs).
+    prompt: `Ative RLS nas tabelas choices, iterations e choice_feedback no Supabase (projeto movfynswogmookzcjijt).
 
 ALTER TABLE choices ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Cliente ve proprias choices" ON choices
@@ -139,12 +139,12 @@ CREATE POLICY "Service role acesso total feedback" ON choice_feedback
     label: "Notificação e-mail — execute-product",
     detail: "execute-product gera choices mas não notifica o cliente. Implementar trigger de e-mail ao fim da função.",
     url: "supabase.com/dashboard/functions", action: "claude",
-    prompt: `Atualize a edge function execute-product (v5) no Supabase (nbxsfsuiwvoriyfwzezs).
+    prompt: `Atualize a edge function execute-product (v5) no Supabase (movfynswogmookzcjijt).
 
 Adicionar ao final do fluxo, após inserir as choices:
 
 const notifyRes = await fetch(
-  'https://nbxsfsuiwvoriyfwzezs.supabase.co/functions/v1/send-reply',
+  'https://movfynswogmookzcjijt.supabase.co/functions/v1/send-reply',
   {
     method: 'POST',
     headers: {

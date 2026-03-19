@@ -41,7 +41,7 @@ NEXT_PUBLIC_APP_URL=https://voku.one
 
 ## Supabase — configuração manual necessária
 
-1. Acesse: https://supabase.com/dashboard/project/nbxsfsuiwvoriyfwzezs/settings/functions
+1. Acesse: https://supabase.com/dashboard/project/movfynswogmookzcjijt/settings/functions
 2. Adicione os secrets: ANTHROPIC_API_KEY, RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY
 
 ## Deploy na Vercel
@@ -65,5 +65,5 @@ Cliente → Cadastro → Briefing IA → submit-briefing API
 
 ## Edge Functions (Supabase)
 
-- `submit-briefing` — ativa https://nbxsfsuiwvoriyfwzezs.supabase.co/functions/v1/submit-briefing
-- `execute-product` — ativa https://nbxsfsuiwvoriyfwzezs.supabase.co/functions/v1/execute-product
+- `submit-briefing` — ativa https://movfynswogmookzcjijt.supabase.co/functions/v1/submit-briefing
+- `execute-product` — ativa https://movfynswogmookzcjijt.supabase.co/functions/v1/execute-product
