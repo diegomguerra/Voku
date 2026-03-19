@@ -9,6 +9,7 @@ export interface UserContext {
   email: string;
   plan: string;
   credits: number;
+  createdAt: string;
 }
 
 export function useUserContext() {
@@ -39,6 +40,7 @@ export function useUserContext() {
         email: user.email || "",
         plan: credits?.plan || "free",
         credits: credits?.balance || 0,
+        createdAt: user.created_at || "",
       });
       setLoading(false);
     }
