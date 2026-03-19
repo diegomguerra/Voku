@@ -107,19 +107,32 @@ export default function ProjetosPage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  /* ─── Load orders ─── */
+  const [userId, setUserId] = useState(null);
+  const [looseDeliverables, setLooseDeliverables] = useState([]);
+
+  /* ─── Load orders + loose deliverables ─── */
   useEffect(() => {
     const sb = supabase();
-    sb.auth.getUser().then(({ data }) => {
+    sb.auth.getUser().then(async ({ data }) => {
       if (!data.user) { window.location.href = "/cliente"; return; }
-      sb.from("orders")
+      setUserId(data.user.id);
+
+      // Load orders
+      const { data: o } = await sb.from("orders")
         .select("*")
         .eq("user_id", data.user.id)
-        .order("created_at", { ascending: false })
-        .then(({ data: o }) => {
-          setOrders(o || []);
-          setLoading(false);
-        });
+        .order("created_at", { ascending: false });
+      setOrders(o || []);
+
+      // Load deliverables without order (loose/chat deliverables)
+      const res = await fetch(`/api/deliverables?user_id=${data.user.id}`);
+      const json = await res.json();
+      const allDels = json.deliverables || [];
+      const orderIds = (o || []).map(order => order.id);
+      const loose = allDels.filter(d => !d.order_id || !orderIds.includes(d.order_id));
+      setLooseDeliverables(loose);
+
+      setLoading(false);
     });
   }, []);
 
@@ -276,6 +289,34 @@ export default function ProjetosPage() {
         <div style={{ fontSize: 12, color: T.inkMid, marginTop: 2 }}>{orders.length} projeto{orders.length !== 1 ? "s" : ""}</div>
       </div>
 
+      {/* Loose deliverables entry */}
+      {looseDeliverables.length > 0 && (
+        <div
+          onClick={() => { setSelectedId("__loose__"); setDeliverables(looseDeliverables); setPhases([]); setActiveTab("aprovacao"); }}
+          style={{
+            padding: "14px 16px", cursor: "pointer",
+            borderBottom: `1px solid ${T.border}`,
+            background: selectedId === "__loose__" ? T.sand : "transparent",
+            borderLeft: selectedId === "__loose__" ? `3px solid ${T.lime}` : "3px solid transparent",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 8, background: T.lime + "30",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 14, fontWeight: 800, color: T.ink, flexShrink: 0,
+            }}>✦</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: T.ink }}>Entregas do Chat</div>
+              <div style={{ fontSize: 11, color: T.inkFaint }}>{looseDeliverables.length} entrega{looseDeliverables.length !== 1 ? "s" : ""}</div>
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.amber, background: T.amberBg, padding: "3px 8px", borderRadius: 10 }}>
+              {looseDeliverables.filter(d => d.status === "pending").length} pendente{looseDeliverables.filter(d => d.status === "pending").length !== 1 ? "s" : ""}
+            </div>
+          </div>
+        </div>
+      )}
+
       {orders.map(order => {
         const iconColor = PRODUCT_ICON_COLOR[order.product] || T.inkMid;
         const st = ORDER_STATUS[order.status] || ORDER_STATUS.briefing;
@@ -324,7 +365,7 @@ export default function ProjetosPage() {
   );
 
   /* ═══════════════════════════ EMPTY STATE ═══════════════════════════ */
-  if (orders.length === 0) {
+  if (orders.length === 0 && looseDeliverables.length === 0) {
     return (
       <div style={{ background: T.sand, minHeight: "100vh", fontFamily: FF }}>
         {renderHeader(ctx, isMobile, handleLogout)}
@@ -347,12 +388,23 @@ export default function ProjetosPage() {
   }
 
   /* ═══════════════════════════ MAIN PANEL ═══════════════════════════ */
-  const mainPanel = !selected ? (
+  const isLoose = selectedId === "__loose__";
+  const mainPanel = (!selected && !isLoose) ? (
     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: T.sand }}>
       <div style={{ textAlign: "center", color: T.inkMid }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>←</div>
         <div style={{ fontSize: 15, fontWeight: 600 }}>Selecione um projeto</div>
         <div style={{ fontSize: 13, marginTop: 4 }}>Clique em um projeto na lista para ver os detalhes</div>
+      </div>
+    </div>
+  ) : isLoose ? (
+    <div style={{ flex: 1, overflowY: "auto", height: isMobile ? "auto" : "calc(100vh - 64px)", background: T.sand }}>
+      <div style={{ padding: isMobile ? "20px 16px" : "28px 36px", background: T.white, borderBottom: `1px solid ${T.border}` }}>
+        <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 800, color: T.ink, marginBottom: 4 }}>Entregas do Chat</div>
+        <div style={{ fontSize: 13, color: T.inkMid }}>Conteúdos gerados via chat sem pedido vinculado</div>
+      </div>
+      <div style={{ padding: isMobile ? "20px 16px" : "28px 36px" }}>
+        {renderAprovacao()}
       </div>
     </div>
   ) : (

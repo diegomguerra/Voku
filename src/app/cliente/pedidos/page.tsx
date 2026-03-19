@@ -256,6 +256,7 @@ export default function PedidosPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
+              user_id: userIdRef.current,
               order_id: activeOrderId || null,
               title: parsedDeliverable.title,
               content: parsedDeliverable.content,

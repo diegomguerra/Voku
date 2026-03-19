@@ -1,33 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase, supabaseAdmin } from "@/lib/supabase";
+import { supabaseAdmin } from "@/lib/supabase";
 
 // POST — create a deliverable
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get("cookie") || "";
-    const sb = supabase();
-    const { data: { user } } = await sb.auth.getUser();
-
-    // Fallback: try to get user_id from body if no auth session (server-side call)
     const body = await req.json();
-    const userId = user?.id || body.user_id;
+    const userId = body.user_id;
     if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "user_id is required" }, { status: 400 });
     }
 
-    const admin = supabaseAdmin();
-    const { data, error } = await admin
+    const sb = supabaseAdmin();
+    const { data, error } = await sb
       .from("deliverables")
       .insert({
         user_id: userId,
         order_id: body.order_id || null,
-        title: body.title,
-        content: body.content,
+        title: body.title || "Entrega",
+        content: body.content || "",
         type: body.type || "copy",
         status: body.status || "pending",
-        file_name: body.title ? `${body.title.slice(0, 50).replace(/[^a-zA-Z0-9]/g, "_")}.txt` : "deliverable.txt",
-        file_path: "",
-        file_type: "txt",
       })
       .select()
       .single();
@@ -39,25 +31,24 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — list deliverables for current user
+// GET — list deliverables (by user_id query param or order_id)
 export async function GET(req: NextRequest) {
   try {
-    const sb = supabase();
-    const { data: { user } } = await sb.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { searchParams } = new URL(req.url);
+    const userId = searchParams.get("user_id");
     const orderId = searchParams.get("order_id");
 
-    const admin = supabaseAdmin();
-    let query = admin
+    if (!userId && !orderId) {
+      return NextResponse.json({ error: "user_id or order_id required" }, { status: 400 });
+    }
+
+    const sb = supabaseAdmin();
+    let query = sb
       .from("deliverables")
       .select("*")
-      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
+    if (userId) query = query.eq("user_id", userId);
     if (orderId) query = query.eq("order_id", orderId);
 
     const { data, error } = await query;
