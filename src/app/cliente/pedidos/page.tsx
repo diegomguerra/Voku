@@ -347,8 +347,8 @@ export default function PedidosPage() {
     for (const file of Array.from(files)) {
       if (!ACCEPTED.includes(file.type) || file.size > MAX_SIZE) continue;
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${userIdRef.current}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await sb.storage.from("client-photos").upload(path, file);
+      const path = `${userIdRef.current}/photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error: upErr } = await sb.storage.from("deliverables").upload(path, file);
       if (upErr) {
         console.error("Photo storage error:", upErr);
         continue;

@@ -57,7 +57,7 @@ export default function FotosPage() {
     const withUrls = await Promise.all(
       data.map(async (photo: ClientPhoto) => {
         const { data: urlData } = await sb.storage
-          .from("client-photos")
+          .from("deliverables")
           .createSignedUrl(photo.file_path, 3600);
         return { ...photo, url: urlData?.signedUrl || "" };
       })
@@ -101,10 +101,10 @@ export default function FotosPage() {
     let uploaded = 0;
     for (const file of validFiles) {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${userId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const path = `${userId}/photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
       const { error: uploadError } = await sb.storage
-        .from("client-photos")
+        .from("deliverables")
         .upload(path, file);
 
       if (uploadError) {
@@ -139,7 +139,7 @@ export default function FotosPage() {
   const handleDelete = async (photo: ClientPhoto) => {
     if (!userId) return;
     const sb = supabase();
-    await sb.storage.from("client-photos").remove([photo.file_path]);
+    await sb.storage.from("deliverables").remove([photo.file_path]);
     await sb.from("client_photos").delete().eq("id", photo.id);
     setPhotos(prev => prev.filter(p => p.id !== photo.id));
     if (selectedPhoto?.id === photo.id) setSelectedPhoto(null);
