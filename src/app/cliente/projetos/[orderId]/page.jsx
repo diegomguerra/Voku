@@ -61,8 +61,11 @@ export default function ProjetoPage({ params }) {
   const [feedbacks, setFeedbacks] = useState({});
   const [actionLoading, setActionLoading] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const bottomRef = useRef(null);
   const userIdRef = useRef(null);
+  const photoInputRef = useRef(null);
 
   const voice = useVoiceInput({
     lang: "pt-BR",
@@ -243,6 +246,43 @@ ___END___`;
     URL.revokeObjectURL(url);
   };
 
+  const handlePhotoUpload = async (e) => {
+    const files = e.target.files;
+    if (!files || !userIdRef.current) return;
+    setPhotoUploading(true);
+
+    const sb = supabase();
+    const { data: sessionData } = await sb.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    if (!token) { setPhotoUploading(false); return; }
+
+    const formData = new FormData();
+    Array.from(files).forEach(f => formData.append("files", f));
+
+    let uploadedCount = 0;
+    try {
+      const res = await fetch("/api/upload-photo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      uploadedCount = data.uploaded?.length || 0;
+    } catch (err) {
+      console.error("Photo upload error:", err);
+    }
+
+    setPhotoUploading(false);
+    setShowPhotoUpload(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    const msg = uploadedCount > 0
+      ? `${uploadedCount} foto(s) enviada(s) com sucesso! Acesse seu banco de fotos em Fotos no menu.`
+      : "Erro ao enviar fotos. Tente novamente.";
+    const sb2 = supabase();
+    await sb2.from("project_messages").insert({ order_id: orderId, user_id: userIdRef.current, role: "assistant", content: msg });
+    setMessages(prev => [...prev, { role: "assistant", content: msg }]);
+  };
+
   if (loading) return <div style={{ background: T.sand, minHeight: "calc(100vh - 64px)", display: "flex", alignItems: "center", justifyContent: "center", color: T.inkMid, fontFamily: FF }}>Carregando...</div>;
 
   const totalSteps = phases.flatMap(p => p.steps || []).length;
@@ -303,36 +343,79 @@ ___END___`;
           <div style={{ padding: "6px 16px", fontSize: 12, color: T.red, background: T.redBg }}>{voice.error}</div>
         )}
         {/* Input */}
-        <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8, alignItems: "center" }}>
-          {/* Mic button */}
-          {voice.isSupported && (
-            <button onClick={voice.toggleListening} title={voice.isListening ? "Parar gravação" : "Falar"} style={{
-              width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
-              background: voice.isListening ? T.red : T.sand,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              animation: voice.isListening ? "voicePulse 1.5s infinite" : "none",
+        <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}`, position: "relative" }}>
+          {/* Photo upload popup */}
+          {showPhotoUpload && (
+            <div style={{
+              position: "absolute", bottom: "100%", left: 16, right: 16,
+              background: T.white, border: `1px solid ${T.border}`, borderRadius: 14,
+              padding: "16px", marginBottom: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={voice.isListening ? "#fff" : T.inkMid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="9" y="1" width="6" height="12" rx="3" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
-            </button>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.ink, fontFamily: FF }}>Enviar fotos</span>
+                <button onClick={() => setShowPhotoUpload(false)} style={{ background: "transparent", border: "none", color: T.inkFaint, fontSize: 18, cursor: "pointer", lineHeight: 1 }}>x</button>
+              </div>
+              <div
+                onClick={() => photoInputRef.current?.click()}
+                style={{ border: `2px dashed ${T.borderMd}`, borderRadius: 10, padding: "20px", textAlign: "center", cursor: "pointer" }}
+              >
+                <div style={{ fontSize: 13, color: T.inkMid, fontWeight: 600, fontFamily: FF }}>
+                  {photoUploading ? "Enviando..." : "Clique para selecionar imagens"}
+                </div>
+                <div style={{ fontSize: 11, color: T.inkFaint, marginTop: 4 }}>JPG, PNG, WEBP, GIF — máx 10MB</div>
+              </div>
+              <a href="/cliente/fotos" style={{ display: "block", textAlign: "center", fontSize: 12, color: T.blue, fontWeight: 600, marginTop: 10, textDecoration: "none" }}>
+                Ver banco de fotos completo →
+              </a>
+            </div>
           )}
-          <input
-            value={voice.isListening && voice.interimText ? input + (input ? " " : "") + voice.interimText : input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); voice.isListening && voice.stopListening(); sendMessage(); } }}
-            placeholder={voice.isListening ? "Ouvindo..." : "Descreva o que precisa..."}
-            readOnly={voice.isListening}
-            style={{ flex: 1, background: voice.isListening ? "#fef9e7" : "#f5f5f0", border: voice.isListening ? `1px solid ${T.lime}` : "none", borderRadius: 20, padding: "10px 16px", fontSize: 13, color: T.ink, fontFamily: FF, outline: "none", transition: "background 0.2s, border 0.2s" }}
-          />
-          <button onClick={() => { voice.isListening && voice.stopListening(); sendMessage(); }} disabled={!input.trim() || chatLoading} style={{
-            width: 32, height: 32, borderRadius: "50%", border: "none", cursor: input.trim() && !chatLoading ? "pointer" : "not-allowed",
-            background: input.trim() && !chatLoading ? T.lime : T.borderMd,
-            color: T.ink, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
-          }}>↑</button>
+          <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handlePhotoUpload} style={{ display: "none" }} />
+
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            {/* Botão + para fotos */}
+            <button
+              onClick={() => setShowPhotoUpload(!showPhotoUpload)}
+              disabled={photoUploading}
+              style={{
+                width: 32, height: 32, borderRadius: "50%", border: `1.5px solid ${T.borderMd}`,
+                background: showPhotoUpload ? T.ink : "transparent",
+                color: showPhotoUpload ? T.lime : T.inkMid,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 18, fontWeight: 300, flexShrink: 0, transition: "all 0.2s",
+              }}
+            >+</button>
+            {/* Mic button */}
+            {voice.isSupported && (
+              <button onClick={voice.toggleListening} title={voice.isListening ? "Parar gravação" : "Falar"} style={{
+                width: 32, height: 32, borderRadius: "50%",
+                border: voice.isListening ? "2px solid #EF4444" : `1.5px solid ${T.borderMd}`,
+                background: voice.isListening ? "#FEE2E2" : "transparent",
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0, transition: "all 0.2s",
+                animation: voice.isListening ? "voicePulse 1.5s infinite" : "none",
+              }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={voice.isListening ? "#EF4444" : T.inkMid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="1" width="6" height="12" rx="3" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </svg>
+              </button>
+            )}
+            <input
+              value={voice.isListening && voice.interimText ? input + (input ? " " : "") + voice.interimText : input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); voice.isListening && voice.stopListening(); sendMessage(); } }}
+              placeholder={voice.isListening ? "Ouvindo..." : "Descreva o que precisa..."}
+              readOnly={voice.isListening}
+              style={{ flex: 1, background: voice.isListening ? "#fef9e7" : "#f5f5f0", border: voice.isListening ? `1px solid ${T.lime}` : "none", borderRadius: 20, padding: "10px 16px", fontSize: 13, color: T.ink, fontFamily: FF, outline: "none", transition: "background 0.2s, border 0.2s" }}
+            />
+            <button onClick={() => { voice.isListening && voice.stopListening(); sendMessage(); }} disabled={!input.trim() || chatLoading} style={{
+              width: 32, height: 32, borderRadius: "50%", border: "none", cursor: input.trim() && !chatLoading ? "pointer" : "not-allowed",
+              background: input.trim() && !chatLoading ? T.lime : T.borderMd,
+              color: T.ink, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
+            }}>↑</button>
+          </div>
         </div>
       </div>
 
