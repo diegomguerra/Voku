@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
 import OrderChoices from "@/components/OrderChoices";
 import ProjectTracker from "@/components/ProjectTracker";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 const T = {
   sand:"#FAF8F3",white:"#FFFFFF",ink:"#111111",inkSub:"#3D3D3D",inkMid:"#6B6B6B",inkFaint:"#A0A0A0",
@@ -80,6 +81,13 @@ export default function PedidosPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const userIdRef = useRef<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Voice input
+  const voice = useVoiceInput({
+    lang: "pt-BR",
+    silenceTimeout: 2500,
+    onTranscript: (text) => setInput(prev => prev ? prev + " " + text : text),
+  });
 
   // Detecta mobile
   useEffect(() => {
@@ -648,22 +656,57 @@ export default function PedidosPage() {
               fontSize: 18, fontWeight: 300, flexShrink: 0, transition: "all 0.2s",
             }}
           >+</button>
+          {/* Botão microfone */}
+          {voice.isSupported && (
+            <button
+              onClick={voice.toggleListening}
+              title={voice.isListening ? "Parar gravação" : "Falar"}
+              style={{
+                width: 32, height: 32, borderRadius: "50%",
+                border: voice.isListening ? `2px solid #EF4444` : `1.5px solid ${T.borderMd}`,
+                background: voice.isListening ? "#FEE2E2" : "transparent",
+                color: voice.isListening ? "#EF4444" : T.inkMid,
+                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 15, flexShrink: 0, transition: "all 0.2s",
+                animation: voice.isListening ? "voicePulse 1.5s ease-in-out infinite" : "none",
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                <line x1="12" y1="19" x2="12" y2="23"/>
+                <line x1="8" y1="23" x2="16" y2="23"/>
+              </svg>
+            </button>
+          )}
           <textarea
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="O que você precisa criar hoje?"
+            value={input + (voice.interimText ? (input ? " " : "") + voice.interimText : "")}
+            onChange={e => { if (!voice.isListening) setInput(e.target.value); }}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); voice.stopListening(); sendMessage(); } }}
+            placeholder={voice.isListening ? "Ouvindo..." : "O que você precisa criar hoje?"}
             rows={1}
-            style={{ flex: 1, background: "transparent", border: "none", outline: "none", resize: "none", fontSize: 13, color: T.ink, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 100, overflowY: "auto" }}
+            readOnly={voice.isListening}
+            style={{ flex: 1, background: "transparent", border: "none", outline: "none", resize: "none", fontSize: 13, color: voice.isListening ? T.inkMid : T.ink, fontFamily: "inherit", lineHeight: 1.5, maxHeight: 100, overflowY: "auto", fontStyle: voice.isListening ? "italic" : "normal" }}
             onInput={(e: any) => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 100) + "px"; }}
           />
           <button
-            onClick={() => sendMessage()}
+            onClick={() => { voice.stopListening(); sendMessage(); }}
             disabled={!input.trim() || chatLoading}
             style={{ width: 32, height: 32, borderRadius: "50%", background: input.trim() && !chatLoading ? T.ink : T.borderMd, border: "none", color: input.trim() && !chatLoading ? T.lime : T.white, cursor: input.trim() && !chatLoading ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, flexShrink: 0 }}
           >↑</button>
         </div>
-        <p style={{ textAlign: "center", fontSize: 10, color: T.inkFaint, marginTop: 8 }}>Enter para enviar · Shift+Enter para nova linha</p>
+        {voice.error && (
+          <p style={{ textAlign: "center", fontSize: 11, color: "#EF4444", marginTop: 6 }}>{voice.error}</p>
+        )}
+        <p style={{ textAlign: "center", fontSize: 10, color: T.inkFaint, marginTop: 8 }}>
+          Enter para enviar · Shift+Enter para nova linha{voice.isSupported ? " · 🎤 para ditar" : ""}
+        </p>
+        <style>{`
+          @keyframes voicePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+          }
+        `}</style>
       </div>
     </div>
   );
