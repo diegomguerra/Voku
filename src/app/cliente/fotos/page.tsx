@@ -43,34 +43,30 @@ export default function FotosPage() {
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  const loadPhotos = useCallback(async (uid: string) => {
-    const sb = supabase();
-    const { data } = await sb
-      .from("client_photos")
-      .select("*")
-      .eq("user_id", uid)
-      .order("created_at", { ascending: false });
+  const tokenRef = useRef<string | null>(null);
 
-    if (!data) { setPhotos([]); return; }
-
-    // Gera URLs assinadas para cada foto
-    const withUrls = await Promise.all(
-      data.map(async (photo: ClientPhoto) => {
-        const { data: urlData } = await sb.storage
-          .from("deliverables")
-          .createSignedUrl(photo.file_path, 3600);
-        return { ...photo, url: urlData?.signedUrl || "" };
-      })
-    );
-    setPhotos(withUrls);
+  const loadPhotos = useCallback(async (token: string) => {
+    try {
+      const res = await fetch("/api/upload-photo", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setPhotos(data.photos || []);
+    } catch {
+      setPhotos([]);
+    }
   }, []);
 
   useEffect(() => {
     const sb = supabase();
-    sb.auth.getUser().then(({ data }) => {
+    sb.auth.getUser().then(async ({ data }) => {
       if (!data.user) { window.location.href = "/cliente"; return; }
       setUserId(data.user.id);
-      loadPhotos(data.user.id).then(() => setLoading(false));
+      const { data: sessionData } = await sb.auth.getSession();
+      const token = sessionData?.session?.access_token || "";
+      tokenRef.current = token;
+      await loadPhotos(token);
+      setLoading(false);
     });
   }, [loadPhotos]);
 
@@ -80,7 +76,6 @@ export default function FotosPage() {
     setUploading(true);
     setUploadProgress(0);
 
-    const sb = supabase();
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(f => {
       if (!ACCEPTED_TYPES.includes(f.type)) return false;
@@ -98,49 +93,53 @@ export default function FotosPage() {
       setError(`${fileArray.length - validFiles.length} arquivo(s) ignorado(s) (formato inválido ou >10MB).`);
     }
 
-    let uploaded = 0;
-    for (const file of validFiles) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${userId}/photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-
-      const { error: uploadError } = await sb.storage
-        .from("deliverables")
-        .upload(path, file);
-
-      if (uploadError) {
-        console.error("Storage upload error:", uploadError);
-        setError(`Erro no upload: ${uploadError.message}`);
-        continue;
-      }
-
-      const { error: insertError } = await sb.from("client_photos").insert({
-        user_id: userId,
-        file_path: path,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
-      });
-
-      if (insertError) {
-        console.error("DB insert error:", insertError);
-        setError(`Erro ao salvar: ${insertError.message}`);
-      }
-
-      uploaded++;
-      setUploadProgress(Math.round((uploaded / validFiles.length) * 100));
+    const token = tokenRef.current;
+    if (!token) {
+      setError("Sessão expirada. Faça login novamente.");
+      setUploading(false);
+      return;
     }
 
-    await loadPhotos(userId);
+    const formData = new FormData();
+    validFiles.forEach(f => formData.append("files", f));
+
+    try {
+      const res = await fetch("/api/upload-photo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Erro ao enviar fotos.");
+      } else if (data.errors?.length) {
+        setError(data.errors.join(", "));
+      }
+    } catch (e: any) {
+      setError(e.message || "Erro de rede ao enviar fotos.");
+    }
+
+    if (tokenRef.current) await loadPhotos(tokenRef.current);
     setUploading(false);
     setUploadProgress(0);
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleDelete = async (photo: ClientPhoto) => {
-    if (!userId) return;
-    const sb = supabase();
-    await sb.storage.from("deliverables").remove([photo.file_path]);
-    await sb.from("client_photos").delete().eq("id", photo.id);
+    if (!tokenRef.current) return;
+    try {
+      await fetch("/api/upload-photo", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${tokenRef.current}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: photo.id, file_path: photo.file_path }),
+      });
+    } catch (e) {
+      console.error("Delete error:", e);
+    }
     setPhotos(prev => prev.filter(p => p.id !== photo.id));
     if (selectedPhoto?.id === photo.id) setSelectedPhoto(null);
   };

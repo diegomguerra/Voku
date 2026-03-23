@@ -339,36 +339,38 @@ export default function PedidosPage() {
     const files = e.target.files;
     if (!files || !userIdRef.current) return;
     setPhotoUploading(true);
+
     const sb = supabase();
-    const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-    const MAX_SIZE = 10 * 1024 * 1024;
+    const { data: sessionData } = await sb.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    if (!token) {
+      setPhotoUploading(false);
+      return;
+    }
+
+    const formData = new FormData();
+    Array.from(files).forEach(f => formData.append("files", f));
 
     let uploadedCount = 0;
-    for (const file of Array.from(files)) {
-      if (!ACCEPTED.includes(file.type) || file.size > MAX_SIZE) continue;
-      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${userIdRef.current}/photos/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error: upErr } = await sb.storage.from("deliverables").upload(path, file);
-      if (upErr) {
-        console.error("Photo storage error:", upErr);
-        continue;
-      }
-      const { error: dbErr } = await sb.from("client_photos").insert({
-        user_id: userIdRef.current,
-        file_path: path,
-        file_name: file.name,
-        file_type: file.type,
-        file_size: file.size,
+    try {
+      const res = await fetch("/api/upload-photo", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
       });
-      if (dbErr) console.error("Photo DB error:", dbErr);
-      else uploadedCount++;
+      const data = await res.json();
+      uploadedCount = data.uploaded?.length || 0;
+    } catch (err) {
+      console.error("Photo upload error:", err);
     }
+
     setPhotoUploading(false);
     setShowPhotoUpload(false);
     if (photoInputRef.current) photoInputRef.current.value = "";
     const msg = uploadedCount > 0
       ? `${uploadedCount} foto(s) enviada(s) com sucesso! Acesse seu banco de fotos completo em Fotos no menu.`
-      : "Erro ao enviar fotos. Verifique o console para detalhes.";
+      : "Erro ao enviar fotos. Tente novamente.";
     setMessages(prev => [...prev, { role: "assistant", content: msg }]);
     await persistMessage("assistant", msg);
   };
