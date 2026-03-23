@@ -74,6 +74,9 @@ export default function PedidosPage() {
   const [landingPageSlugs, setLandingPageSlugs] = useState<Record<string, string>>({});
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [showPhotoUpload, setShowPhotoUpload] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const userIdRef = useRef<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -332,10 +335,36 @@ export default function PedidosPage() {
     setChatLoading(false);
   }, [input, messages, chatLoading, ctx, persistMessage, isMobile, pollForChoices]);
 
-  const handleLogout = async () => {
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || !userIdRef.current) return;
+    setPhotoUploading(true);
     const sb = supabase();
-    await sb.auth.signOut();
-    window.location.href = "/cliente";
+    const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const MAX_SIZE = 10 * 1024 * 1024;
+
+    for (const file of Array.from(files)) {
+      if (!ACCEPTED.includes(file.type) || file.size > MAX_SIZE) continue;
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${userIdRef.current}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await sb.storage.from("client-photos").upload(path, file);
+      if (!error) {
+        await sb.from("client_photos").insert({
+          user_id: userIdRef.current,
+          file_path: path,
+          file_name: file.name,
+          file_type: file.type,
+          file_size: file.size,
+        });
+      }
+    }
+    setPhotoUploading(false);
+    setShowPhotoUpload(false);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+    // Notifica no chat
+    const msg = `Fotos enviadas com sucesso! Acesse seu banco de fotos completo em Fotos no menu.`;
+    setMessages(prev => [...prev, { role: "assistant", content: msg }]);
+    await persistMessage("assistant", msg);
   };
 
   const handleDownload = async (order: any) => {
@@ -567,8 +596,50 @@ export default function PedidosPage() {
       </div>
 
       {/* Input */}
-      <div style={{ padding: "16px 24px", borderTop: `1px solid ${T.border}` }}>
+      <div style={{ padding: "16px 24px", borderTop: `1px solid ${T.border}`, position: "relative" }}>
+        {/* Photo upload popup */}
+        {showPhotoUpload && (
+          <div style={{
+            position: "absolute", bottom: "100%", left: 24, right: 24,
+            background: T.white, border: `1px solid ${T.border}`, borderRadius: 14,
+            padding: "16px", marginBottom: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.1)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.ink }}>Enviar fotos</span>
+              <button onClick={() => setShowPhotoUpload(false)} style={{ background: "transparent", border: "none", color: T.inkFaint, fontSize: 18, cursor: "pointer", lineHeight: 1 }}>x</button>
+            </div>
+            <div
+              onClick={() => photoInputRef.current?.click()}
+              style={{
+                border: `2px dashed ${T.borderMd}`, borderRadius: 10, padding: "20px",
+                textAlign: "center", cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: 13, color: T.inkMid, fontWeight: 600 }}>
+                {photoUploading ? "Enviando..." : "Clique para selecionar imagens"}
+              </div>
+              <div style={{ fontSize: 11, color: T.inkFaint, marginTop: 4 }}>JPG, PNG, WEBP, GIF — máx 10MB</div>
+            </div>
+            <a href="/cliente/fotos" style={{ display: "block", textAlign: "center", fontSize: 12, color: T.teal, fontWeight: 600, marginTop: 10, textDecoration: "none" }}>
+              Ver banco de fotos completo →
+            </a>
+          </div>
+        )}
+        <input ref={photoInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple onChange={handlePhotoUpload} style={{ display: "none" }} />
+
         <div style={{ display: "flex", gap: 10, alignItems: "flex-end", background: T.sand, border: `1px solid ${T.borderMd}`, borderRadius: 12, padding: "10px 14px" }}>
+          {/* Botão + para fotos */}
+          <button
+            onClick={() => setShowPhotoUpload(!showPhotoUpload)}
+            disabled={photoUploading}
+            style={{
+              width: 32, height: 32, borderRadius: "50%", border: `1.5px solid ${T.borderMd}`,
+              background: showPhotoUpload ? T.ink : "transparent",
+              color: showPhotoUpload ? T.lime : T.inkMid,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: 18, fontWeight: 300, flexShrink: 0, transition: "all 0.2s",
+            }}
+          >+</button>
           <textarea
             value={input}
             onChange={e => setInput(e.target.value)}
