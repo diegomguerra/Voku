@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
 import { useSearchParams } from "next/navigation";
+import { useVoiceInput } from "@/hooks/useVoiceInput";
 
 const T = {
   sand: "#FAF8F3", white: "#FFFFFF", ink: "#111", inkMid: "#6B6B6B",
@@ -62,6 +63,12 @@ export default function ProjetoPage({ params }) {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef(null);
   const userIdRef = useRef(null);
+
+  const voice = useVoiceInput({
+    lang: "pt-BR",
+    silenceTimeout: 2500,
+    onTranscript: (text) => setInput(prev => prev ? prev + " " + text : text),
+  });
 
   // ── Load everything ──
   useEffect(() => {
@@ -291,16 +298,37 @@ ___END___`;
           <div ref={bottomRef} />
         </div>
 
+        {/* Voice error */}
+        {voice.error && (
+          <div style={{ padding: "6px 16px", fontSize: 12, color: T.red, background: T.redBg }}>{voice.error}</div>
+        )}
         {/* Input */}
         <div style={{ padding: "12px 16px", borderTop: `1px solid ${T.border}`, display: "flex", gap: 8, alignItems: "center" }}>
+          {/* Mic button */}
+          {voice.isSupported && (
+            <button onClick={voice.toggleListening} title={voice.isListening ? "Parar gravação" : "Falar"} style={{
+              width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer",
+              background: voice.isListening ? T.red : T.sand,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              animation: voice.isListening ? "voicePulse 1.5s infinite" : "none",
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={voice.isListening ? "#fff" : T.inkMid} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="9" y="1" width="6" height="12" rx="3" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+          )}
           <input
-            value={input}
+            value={voice.isListening && voice.interimText ? input + (input ? " " : "") + voice.interimText : input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            placeholder="Descreva o que precisa..."
-            style={{ flex: 1, background: "#f5f5f0", border: "none", borderRadius: 20, padding: "10px 16px", fontSize: 13, color: T.ink, fontFamily: FF, outline: "none" }}
+            onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); voice.isListening && voice.stopListening(); sendMessage(); } }}
+            placeholder={voice.isListening ? "Ouvindo..." : "Descreva o que precisa..."}
+            readOnly={voice.isListening}
+            style={{ flex: 1, background: voice.isListening ? "#fef9e7" : "#f5f5f0", border: voice.isListening ? `1px solid ${T.lime}` : "none", borderRadius: 20, padding: "10px 16px", fontSize: 13, color: T.ink, fontFamily: FF, outline: "none", transition: "background 0.2s, border 0.2s" }}
           />
-          <button onClick={sendMessage} disabled={!input.trim() || chatLoading} style={{
+          <button onClick={() => { voice.isListening && voice.stopListening(); sendMessage(); }} disabled={!input.trim() || chatLoading} style={{
             width: 32, height: 32, borderRadius: "50%", border: "none", cursor: input.trim() && !chatLoading ? "pointer" : "not-allowed",
             background: input.trim() && !chatLoading ? T.lime : T.borderMd,
             color: T.ink, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center",
@@ -492,7 +520,7 @@ ___END___`;
         </div>
       </div>
 
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} } @keyframes voicePulse { 0%,100%{box-shadow:0 0 0 0 rgba(153,27,27,0.4)} 50%{box-shadow:0 0 0 8px rgba(153,27,27,0)} }`}</style>
     </div>
   );
 }
