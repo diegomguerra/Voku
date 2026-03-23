@@ -35,7 +35,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
     const credits = PLAN_CREDITS[plan] || 0;
 
     // Update plan + reset credits
-    await supabase
+    await getSupabase()
       .from("credits")
       .upsert({ user_id: userId, plan, balance: credits }, { onConflict: "user_id" });
 
@@ -117,7 +117,7 @@ async function handleSubscriptionRenewed(invoice: Stripe.Invoice) {
   const credits = PLAN_CREDITS[plan] || 0;
 
   if (credits > 0) {
-    await supabase
+    await getSupabase()
       .from("credits")
       .update({ balance: credits })
       .eq("user_id", profile.id);
