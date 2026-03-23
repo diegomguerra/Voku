@@ -61,7 +61,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
     // Store Stripe customer ID for future billing
     if (session.customer) {
-      await supabase
+      await getSupabase()
         .from("profiles")
         .update({ stripe_customer_id: session.customer as string })
         .eq("id", userId);
@@ -72,14 +72,14 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
 
     if (amount > 0) {
       // Add credits to existing balance
-      const { data: current } = await supabase
+      const { data: current } = await getSupabase()
         .from("credits")
         .select("balance")
         .eq("user_id", userId)
         .single();
 
       const newBalance = (current?.balance || 0) + amount;
-      await supabase
+      await getSupabase()
         .from("credits")
         .upsert({ user_id: userId, balance: newBalance }, { onConflict: "user_id" });
 
@@ -99,7 +99,7 @@ async function handleSubscriptionRenewed(invoice: Stripe.Invoice) {
   if (!customerId) return;
 
   // Find user by stripe_customer_id
-  const { data: profile } = await supabase
+  const { data: profile } = await getSupabase()
     .from("profiles")
     .select("id")
     .eq("stripe_customer_id", customerId)
@@ -107,7 +107,7 @@ async function handleSubscriptionRenewed(invoice: Stripe.Invoice) {
 
   if (!profile) return;
 
-  const { data: creditRow } = await supabase
+  const { data: creditRow } = await getSupabase()
     .from("credits")
     .select("plan")
     .eq("user_id", profile.id)
@@ -159,13 +159,13 @@ export async function POST(req: NextRequest) {
         // Downgrade to free on cancellation
         const sub = event.data.object as Stripe.Subscription;
         const cancelCustomerId = sub.customer as string;
-        const { data: cancelProfile } = await supabase
+        const { data: cancelProfile } = await getSupabase()
           .from("profiles")
           .select("id")
           .eq("stripe_customer_id", cancelCustomerId)
           .single();
         if (cancelProfile) {
-          await supabase
+          await getSupabase()
             .from("credits")
             .update({ plan: "free", balance: 20 })
             .eq("user_id", cancelProfile.id);
