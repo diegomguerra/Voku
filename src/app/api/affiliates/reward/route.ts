@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const { referred_user_id, plan_slug } = await req.json();
 
     // Find referred_by from profiles
-    const { data: profile } = await supabase
+    const { data: profile } = await getSupabase()
       .from("profiles")
       .select("referred_by")
       .eq("id", referred_user_id)
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Find affiliate by code
-    const { data: affiliate } = await supabase
+    const { data: affiliate } = await getSupabase()
       .from("affiliates")
       .select("id, user_id, total_indicados, total_ganho_creditos")
       .eq("codigo", profile.referred_by)
@@ -51,21 +51,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Credit the affiliate
-    const { data: creditRow } = await supabase
+    const { data: creditRow } = await getSupabase()
       .from("credits")
       .select("balance")
       .eq("user_id", affiliate.user_id)
       .single();
 
     if (creditRow) {
-      await supabase
+      await getSupabase()
         .from("credits")
         .update({ balance: creditRow.balance + reward })
         .eq("user_id", affiliate.user_id);
     }
 
     // Record transaction
-    await supabase.from("credit_transactions").insert({
+    await getSupabase().from("credit_transactions").insert({
       user_id: affiliate.user_id,
       amount: reward,
       type: "credit",
@@ -73,14 +73,14 @@ export async function POST(req: NextRequest) {
     });
 
     // Update referral record
-    await supabase
+    await getSupabase()
       .from("affiliate_referrals")
       .update({ plan_purchased: plan_slug, creditos_gerados: reward })
       .eq("referred_user_id", referred_user_id)
       .eq("affiliate_id", affiliate.id);
 
     // Update affiliate totals
-    await supabase
+    await getSupabase()
       .from("affiliates")
       .update({
         total_indicados: (affiliate.total_indicados || 0) + 1,

@@ -4,11 +4,11 @@ import { Resend } from "resend";
 
 export const dynamic = "force-dynamic";
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-const resend = new Resend(process.env.RESEND_API_KEY);
+const getResend = () => new Resend(process.env.RESEND_API_KEY);
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://voku.one";
 
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     const firstName = name?.split(" ")[0] || "você";
 
     // Day 0 — Welcome (immediate)
-    await resend.emails.send({
+    await getResend().emails.send({
       from: "Voku <ola@voku.one>",
       to: email,
       subject: `Bem-vindo à Voku, ${firstName}! Seus 10 créditos estão esperando 🎉`,
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
     const day1 = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     const day3 = new Date(now.getTime() + 72 * 60 * 60 * 1000);
 
-    await supabase.from("email_queue").insert([
+    await getSupabase().from("email_queue").insert([
       { user_id, email, name: firstName, template: "tip_day1", scheduled_for: day1.toISOString() },
       { user_id, email, name: firstName, template: "case_day3", scheduled_for: day3.toISOString() },
     ]);

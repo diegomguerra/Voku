@@ -4,17 +4,17 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export const dynamic = "force-dynamic";
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-const anthropic = new Anthropic();
+const getAnthropic = () => new Anthropic();
 
 export async function POST(req: NextRequest) {
   try {
     const { slug, instruction } = await req.json();
 
-    const { data: app } = await supabase
+    const { data: app } = await getSupabase()
       .from("apps")
       .select("html_path")
       .eq("slug", slug)
@@ -22,13 +22,13 @@ export async function POST(req: NextRequest) {
 
     if (!app) return NextResponse.json({ error: "App não encontrado" }, { status: 404 });
 
-    const { data: file } = await supabase.storage
+    const { data: file } = await getSupabase().storage
       .from("apps")
       .download(app.html_path);
 
     const currentHtml = await file!.text();
 
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model: "claude-haiku-4-5-20251001",
       max_tokens: 8192,
       messages: [{
@@ -40,11 +40,11 @@ export async function POST(req: NextRequest) {
     let newHtml = response.content[0].type === "text" ? response.content[0].text : "";
     newHtml = newHtml.replace(/^```html\n?/, "").replace(/\n?```$/, "").trim();
 
-    await supabase.storage
+    await getSupabase().storage
       .from("apps")
       .upload(app.html_path, new Blob([newHtml], { type: "text/html" }), { upsert: true });
 
-    await supabase.from("apps")
+    await getSupabase().from("apps")
       .update({ updated_at: new Date().toISOString() })
       .eq("slug", slug);
 
