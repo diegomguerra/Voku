@@ -4,10 +4,10 @@ import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
-const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const getStripe = () => new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
+const getEndpointSecret = () => process.env.STRIPE_WEBHOOK_SECRET!;
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -40,7 +40,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
       .upsert({ user_id: userId, plan, balance: credits }, { onConflict: "user_id" });
 
     // Record transaction
-    await supabase.from("credit_transactions").insert({
+    await getSupabase().from("credit_transactions").insert({
       user_id: userId,
       amount: credits,
       type: "credit",
@@ -83,7 +83,7 @@ async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
         .from("credits")
         .upsert({ user_id: userId, balance: newBalance }, { onConflict: "user_id" });
 
-      await supabase.from("credit_transactions").insert({
+      await getSupabase().from("credit_transactions").insert({
         user_id: userId,
         amount,
         type: "credit",
@@ -122,7 +122,7 @@ async function handleSubscriptionRenewed(invoice: Stripe.Invoice) {
       .update({ balance: credits })
       .eq("user_id", profile.id);
 
-    await supabase.from("credit_transactions").insert({
+    await getSupabase().from("credit_transactions").insert({
       user_id: profile.id,
       amount: credits,
       type: "credit",
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
+    event = getStripe().webhooks.constructEvent(body, sig, getEndpointSecret());
   } catch (err: any) {
     console.error("Webhook signature verification failed:", err.message);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

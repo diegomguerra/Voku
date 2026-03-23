@@ -4,9 +4,12 @@ import Stripe from "stripe";
 
 export const dynamic = "force-dynamic";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2026-02-25.clover" });
+const getStripe = () => {
+  if (!process.env.STRIPE_SECRET_KEY) throw new Error("STRIPE_SECRET_KEY not configured");
+  return new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-02-25.clover" });
+};
 
-const supabase = createClient(
+const getSupabase = () => createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -43,7 +46,7 @@ export async function GET(req: NextRequest) {
     let userEmail: string | null = null;
 
     if (token) {
-      const { data } = await supabase.auth.getUser(token);
+      const { data } = await getSupabase().auth.getUser(token);
       userId = data.user?.id || null;
       userEmail = data.user?.email || null;
     }
@@ -79,7 +82,7 @@ export async function GET(req: NextRequest) {
       ...(userEmail ? { customer_email: userEmail } : {}),
     };
 
-    const session = await stripe.checkout.sessions.create(sessionParams);
+    const session = await getStripe().checkout.sessions.create(sessionParams);
 
     return NextResponse.redirect(session.url!, 303);
   } catch (error: any) {
