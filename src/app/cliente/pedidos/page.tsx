@@ -343,26 +343,32 @@ export default function PedidosPage() {
     const ACCEPTED = ["image/jpeg", "image/png", "image/webp", "image/gif"];
     const MAX_SIZE = 10 * 1024 * 1024;
 
+    let uploadedCount = 0;
     for (const file of Array.from(files)) {
       if (!ACCEPTED.includes(file.type) || file.size > MAX_SIZE) continue;
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${userIdRef.current}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const { error } = await sb.storage.from("client-photos").upload(path, file);
-      if (!error) {
-        await sb.from("client_photos").insert({
-          user_id: userIdRef.current,
-          file_path: path,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-        });
+      const { error: upErr } = await sb.storage.from("client-photos").upload(path, file);
+      if (upErr) {
+        console.error("Photo storage error:", upErr);
+        continue;
       }
+      const { error: dbErr } = await sb.from("client_photos").insert({
+        user_id: userIdRef.current,
+        file_path: path,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+      });
+      if (dbErr) console.error("Photo DB error:", dbErr);
+      else uploadedCount++;
     }
     setPhotoUploading(false);
     setShowPhotoUpload(false);
     if (photoInputRef.current) photoInputRef.current.value = "";
-    // Notifica no chat
-    const msg = `Fotos enviadas com sucesso! Acesse seu banco de fotos completo em Fotos no menu.`;
+    const msg = uploadedCount > 0
+      ? `${uploadedCount} foto(s) enviada(s) com sucesso! Acesse seu banco de fotos completo em Fotos no menu.`
+      : "Erro ao enviar fotos. Verifique o console para detalhes.";
     setMessages(prev => [...prev, { role: "assistant", content: msg }]);
     await persistMessage("assistant", msg);
   };

@@ -107,14 +107,23 @@ export default function FotosPage() {
         .from("client-photos")
         .upload(path, file);
 
-      if (!uploadError) {
-        await sb.from("client_photos").insert({
-          user_id: userId,
-          file_path: path,
-          file_name: file.name,
-          file_type: file.type,
-          file_size: file.size,
-        });
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        setError(`Erro no upload: ${uploadError.message}`);
+        continue;
+      }
+
+      const { error: insertError } = await sb.from("client_photos").insert({
+        user_id: userId,
+        file_path: path,
+        file_name: file.name,
+        file_type: file.type,
+        file_size: file.size,
+      });
+
+      if (insertError) {
+        console.error("DB insert error:", insertError);
+        setError(`Erro ao salvar: ${insertError.message}`);
       }
 
       uploaded++;
