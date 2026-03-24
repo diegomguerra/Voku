@@ -74,35 +74,40 @@ const PRODUCT_PHASES: Record<string, (order: any) => Phase[]> = {
 
 function getPhaseStatus(order: any, phase: string): PhaseStatus {
   const s = order.status;
+  const hasBriefing = order.briefings_count > 0;
   const hasChoices = order.choices_count > 0;
   const hasSelected = order.choice_selected;
+  const hasDeliverables = order.deliverables_count > 0;
 
   const flow: Record<string, () => PhaseStatus> = {
-    briefing: () => s === "briefing" ? "active" : "done",
+    briefing: () => {
+      if (!hasBriefing) return s === "briefing" ? "active" : "pending";
+      return "done";
+    },
     generation: () => {
-      if (s === "briefing") return "pending";
-      if (s === "in_production" && !hasChoices) return "active";
+      if (!hasBriefing) return "pending";
+      if (!hasChoices) return s === "in_production" ? "active" : "pending";
       return "done";
     },
     choices: () => {
-      if (s === "briefing" || (s === "in_production" && !hasChoices)) return "pending";
-      if (s === "in_production" && hasChoices && !hasSelected) return "active";
+      if (!hasChoices) return "pending";
+      if (!hasSelected) return "active";
       return "done";
     },
     lp_build: () => {
-      if (s !== "delivered" && !(hasSelected)) return "pending";
-      if (hasSelected && s === "in_production") return "active";
+      if (!hasSelected) return "pending";
+      if (s === "in_production" && !hasDeliverables) return "active";
       return s === "delivered" ? "done" : "pending";
     },
     build: () => {
       if (!hasSelected) return "pending";
-      if (hasSelected && s === "in_production") return "active";
+      if (s === "in_production" && !hasDeliverables) return "active";
       return s === "delivered" ? "done" : "pending";
     },
     publish: () => s === "delivered" ? "done" : "pending",
     spec: () => {
-      if (s === "briefing") return "pending";
-      if (s === "in_production" && !hasChoices) return "active";
+      if (!hasBriefing) return "pending";
+      if (!hasChoices) return s === "in_production" ? "active" : "pending";
       return "done";
     },
     delivered: () => s === "delivered" ? "done" : "pending",
@@ -126,23 +131,37 @@ export default function ProjectTracker({ order }: { order: any }) {
   const [expanded, setExpanded] = useState(false);
   const [choicesCount, setChoicesCount] = useState(0);
   const [choiceSelected, setChoiceSelected] = useState(false);
+  const [briefingsCount, setBriefingsCount] = useState(0);
+  const [deliverablesCount, setDeliverablesCount] = useState(0);
 
   // Poll for real-time updates
   useEffect(() => {
     const sb = supabase();
     const check = async () => {
-      const { data: choices } = await sb.from("choices").select("id, is_selected").eq("order_id", order.id);
-      if (choices) {
-        setChoicesCount(choices.length);
-        setChoiceSelected(choices.some((c: any) => c.is_selected));
+      const [choicesRes, briefingsRes, deliverablesRes] = await Promise.all([
+        sb.from("choices").select("id, is_selected").eq("order_id", order.id),
+        sb.from("briefings").select("id").eq("order_id", order.id),
+        sb.from("deliverables").select("id").eq("order_id", order.id),
+      ]);
+      if (choicesRes.data) {
+        setChoicesCount(choicesRes.data.length);
+        setChoiceSelected(choicesRes.data.some((c: any) => c.is_selected));
       }
+      setBriefingsCount(briefingsRes.data?.length || 0);
+      setDeliverablesCount(deliverablesRes.data?.length || 0);
     };
     check();
     const interval = setInterval(check, 5000);
     return () => clearInterval(interval);
   }, [order.id]);
 
-  const enrichedOrder = { ...order, choices_count: choicesCount, choice_selected: choiceSelected };
+  const enrichedOrder = {
+    ...order,
+    choices_count: choicesCount,
+    choice_selected: choiceSelected,
+    briefings_count: briefingsCount,
+    deliverables_count: deliverablesCount,
+  };
   const phaseBuilder = PRODUCT_PHASES[order.product] || PRODUCT_PHASES.post_instagram;
   const phases = phaseBuilder(enrichedOrder);
   const progress = getProgress(phases);
