@@ -20,78 +20,88 @@ function buildSystemPrompt(user_context: any, brand?: any): string {
     if (brand.palavras_chave?.length) parts.push(`- Palavras que a marca USA: ${brand.palavras_chave.join(", ")}`);
     if (brand.palavras_proibidas?.length) parts.push(`- Palavras que a marca NUNCA usa: ${brand.palavras_proibidas.join(", ")}`);
     if (brand.exemplos_conteudo) parts.push(`- Exemplos de conteúdo da marca:\n${brand.exemplos_conteudo.slice(0, 1000)}`);
+    if (brand.cor_primaria) parts.push(`- Cor primária da marca: ${brand.cor_primaria}`);
+    if (brand.cor_secundaria) parts.push(`- Cor secundária da marca: ${brand.cor_secundaria}`);
+    if (brand.fonte_preferida) parts.push(`- Fonte/estilo visual preferido: ${brand.fonte_preferida}`);
     if (parts.length > 0) {
       brandSection = `\n\n## Brand Voice do cliente (USE SEMPRE)\n${parts.join("\n")}`;
     }
   }
 
-  return `Você é o agente da Voku — especialista sênior em marketing digital e copywriting.
+  const brandCtxForExecution = brand ? {
+    nome_marca: brand.nome_marca,
+    tom: brand.tom,
+    personalidade: brand.personalidade,
+    cor_primaria: brand.cor_primaria || null,
+    cor_secundaria: brand.cor_secundaria || null,
+    fonte_preferida: brand.fonte_preferida || null,
+    palavras_chave: brand.palavras_chave || [],
+    palavras_proibidas: brand.palavras_proibidas || [],
+  } : null;
+
+  return `Você é a Voku — assistente de marketing com IA da plataforma Voku.
 
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
 - Plano: ${user_context?.plan || "free"}
 - Créditos disponíveis: ${user_context?.credits ?? 0}${brandSection}
 
-## COMPORTAMENTO OBRIGATÓRIO
-- Tom direto e profissional. Máximo 1 emoji por mensagem, nunca no meio de frases.
-- Faça no máximo 2 perguntas por mensagem. Nunca uma de cada vez.
-- Quando tiver informação suficiente, execute sem pedir confirmação.
-- NUNCA entregue conteúdo apenas no chat. Todo conteúdo gerado deve ser materializado como deliverable e aparecer na área de projetos do cliente.
-- NUNCA diga que "o sistema não permite" algo.
-- Se o cliente tem Brand Voice configurada, RESPEITE o tom, palavras e personalidade definidas.
-- Nunca mencione Claude, Anthropic ou tecnologias internas.
+## Sua personalidade
+- Tom descontraído mas profissional — como um amigo que entende muito de marketing
+- Usa o nome do cliente naturalmente na conversa
+- Faz UMA pergunta por vez — nunca sobrecarrega
+- Confirma antes de executar qualquer entrega: "Vou criar X para Y com foco em Z. Posso ir?"
+- Celebra pequenas vitórias ("Boa escolha!", "Isso vai arrasar!")
+- Respostas curtas e diretas — sem enrolação
+- Nunca usa jargão técnico
+- Se o cliente tem Brand Voice configurada, RESPEITE o tom, palavras e personalidade definidas
 
-## FLUXO OBRIGATÓRIO A CADA ENTREGA
-1. Recebe o briefing (máximo 2 rodadas de perguntas)
-2. Gera o conteúdo completo
-3. Inclui o bloco ___DELIVERABLE___ — OBRIGATÓRIO
-4. Exibe no chat apenas um resumo: tipo, título, o que foi entregue
-5. Informa: "Sua entrega está em Meus Projetos → aba Aprovação."
+## O que você pode fazer
+1. COPY — anúncios, e-mails, bio, pitch, VSL
+2. POSTS — legendas Instagram, carrossel, roteiro de Reels
+3. LANDING PAGE — estrutura completa com headline, benefícios, CTA
+4. ESTRATÉGIA — calendário editorial, posicionamento, proposta de valor
+5. APPS — app simples baseado na ideia do cliente
 
-## TIPOS DE ENTREGA
-- Posts Instagram: hook + legenda + hashtags + CTA (por post)
-- Carrossel: título + slide a slide (mínimo 5 slides)
-- Sequência de e-mails: subject + preview text + corpo (por e-mail)
-- Landing page copy: hero → problema → solução → benefícios → prova → CTA
-- Roteiro de Reels: cena a cena com timing e overlay de texto
-- Copy Meta Ads: 3 variações (dor, benefício, prova social)
+## Coleta obrigatória ANTES de executar posts/carrossel/conteúdo
+Se o produto for POSTS, CARROSSEL ou qualquer conteúdo visual, você PRECISA saber antes de confirmar execução:
+1. Nome da empresa/marca do cliente
+2. Produto ou serviço principal
+3. Público-alvo (quem compra, faixa etária, dor principal)
+4. Tom desejado (ex: leve e bem-humorado, sério e técnico, inspiracional)
+5. Cor principal da marca (ex: azul #0057FF) — se não souber, pergunte "Qual a cor principal da sua marca? Pode ser o nome da cor ou o código hex"
+6. Cor secundária ou de fundo (ex: branco, cinza claro)
+Se o brand context já tem essas informações, não pergunte de novo — use o que já existe.
 
-## FORMATO DE RESPOSTA APÓS GERAR CONTEÚDO
-Sempre termine com exatamente este bloco (não mostrar ao usuário, incluir após o resumo):
-___DELIVERABLE___
-{
-  "title": "título curto do que foi entregue",
-  "type": "post|carrossel|email|landing_page|reels|copy",
-  "content": "conteúdo completo aqui"
+## Fluxo
+1. Entenda o negócio com 1–3 perguntas simples (UMA POR VEZ)
+2. Para conteúdo visual, colete as cores conforme regra acima
+3. Confirme o que vai entregar antes de executar
+4. Quando confirmado, retorne JSON no fim da mensagem:
+   {"action":"execute","product":"copy","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"...","brand_context":${JSON.stringify(brandCtxForExecution)}}}
+5. Para posts/carrossel, inclua SEMPRE no structured_data: "cor_primaria", "cor_secundaria", "nome_marca", "publico_detalhado"
+6. Nunca mencione Claude, Anthropic ou tecnologias internas
+
+## Tom
+❌ "Para prosseguir com a geração do asset..."
+✅ "Legal! Me conta — qual é o maior problema que seu produto resolve?"
+
+## IMPORTANTE sobre imagens
+Você cria CONTEÚDO ESTRATÉGICO: textos dos slides, hooks, CTAs, legendas, hashtags.
+Você NÃO gera imagens. Se o cliente pedir imagem, explique isso brevemente e volte ao foco de criar conteúdo excelente.
+Nunca sugira ferramentas externas de imagem — apenas entregue o melhor conteúdo possível.`;
 }
-___END___
 
-## QUANDO PRECISA CRIAR UM PEDIDO (order)
-Se o cliente quer um produto novo e você já tem informação suficiente, retorne JSON:
-{"action":"execute","product":"copy","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"..."}}`;
-}
-
-function extractAction(text: string): { cleanText: string; action: any | null; deliverable: any | null } {
-  // Extract ___DELIVERABLE___ block
-  let deliverable = null;
-  let cleaned = text;
-  const delMatch = text.match(/___DELIVERABLE___([\s\S]*?)___END___/);
-  if (delMatch) {
-    try { deliverable = JSON.parse(delMatch[1].trim()); } catch { /* ignore */ }
-    cleaned = cleaned.replace(/___DELIVERABLE___[\s\S]*?___END___/g, "").trim();
+function extractAction(text: string): { cleanText: string; action: any | null } {
+  const match = text.match(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/);
+  if (!match) return { cleanText: text, action: null };
+  try {
+    const action = JSON.parse(match[0]);
+    const cleanText = text.replace(match[0], "").trim();
+    return { cleanText, action };
+  } catch {
+    return { cleanText: text, action: null };
   }
-
-  // Extract action JSON
-  const actionMatch = cleaned.match(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/);
-  let action = null;
-  if (actionMatch) {
-    try {
-      action = JSON.parse(actionMatch[0]);
-      cleaned = cleaned.replace(actionMatch[0], "").trim();
-    } catch { /* ignore */ }
-  }
-
-  return { cleanText: cleaned, action, deliverable };
 }
 
 serve(async (req) => {
@@ -101,20 +111,18 @@ serve(async (req) => {
 
   const { messages, user_context } = await req.json();
 
-  // Fetch brand context if user_id is available
   let brand = null;
   if (user_context?.user_id) {
     try {
       const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
       const { data } = await sb.from("brand_contexts").select("*").eq("user_id", user_context.user_id).single();
       if (data) brand = data;
-    } catch { /* no brand context — that's fine */ }
+    } catch { /* no brand context */ }
   }
 
   const systemPrompt = buildSystemPrompt(user_context, brand);
   const wantsStream = req.headers.get("accept") === "text/event-stream";
 
-  // ── STREAMING ──
   if (wantsStream) {
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -125,52 +133,42 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 4096,
+        max_tokens: 1024,
         stream: true,
         system: systemPrompt,
         messages,
       }),
     });
 
-    // Collect full text to detect action at the end
     let fullText = "";
-
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         const reader = anthropicRes.body!.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
-
         try {
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split("\n");
             buffer = lines.pop() || "";
-
             for (const line of lines) {
               if (!line.startsWith("data: ")) continue;
               const payload = line.slice(6).trim();
               if (payload === "[DONE]") continue;
-
               try {
                 const event = JSON.parse(payload);
-
                 if (event.type === "content_block_delta" && event.delta?.text) {
                   fullText += event.delta.text;
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text: event.delta.text })}\n\n`));
                 }
-
                 if (event.type === "message_stop") {
-                  const { cleanText, action, deliverable } = extractAction(fullText);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, ...(action ? { action } : {}), ...(deliverable ? { deliverable } : {}) })}\n\n`));
+                  const { cleanText, action } = extractAction(fullText);
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, ...(action ? { action } : {}) })}\n\n`));
                 }
-              } catch {
-                // skip malformed events
-              }
+              } catch { /* skip */ }
             }
           }
         } finally {
@@ -180,16 +178,10 @@ serve(async (req) => {
     });
 
     return new Response(stream, {
-      headers: {
-        ...CORS,
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      },
+      headers: { ...CORS, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
     });
   }
 
-  // ── NON-STREAMING ──
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -199,24 +191,17 @@ serve(async (req) => {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5",
-      max_tokens: 4096,
+      max_tokens: 1024,
       system: systemPrompt,
       messages,
     }),
   });
 
   const data = await response.json();
-
-  // Extract action and deliverable from response text
   const rawText = data?.content?.[0]?.text || "";
-  const { cleanText, action, deliverable } = extractAction(rawText);
-
-  const result: any = {
-    ...data,
-    content: [{ type: "text", text: cleanText }],
-  };
+  const { cleanText, action } = extractAction(rawText);
+  const result: any = { ...data, content: [{ type: "text", text: cleanText }] };
   if (action) result.action = action;
-  if (deliverable) result.deliverable = deliverable;
 
   return new Response(JSON.stringify(result), {
     headers: { ...CORS, "Content-Type": "application/json" },

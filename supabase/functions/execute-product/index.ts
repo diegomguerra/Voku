@@ -6,6 +6,53 @@ const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY")!;
 
+function buildContentPackPrompt(structured_data: any): string {
+  const bc = structured_data?.brand_context || {};
+  const cor1 = structured_data?.cor_primaria || bc?.cor_primaria || "a cor principal da marca";
+  const cor2 = structured_data?.cor_secundaria || bc?.cor_secundaria || "branco ou cor de fundo neutra";
+  const nomeMarca = structured_data?.nome_marca || bc?.nome_marca || "a marca";
+  const tom = structured_data?.tom || bc?.tom || "profissional e direto";
+  const publico = structured_data?.publico_detalhado || structured_data?.publico || "público-alvo da marca";
+  const fonte = bc?.fonte_preferida || "Inter ou sans-serif moderna";
+
+  return `Você é RORDENS, o motor de execução da Voku. Sua tarefa é criar 12 posts completos para redes sociais com base no briefing fornecido.
+
+## IDENTIDADE VISUAL DO CLIENTE (use em TODAS as sugestões visuais)
+- Nome da marca: ${nomeMarca}
+- Cor primária: ${cor1}
+- Cor secundária / fundo: ${cor2}
+- Fonte/estilo: ${fonte}
+- Tom de voz: ${tom}
+- Público: ${publico}
+
+IMPORTANTE: As sugestões visuais devem usar SEMPRE as cores da marca acima. NUNCA use preto com verde lime a menos que essas sejam as cores da marca.
+
+## Estrutura obrigatória para cada post
+
+Post [N] — [FORMATO]
+---
+GANCHO: [primeira linha que para o scroll, max 10 palavras]
+DESENVOLVIMENTO:
+[corpo do post, 3–5 linhas no tom correto]
+CTA: [chamada para ação direta]
+HASHTAGS: #tag1 #tag2 #tag3 #tag4 #tag5
+SUGESTÃO VISUAL:
+- Fundo: [cor hex ou descrição usando ${cor2}]
+- Texto destaque: [cor hex usando ${cor1}]
+- Elemento visual: [descrição do que aparece na imagem]
+- Estilo: [foto realista / ilustração / tipografia / gradiente]
+---
+
+Se for CARROSSEL, liste os slides:
+Slide 1 — CAPA: [título]
+Slide 2: [conteúdo]
+...e assim por diante
+
+Mix obrigatório: 5 carrosseis, 4 estáticos, 3 reels.
+Escreva no idioma e tom indicado no briefing.
+NUNCA mencione Voku, Claude ou Anthropic no conteúdo gerado.`;
+}
+
 const SYSTEM_PROMPTS: Record<string, string> = {
   landing_page_copy: `Você é RORDENS, o motor de execução da Voku. Sua tarefa é escrever uma landing page copy completa e de alta conversão com base no briefing fornecido.
 
@@ -20,20 +67,6 @@ Estrutura obrigatória:
 8. CTA PRINCIPAL + CTA SECUNDÁRIO
 
 Escreva em português a menos que o briefing indique outro idioma. Tom: direto, sem floreios, orientado a conversão.`,
-
-  content_pack: `Você é RORDENS, o motor de execução da Voku. Sua tarefa é criar 12 posts completos para redes sociais com base no briefing fornecido.
-
-Para cada post entregue:
-- Número do post (Post 1 a 12)
-- FORMATO: (Carrossel / Reels / Estático)
-- GANCHO: primeira linha que para o scroll
-- DESENVOLVIMENTO: corpo do post (3-5 linhas)
-- CTA: chamada para ação clara
-- HASHTAGS: 5-8 relevantes
-- SUGESTÃO VISUAL: descrição breve do visual ideal
-
-Varie os formatos. Mix sugerido: 5 carroséis, 4 estáticos, 3 reels.
-Escreva no idioma e tom indicado no briefing.`,
 
   email_sequence: `Você é RORDENS, o motor de execução da Voku. Sua tarefa é escrever uma sequência de 5 e-mails de nutrição completa com base no briefing fornecido.
 
@@ -68,7 +101,10 @@ Deno.serve(async (req: Request) => {
     const { order_id, user_id, email, name, product, structured_data, currency } = await req.json();
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
-    const systemPrompt = SYSTEM_PROMPTS[product];
+    const systemPrompt = product === "content_pack"
+      ? buildContentPackPrompt(structured_data)
+      : SYSTEM_PROMPTS[product];
+
     const userPrompt = `BRIEFING DO CLIENTE:\n${JSON.stringify(structured_data, null, 2)}\n\nGere o produto completo agora.`;
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
