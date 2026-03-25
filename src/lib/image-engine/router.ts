@@ -127,6 +127,41 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
       image_url: result.url,
     }).eq('id', req.choice_id)
 
+    // Check if ALL choices for this order have images → mark image step done, activate approval
+    const { data: allChoices } = await supabase
+      .from('choices').select('id, image_url')
+      .eq('order_id', req.order_id)
+    const allDone = allChoices?.every(c => c.image_url)
+    if (allDone) {
+      // Mark "Gerar imagens" step as done
+      const { data: imgStep } = await supabase
+        .from('project_steps').select('id')
+        .eq('order_id', req.order_id).eq('step_number', 2).single()
+      if (imgStep) {
+        await supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', imgStep.id)
+      }
+      // Mark production phase as done, activate approval phase
+      const { data: prodPhase } = await supabase
+        .from('project_phases').select('id')
+        .eq('order_id', req.order_id).eq('phase_number', 1).single()
+      if (prodPhase) {
+        await supabase.from('project_phases').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', prodPhase.id)
+      }
+      const { data: approvalPhase } = await supabase
+        .from('project_phases').select('id')
+        .eq('order_id', req.order_id).eq('phase_number', 2).single()
+      if (approvalPhase) {
+        await supabase.from('project_phases').update({ status: 'active', started_at: new Date().toISOString() }).eq('id', approvalPhase.id)
+      }
+      // Activate "Escolher variação" step
+      const { data: chooseStep } = await supabase
+        .from('project_steps').select('id')
+        .eq('order_id', req.order_id).eq('step_number', 3).single()
+      if (chooseStep) {
+        await supabase.from('project_steps').update({ status: 'active' }).eq('id', chooseStep.id)
+      }
+    }
+
     return result
   } catch (err) {
     // Mark as failed

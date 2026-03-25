@@ -41,8 +41,25 @@ type Props = {
 
 const PRODUCT_NAMES: Record<string, string> = {
   landing_page_copy: "Landing Page Copy",
-  content_pack: "Content Pack",
-  email_sequence: "Email Sequence",
+  content_pack: "Pacote de Conteúdo",
+  email_sequence: "Sequência de E-mails",
+  post_instagram: "Post para Instagram",
+  carrossel: "Carrossel para Instagram",
+  reels_script: "Roteiro de Reels",
+  ad_copy: "Copy para Meta Ads",
+  app: "App Web",
+};
+
+// Estimated generation time in minutes per product
+const ESTIMATED_MINUTES: Record<string, number> = {
+  post_instagram: 2,
+  carrossel: 3,
+  reels_script: 2,
+  ad_copy: 3,
+  content_pack: 4,
+  email_sequence: 3,
+  landing_page_copy: 4,
+  app: 4,
 };
 
 function getPreview(choice: Choice): string {
@@ -140,7 +157,22 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
     // 5. Update order status
     await sb.from("orders").update({ status: "delivered", delivered_at: new Date().toISOString() }).eq("id", order.id);
 
-    // 6. Get download URL
+    // 6. Advance project steps: mark "Escolher variação" + "Aprovar entrega" as done
+    const { data: steps } = await sb.from("project_steps").select("id, step_number, status").eq("order_id", order.id).order("step_number");
+    if (steps) {
+      for (const step of steps) {
+        if (step.status !== "done") {
+          await sb.from("project_steps").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", step.id);
+        }
+      }
+    }
+    // Mark approval phase as done
+    const { data: approvalPhase } = await sb.from("project_phases").select("id").eq("order_id", order.id).eq("phase_number", 2).single();
+    if (approvalPhase) {
+      await sb.from("project_phases").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", approvalPhase.id);
+    }
+
+    // 7. Get download URL
     const { data: urlData } = await sb.storage.from("deliverables").createSignedUrl(filePath, 3600);
     if (urlData?.signedUrl) setDownloadUrl(urlData.signedUrl);
 
@@ -236,10 +268,10 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>✓</div>
           <h2 style={{ fontFamily: FF, fontSize: 22, fontWeight: 700, color: C.white, marginBottom: 8 }}>
-            Choice approved!
+            Material aprovado!
           </h2>
           <p style={{ fontFamily: FF, fontSize: 14, color: C.sub, marginBottom: 32 }}>
-            Your material is ready for download.
+            Seu material está pronto para download.
           </p>
           <button onClick={handleDownload} style={{
             fontFamily: FF, background: C.lime, color: C.dark, border: "none", borderRadius: 10,
@@ -254,15 +286,20 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
 
   // ─── WAITING STATE ───
   if (isWaiting) {
+    const est = ESTIMATED_MINUTES[order.product] || 3;
     return (
       <div style={{ textAlign: "center", padding: "60px 24px" }}>
-        <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+        <div style={{ fontSize: 40, marginBottom: 16, animation: "pulse 2s infinite" }}>⏳</div>
         <h2 style={{ fontFamily: FF, fontSize: 18, fontWeight: 700, color: C.white, marginBottom: 8 }}>
-          We&apos;re producing your material
+          Estamos produzindo seu material
         </h2>
-        <p style={{ fontFamily: FF, fontSize: 14, color: C.sub }}>
-          You&apos;ll receive an email when your 3 options are ready.
+        <p style={{ fontFamily: FF, fontSize: 14, color: C.sub, marginBottom: 6 }}>
+          Tempo estimado: ~{est} minuto{est > 1 ? "s" : ""}
         </p>
+        <p style={{ fontFamily: FF, fontSize: 13, color: C.faint }}>
+          Vamos gerar 3 variações de texto + imagens. Você receberá um e-mail quando estiver pronto.
+        </p>
+        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
       </div>
     );
   }
@@ -273,13 +310,13 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
       {/* Header */}
       <div style={{ marginBottom: 32 }}>
         <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 600, color: C.lime, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
-          Order #{order.order_number} — {PRODUCT_NAMES[order.product] || order.product}
+          Pedido #{order.order_number} — {PRODUCT_NAMES[order.product] || order.product}
         </div>
         <h2 style={{ fontFamily: FF, fontSize: 22, fontWeight: 700, color: C.white, margin: 0, marginBottom: 6 }}>
-          Your 3 options are ready
+          Suas 3 opções estão prontas
         </h2>
         <p style={{ fontFamily: FF, fontSize: 14, color: C.sub, margin: 0 }}>
-          Pick your favorite. You can add notes before approving.
+          Escolha sua favorita. Você pode adicionar observações antes de aprovar.
         </p>
       </div>
 
@@ -321,7 +358,7 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
                 }}>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.4 }}>◐</div>
-                    <div style={{ fontFamily: FF, fontSize: 11, color: C.faint }}>Gerando imagem...</div>
+                    <div style={{ fontFamily: FF, fontSize: 11, color: C.faint, animation: "pulse 2s infinite" }}>Gerando imagem...</div>
                   </div>
                 </div>
               ) : null}
@@ -329,7 +366,7 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
               {/* Card header */}
               <div style={{ padding: "18px 20px 0" }}>
                 <div style={{ fontFamily: FF, fontSize: 11, fontWeight: 700, color: C.lime, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
-                  Option {label}
+                  Opção {label}
                 </div>
                 <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 600, color: C.white, marginBottom: 12 }}>
                   {choice.label}
@@ -353,7 +390,7 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
                   fontFamily: FF, background: "none", border: "none", color: C.lime,
                   fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0,
                 }}>
-                  {isExpanded ? "Show less ↑" : "See full ↓"}
+                  {isExpanded ? "Ver menos ↑" : "Ver completo ↓"}
                 </button>
               </div>
 
@@ -372,7 +409,7 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
                   {isActive && <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.dark }} />}
                 </div>
                 <span style={{ fontFamily: FF, fontSize: 13, fontWeight: 600, color: isActive ? C.lime : C.faint }}>
-                  {isActive ? "SELECTED" : "Select"}
+                  {isActive ? "SELECIONADO" : "Selecionar"}
                 </span>
               </div>
             </div>
@@ -383,12 +420,12 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
       {/* Feedback */}
       <div style={{ marginBottom: 24 }}>
         <label style={{ fontFamily: FF, fontSize: 13, fontWeight: 600, color: C.sub, display: "block", marginBottom: 8 }}>
-          Any adjustments? (optional)
+          Algum ajuste? (opcional)
         </label>
         <textarea
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          placeholder='E.g. "Make the headline more direct" or "Change the CTA to something bolder"'
+          placeholder='Ex: "Deixe o título mais direto" ou "Mude o CTA para algo mais ousado"'
           rows={3}
           style={{
             fontFamily: FF, width: "100%", boxSizing: "border-box",
@@ -414,7 +451,7 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
           opacity: submitting ? 0.6 : 1,
         }}
       >
-        {submitting ? "Approving..." : "Approve and finalize →"}
+        {submitting ? "Aprovando..." : "Aprovar e finalizar →"}
       </button>
     </div>
   );

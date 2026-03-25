@@ -220,6 +220,28 @@ export async function POST(req: NextRequest) {
     const baseSystem = SYSTEM_PROMPTS[product as ProductId]
     const briefingText = JSON.stringify(structured_data, null, 2)
 
+    // ── Create project phases & steps for tracking ──
+    const { data: phase1 } = await supabase.from('project_phases').insert({
+      order_id, title: 'Produção', phase_number: 1, status: 'active', started_at: new Date().toISOString(),
+    }).select('id').single()
+
+    const { data: phase2 } = await supabase.from('project_phases').insert({
+      order_id, title: 'Aprovação', phase_number: 2, status: 'pending',
+    }).select('id').single()
+
+    if (phase1?.id) {
+      await supabase.from('project_steps').insert([
+        { order_id, phase_id: phase1.id, label: 'Gerar 3 variações de texto', step_number: 1, status: 'active' },
+        { order_id, phase_id: phase1.id, label: 'Gerar imagens', step_number: 2, status: 'pending' },
+      ])
+    }
+    if (phase2?.id) {
+      await supabase.from('project_steps').insert([
+        { order_id, phase_id: phase2.id, label: 'Escolher variação favorita', step_number: 3, status: 'pending' },
+        { order_id, phase_id: phase2.id, label: 'Aprovar entrega final', step_number: 4, status: 'pending' },
+      ])
+    }
+
     // Generate 3 variations in a single API call
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -267,6 +289,20 @@ Each variation must be complete and production-ready. Only output the JSON array
         is_selected: false,
         position: i,
       })
+    }
+
+    // ── Mark "Gerar texto" step as done, activate "Gerar imagens" ──
+    const { data: textStep } = await supabase
+      .from('project_steps').select('id')
+      .eq('order_id', order_id).eq('step_number', 1).single()
+    if (textStep) {
+      await supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', textStep.id)
+    }
+    const { data: imageStep } = await supabase
+      .from('project_steps').select('id')
+      .eq('order_id', order_id).eq('step_number', 2).single()
+    if (imageStep) {
+      await supabase.from('project_steps').update({ status: 'active' }).eq('id', imageStep.id)
     }
 
     // Insert iteration
