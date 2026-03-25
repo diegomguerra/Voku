@@ -319,8 +319,12 @@ Each variation must be complete and production-ready. Only output the JSON array
     const IMAGE_PRODUCTS: Record<string, string> = {
       post_instagram: 'type-first',
       carrossel: 'type-first',
-      ad_copy: 'type-first',
       content_pack: 'type-first',
+      email_sequence: 'type-first',
+      ad_copy: 'product-scene',
+      reels_script: 'atmospheric',
+      landing_page_copy: 'atmospheric',
+      app: 'screen-mockup',
     }
     const imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
     if (imageSlug) {
@@ -359,6 +363,7 @@ Each variation must be complete and production-ready. Only output the JSON array
               slug: imageSlug,
               brand,
               briefing_text: briefingText,
+              product,
             }),
           }).catch(e => console.error('Image gen fire-and-forget error:', e))
         }

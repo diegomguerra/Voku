@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       brand,
       reference_image_url,
       briefing_text,
+      product,
     } = await req.json()
 
     if (!order_id || !choice_id || !slug || !choice_text) {
@@ -28,6 +29,7 @@ export async function POST(req: NextRequest) {
 
     const result = await generateImage({
       slug: slug as ImageSlug,
+      product,
       briefing_text: briefing_text || '',
       choice_label: choice_label || '',
       choice_text,

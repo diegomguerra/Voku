@@ -8,6 +8,8 @@ interface ComposeOptions {
   screenshot_urls: string[]
   brand: BrandContext
   prompt?: string
+  width?: number
+  height?: number
 }
 
 /**
@@ -16,15 +18,17 @@ interface ComposeOptions {
  */
 export async function composeScreenMockup(opts: ComposeOptions & { prompt: string }): Promise<ImageResult> {
   // Try generating a background with FLUX
+  const w = opts.width || 1080
+  const h = opts.height || 1080
   let backgroundUrl: string | undefined
   try {
     const bgResult = await generateFlux({
-      prompt: `Minimal, clean desk environment with soft lighting. Subtle brand colors: ${opts.brand.cor_primaria || '#111111'}. No devices, no text. Blurred, professional background for a device mockup composite. Square format.`,
+      prompt: `Minimal, clean desk environment with soft lighting. Subtle brand colors: ${opts.brand.cor_primaria || '#111111'}. No devices, no text. Blurred, professional background for a device mockup composite.`,
       order_id: opts.order_id,
       choice_position: opts.choice_position,
       mode: 'text-to-image',
-      width: 1080,
-      height: 1080,
+      width: w,
+      height: h,
     })
     backgroundUrl = bgResult.url
   } catch {
@@ -48,8 +52,8 @@ export async function composeScreenMockup(opts: ComposeOptions & { prompt: strin
     order_id: opts.order_id,
     choice_position: opts.choice_position,
     mode: 'text-to-image',
-    width: 1080,
-    height: 1080,
+    width: w,
+    height: h,
   })
 
   return { ...result, engine: 'sharp-flux', slug: 'screen-mockup' }
@@ -66,8 +70,8 @@ export async function composeMultiScreen(opts: ComposeOptions & { prompt: string
     order_id: opts.order_id,
     choice_position: opts.choice_position,
     mode: 'text-to-image',
-    width: 1080,
-    height: 1080,
+    width: opts.width || 1080,
+    height: opts.height || 1080,
   })
 
   return { ...result, engine: 'sharp-compose', slug: 'multi-screen' }

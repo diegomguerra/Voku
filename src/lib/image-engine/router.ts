@@ -1,4 +1,4 @@
-import { ImageRequest, ImageResult, SLUG_ENGINE_MAP } from './types'
+import { ImageRequest, ImageResult, SLUG_ENGINE_MAP, PRODUCT_DIMENSIONS } from './types'
 import { buildPrompt } from './prompts'
 import { generateIdeogram } from './ideogram'
 import { generateImagineArt } from './imagineart'
@@ -6,10 +6,22 @@ import { generateFlux } from './flux'
 import { composeScreenMockup, composeMultiScreen } from './compose'
 import { supabaseAdmin } from '@/lib/supabase'
 
+// Convert PRODUCT_DIMENSIONS aspect string to ImagineArt format
+function toImagineAspect(aspect: string): string {
+  const map: Record<string, string> = {
+    ASPECT_1_1: '1:1',
+    ASPECT_2_1: '2:1',
+    ASPECT_9_16: '9:16',
+    ASPECT_16_9: '16:9',
+  }
+  return map[aspect] || '1:1'
+}
+
 export async function generateImage(req: ImageRequest): Promise<ImageResult> {
   const engine = SLUG_ENGINE_MAP[req.slug]
-  const prompt = buildPrompt(req.slug, req.choice_text, req.brand)
+  const prompt = buildPrompt(req.slug, req.choice_text, req.brand, req.product)
   const supabase = supabaseAdmin()
+  const dims = req.product ? PRODUCT_DIMENSIONS[req.product] : undefined
 
   // Insert tracking row
   const { data: trackRow } = await supabase.from('post_requests').insert({
@@ -32,6 +44,7 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
           prompt,
           order_id: req.order_id,
           choice_position: req.choice_position,
+          aspect_ratio: dims?.aspect,
         })
         result.slug = req.slug
         break
@@ -41,6 +54,7 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
           prompt,
           order_id: req.order_id,
           choice_position: req.choice_position,
+          aspect_ratio: dims ? toImagineAspect(dims.aspect) : undefined,
         })
         result.slug = req.slug
         break
@@ -51,6 +65,8 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
           order_id: req.order_id,
           choice_position: req.choice_position,
           mode: 'text-to-image',
+          width: dims?.width,
+          height: dims?.height,
         })
         result.slug = req.slug
         break
@@ -62,6 +78,8 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
           choice_position: req.choice_position,
           mode: 'image-to-image',
           reference_image_url: req.reference_image_url,
+          width: dims?.width,
+          height: dims?.height,
         })
         result.slug = req.slug
         break
@@ -73,6 +91,8 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
           choice_position: req.choice_position,
           screenshot_urls: req.reference_image_url ? [req.reference_image_url] : [],
           brand: req.brand,
+          width: dims?.width,
+          height: dims?.height,
         })
         break
 
@@ -83,6 +103,8 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
           choice_position: req.choice_position,
           screenshot_urls: req.reference_image_url ? [req.reference_image_url] : [],
           brand: req.brand,
+          width: dims?.width,
+          height: dims?.height,
         })
         break
 

@@ -45,6 +45,7 @@ export interface BrandContext {
 
 export interface ImageRequest {
   slug: ImageSlug
+  product?: string
   briefing_text: string
   choice_label: string
   choice_text: string
@@ -53,6 +54,18 @@ export interface ImageRequest {
   order_id: string
   choice_id: string
   choice_position: number
+}
+
+// Aspect ratio and dimensions per product
+export const PRODUCT_DIMENSIONS: Record<string, { width: number; height: number; aspect: string }> = {
+  post_instagram: { width: 1080, height: 1080, aspect: 'ASPECT_1_1' },
+  carrossel: { width: 1080, height: 1080, aspect: 'ASPECT_1_1' },
+  content_pack: { width: 1080, height: 1080, aspect: 'ASPECT_1_1' },
+  ad_copy: { width: 1080, height: 1080, aspect: 'ASPECT_1_1' },
+  email_sequence: { width: 1200, height: 600, aspect: 'ASPECT_2_1' },
+  reels_script: { width: 1080, height: 1920, aspect: 'ASPECT_9_16' },
+  landing_page_copy: { width: 1920, height: 1080, aspect: 'ASPECT_16_9' },
+  app: { width: 1080, height: 1080, aspect: 'ASPECT_1_1' },
 }
 
 export interface ImageResult {
