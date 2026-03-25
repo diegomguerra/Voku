@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 const FF = "'Plus Jakarta Sans', sans-serif";
@@ -15,6 +15,7 @@ type Choice = {
   content: { text?: string; headline?: string; body?: string; sections?: any[] };
   position: number;
   is_selected: boolean;
+  image_url?: string;
 };
 
 type OrderData = {
@@ -54,7 +55,8 @@ function getFullText(choice: Choice): string {
   return choice.content?.text || choice.content?.body || JSON.stringify(choice.content, null, 2);
 }
 
-export default function OrderChoices({ order, choices, deliverables, iterationId }: Props) {
+export default function OrderChoices({ order, choices: initialChoices, deliverables, iterationId }: Props) {
+  const [choices, setChoices] = useState<Choice[]>(initialChoices);
   const [selected, setSelected] = useState<string | null>(
     choices.find((c) => c.is_selected)?.id || null
   );
@@ -66,6 +68,30 @@ export default function OrderChoices({ order, choices, deliverables, iterationId
   const [showOptIn, setShowOptIn] = useState(false);
   const [optInDone, setOptInDone] = useState(false);
   const [optInLoading, setOptInLoading] = useState(false);
+
+  // Poll for image_url updates (images generate async after text)
+  useEffect(() => {
+    const hasImages = choices.some((c) => c.image_url);
+    const allHaveImages = choices.every((c) => c.image_url);
+    if (allHaveImages || done) return;
+    // Only poll if at least one choice might get an image
+    const interval = setInterval(async () => {
+      const sb = supabase();
+      const { data } = await sb
+        .from("choices")
+        .select("id, image_url")
+        .eq("order_id", order.id);
+      if (data?.some((d: any) => d.image_url)) {
+        setChoices((prev) =>
+          prev.map((c) => {
+            const updated = data.find((d: any) => d.id === c.id);
+            return updated?.image_url ? { ...c, image_url: updated.image_url } : c;
+          })
+        );
+      }
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [choices, order.id, done]);
 
   const isPending = order.status === "in_production" && choices.length > 0 && !choices.some((c) => c.is_selected);
   const isWaiting = (order.status === "briefing" || order.status === "in_production") && choices.length === 0;
@@ -271,6 +297,35 @@ export default function OrderChoices({ order, choices, deliverables, iterationId
               borderRadius: 14, padding: 0, cursor: "pointer",
               transition: "all 0.2s", position: "relative", overflow: "hidden",
             }}>
+              {/* Image preview */}
+              {choice.image_url ? (
+                <div style={{ position: "relative", aspectRatio: "1/1", overflow: "hidden" }}>
+                  <img
+                    src={choice.image_url}
+                    alt={`Visual ${label}`}
+                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+                  />
+                  <div style={{
+                    position: "absolute", top: 10, left: 10,
+                    background: C.lime, color: C.dark, padding: "2px 8px",
+                    fontSize: 10, fontWeight: 800, fontFamily: FF,
+                  }}>
+                    {label}
+                  </div>
+                </div>
+              ) : choices.some((c) => c.image_url) || order.product === 'post_instagram' || order.product === 'carrossel' || order.product === 'ad_copy' ? (
+                <div style={{
+                  aspectRatio: "1/1", display: "flex", alignItems: "center", justifyContent: "center",
+                  background: `linear-gradient(135deg, ${C.card} 0%, ${C.cardHover} 100%)`,
+                  borderBottom: `1px solid ${C.border}`,
+                }}>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 24, marginBottom: 8, opacity: 0.4 }}>◐</div>
+                    <div style={{ fontFamily: FF, fontSize: 11, color: C.faint }}>Gerando imagem...</div>
+                  </div>
+                </div>
+              ) : null}
+
               {/* Card header */}
               <div style={{ padding: "18px 20px 0" }}>
                 <div style={{ fontFamily: FF, fontSize: 11, fontWeight: 700, color: C.lime, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>

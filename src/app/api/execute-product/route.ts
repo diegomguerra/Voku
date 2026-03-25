@@ -315,6 +315,56 @@ Each variation must be complete and production-ready. Only output the JSON array
     const productName = PRODUCT_NAMES[product as ProductId]
     const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
 
+    // Fire image generation for visual products (non-blocking)
+    const IMAGE_PRODUCTS: Record<string, string> = {
+      post_instagram: 'type-first',
+      carrossel: 'type-first',
+      ad_copy: 'type-first',
+      content_pack: 'type-first',
+    }
+    const imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
+    if (imageSlug) {
+      // Fetch inserted choices to get their IDs
+      const { data: insertedChoices } = await supabase
+        .from('choices')
+        .select('id, position, label, content')
+        .eq('order_id', order_id)
+        .order('position')
+
+      // Fetch brand context if available
+      const { data: brandRow } = await supabase
+        .from('brand_contexts')
+        .select('nome_marca, tom, palavras_chave')
+        .eq('user_id', user_id)
+        .limit(1)
+        .single()
+
+      const brand = brandRow ? {
+        nome_marca: brandRow.nome_marca,
+        tom: brandRow.tom,
+      } : {}
+
+      if (insertedChoices?.length) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://voku.one'
+        for (const choice of insertedChoices) {
+          fetch(`${appUrl}/api/generate-image`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              order_id,
+              choice_id: choice.id,
+              choice_position: choice.position,
+              choice_label: choice.label,
+              choice_text: choice.content?.text || '',
+              slug: imageSlug,
+              brand,
+              briefing_text: briefingText,
+            }),
+          }).catch(e => console.error('Image gen fire-and-forget error:', e))
+        }
+      }
+    }
+
     // E-mail (non-blocking — não impede geração das choices)
     resend.emails.send({
       from: 'Voku <ola@voku.one>',
