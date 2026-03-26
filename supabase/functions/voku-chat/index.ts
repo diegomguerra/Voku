@@ -99,11 +99,31 @@ A plataforma gera imagens automaticamente para posts, carrosséis e ads.
 }
 
 function extractAction(text: string): { cleanText: string; action: any | null } {
-  const match = text.match(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/);
-  if (!match) return { cleanText: text, action: null };
+  const marker = '"action"';
+  const idx = text.indexOf(marker);
+  if (idx === -1) return { cleanText: text, action: null };
+
+  // Find the opening { before "action"
+  let start = text.lastIndexOf("{", idx);
+  if (start === -1) return { cleanText: text, action: null };
+
+  // Find balanced closing } (handles nested objects like structured_data)
+  let depth = 0;
+  let end = -1;
+  for (let i = start; i < text.length; i++) {
+    if (text[i] === "{") depth++;
+    else if (text[i] === "}") {
+      depth--;
+      if (depth === 0) { end = i; break; }
+    }
+  }
+  if (end === -1) return { cleanText: text, action: null };
+
+  const jsonStr = text.slice(start, end + 1);
   try {
-    const action = JSON.parse(match[0]);
-    const cleanText = text.replace(match[0], "").trim();
+    const action = JSON.parse(jsonStr);
+    if (action.action !== "execute") return { cleanText: text, action: null };
+    const cleanText = (text.slice(0, start) + text.slice(end + 1)).trim();
     return { cleanText, action };
   } catch {
     return { cleanText: text, action: null };

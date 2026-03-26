@@ -315,8 +315,11 @@ export default function ProjetoPage() {
                       setProgress(p => { if (p >= 90) { clearInterval(timer); return 90; } return p + Math.random() * 12; });
                     }, 400);
                   }
-                  // Hide partial ___PREVIEW___ from display
-                  const displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "").replace(/\{[\s\S]*"action"[\s\S]*$/g, "");
+                  // Hide partial ___PREVIEW___ and action JSON from display
+                  let displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
+                  // Strip action JSON block (find last {"action" and remove from there)
+                  const actionIdx = displayText.lastIndexOf('{"action"');
+                  if (actionIdx !== -1) displayText = displayText.slice(0, actionIdx).trim();
                   setMessages(prev => {
                     const copy = [...prev];
                     copy[streamIdx] = { role: "assistant", content: displayText };

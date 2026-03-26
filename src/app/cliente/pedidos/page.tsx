@@ -478,8 +478,10 @@ export default function PedidosPage() {
                     setPreviewState("generating");
                     if (isMobile) setActiveTab("preview");
                   }
-                  // Hide partial ___PREVIEW___ blocks from display
-                  const displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
+                  // Hide partial ___PREVIEW___ and action JSON from display
+                  let displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
+                  const actionIdx = displayText.lastIndexOf('{"action"');
+                  if (actionIdx !== -1) displayText = displayText.slice(0, actionIdx).trim();
                   setMessages(prev => {
                     const copy = [...prev];
                     copy[streamIdx] = { role: "assistant", content: displayText };
