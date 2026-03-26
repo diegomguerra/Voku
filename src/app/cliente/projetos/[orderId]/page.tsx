@@ -722,63 +722,56 @@ export default function ProjetoPage() {
                     AMOSTRA — {postType}
                   </div>
 
-                  {/* Post card */}
-                  <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", maxWidth: 440, animation: "fadeUp 0.4s ease" }}>
-                    {/* Visual area */}
-                    <div style={{ height: 190, background: C.ink, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", padding: post.imageUrl ? 0 : 22 }}>
-                      {post.imageUrl ? (
-                        <img src={post.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                      ) : (
-                        <div style={{ fontFamily: FFH, fontStyle: "italic", fontSize: 20, color: "#F8F8F4", lineHeight: 1.3, textAlign: "center" }}>
-                          {postHook}
-                        </div>
-                      )}
-                      <div style={{ position: "absolute", top: 11, right: 11, fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", background: C.lime, color: C.ink, padding: "2px 7px", borderRadius: 4 }}>
+                  {/* Preview card */}
+                  <div style={{ background: C.bg, border: `1.5px solid ${C.lime}40`, borderRadius: 12, overflow: "hidden", maxWidth: 480, animation: "fadeUp 0.4s ease" }}>
+                    {/* Header strip */}
+                    <div style={{ background: `${C.lime}18`, padding: "10px 16px", display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${C.lime}30` }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", background: C.lime, color: C.ink, padding: "2px 8px", borderRadius: 4 }}>
                         {postType}
                       </div>
-                      {post.imageUrl && (
-                        <div style={{ position: "absolute", top: 11, left: 11, fontSize: 9, fontWeight: 600, color: "#fff", background: "rgba(0,0,0,0.45)", borderRadius: 3, padding: "2px 6px" }}>
-                          IA gerada
-                        </div>
-                      )}
+                      <div style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>Amostra gratuita</div>
                     </div>
 
                     {/* Card body */}
-                    <div style={{ padding: "16px 18px" }}>
+                    <div style={{ padding: "18px 18px" }}>
                       {postHook && (
-                        <div style={{ fontFamily: FFH, fontStyle: "italic", fontSize: 17, fontWeight: 400, color: C.ink, marginBottom: 10 }}>
+                        <div style={{ fontFamily: FFH, fontStyle: "italic", fontSize: 19, fontWeight: 400, color: C.ink, marginBottom: 14, lineHeight: 1.35 }}>
                           {postHook}
                         </div>
                       )}
                       {postCaption && (
-                        <div style={{ fontSize: 12.5, color: C.ink2, lineHeight: 1.75, whiteSpace: "pre-wrap", borderLeft: `2px solid ${C.lime}`, paddingLeft: 11, marginBottom: 12 }}>
+                        <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.75, whiteSpace: "pre-wrap", borderLeft: `3px solid ${C.lime}`, paddingLeft: 12, marginBottom: 14 }}>
                           {postCaption}
                         </div>
                       )}
                       {postHashtags && (
                         <>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>Hashtags</div>
-                          <div style={{ fontSize: 11, color: "#3a8a3a", lineHeight: 1.9, marginBottom: 12 }}>{postHashtags}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Hashtags</div>
+                          <div style={{ fontSize: 11.5, color: "#3a8a3a", lineHeight: 1.9, marginBottom: 14 }}>{postHashtags}</div>
                         </>
                       )}
                       {postFeatures.length > 0 && (
                         <>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>Features</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Features</div>
                           <ul style={{ fontSize: 12, color: C.ink2, lineHeight: 1.8, paddingLeft: 18, margin: 0 }}>
                             {postFeatures.map((f, fi) => <li key={fi}>{f}</li>)}
                           </ul>
                         </>
                       )}
                     </div>
+
+                    {/* What happens next */}
+                    <div style={{ padding: "12px 16px", background: C.surface, borderTop: `1px solid ${C.border}`, fontSize: 11.5, color: C.muted, lineHeight: 1.6 }}>
+                      Ao aprovar, geramos <strong style={{ color: C.ink }}>3 variações completas</strong> com <strong style={{ color: C.ink }}>fotos reais por IA</strong>. Depois, você escolhe a favorita.
+                    </div>
                   </div>
                 </div>
 
                 {/* Approve bar */}
                 {phase === "preview" && (
-                  <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                  <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
                     <div style={{ fontSize: 12, color: C.muted, flex: 1, lineHeight: 1.5 }}>
-                      Gostou da direção? Aprovando, você recebe o{" "}
-                      <strong style={{ color: C.ink }}>produto completo com imagens reais</strong>.
+                      Gostou? Clique para gerar <strong style={{ color: C.ink }}>3 variações + fotos reais</strong>.
                     </div>
                     <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
                       <button
@@ -786,14 +779,14 @@ export default function ProjetoPage() {
                         disabled={chatLoading}
                         style={{ fontSize: 11.5, fontWeight: 700, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `1.5px solid ${C.mid}`, background: C.bg, color: C.ink }}
                       >
-                        Ajustar tom
+                        Ajustar
                       </button>
                       <button
                         onClick={approveAll}
                         disabled={chatLoading}
-                        style={{ fontSize: 11.5, fontWeight: 700, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `1.5px solid ${C.lime}`, background: C.lime, color: C.ink }}
+                        style={{ fontSize: 12, fontWeight: 800, padding: "10px 22px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `2px solid ${C.lime}`, background: C.lime, color: C.ink, boxShadow: "0 2px 8px rgba(170,255,0,0.3)" }}
                       >
-                        Aprovar e gerar →
+                        Gerar produto completo →
                       </button>
                     </div>
                   </div>
