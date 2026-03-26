@@ -34,8 +34,8 @@ export default function OrderDetailPage() {
         .eq("id", orderId)
         .single();
 
-      if (orderErr || !orderData) { setError("Order not found."); setLoading(false); return; }
-      if (orderData.user_id !== userData.user.id) { setError("Access denied."); setLoading(false); return; }
+      if (orderErr || !orderData) { setError("Pedido não encontrado."); setLoading(false); return; }
+      if (orderData.user_id !== userData.user.id) { setError("Acesso negado."); setLoading(false); return; }
       setOrder(orderData);
 
       // Fetch choices
@@ -71,7 +71,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div style={{ background: C.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ fontFamily: FF, fontSize: 14, color: C.sub }}>Loading...</div>
+        <div style={{ fontFamily: FF, fontSize: 14, color: C.sub }}>Carregando...</div>
       </div>
     );
   }
@@ -92,7 +92,7 @@ export default function OrderDetailPage() {
           <a href="/cliente/pedidos" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ background: C.lime, color: C.dark, fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 18, letterSpacing: "-0.5px", padding: "3px 12px", borderRadius: 6, textTransform: "uppercase" as const }}>VOKU</div>
             <span style={{ color: C.sub, fontSize: 13 }}>←</span>
-            <span style={{ color: C.sub, fontSize: 13 }}>My Orders</span>
+            <span style={{ color: C.sub, fontSize: 13 }}>Meus Pedidos</span>
           </a>
         </div>
       </div>

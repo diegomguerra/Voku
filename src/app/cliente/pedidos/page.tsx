@@ -418,11 +418,6 @@ export default function PedidosPage() {
     // Persiste mensagem do usuário
     await persistMessage("user", userText);
 
-    // Ativa preview "generating" quando chat inicia geração
-    if (previewState === "idle") {
-      setPreviewState("generating");
-    }
-
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -478,6 +473,11 @@ export default function PedidosPage() {
                 const evt = JSON.parse(payload);
                 if (evt.type === "delta" && evt.text) {
                   accumulated += evt.text;
+                  // Detect preview block starting — show generating state
+                  if (accumulated.includes("___PREVIEW___") && previewState !== "generating") {
+                    setPreviewState("generating");
+                    if (isMobile) setActiveTab("preview");
+                  }
                   // Hide partial ___PREVIEW___ blocks from display
                   const displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
                   setMessages(prev => {
@@ -522,9 +522,6 @@ export default function PedidosPage() {
           setActivePreviewProduct(finalPreview.type || "");
           setPreviewState("preview");
           if (isMobile) setActiveTab("preview");
-        } else if (previewState === "generating") {
-          setPreviewState("idle");
-        }
 
         // Handle action
         if (finalAction?.action === "execute") {
@@ -556,9 +553,6 @@ export default function PedidosPage() {
           setActivePreviewProduct(preview.type || "");
           setPreviewState("preview");
           if (isMobile) setActiveTab("preview");
-        } else if (previewState === "generating") {
-          setPreviewState("idle");
-        }
 
         // ACTION=EXECUTE
         if (data?.action?.action === "execute") {

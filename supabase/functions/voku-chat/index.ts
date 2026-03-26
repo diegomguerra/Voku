@@ -74,7 +74,7 @@ A plataforma gera imagens automaticamente para posts, carrosséis e ads.
    ___END___
 3. Depois do bloco, diga algo como: "Isso é só uma amostra grátis do que posso criar. O produto completo vem com 3 variações profissionais + imagens. Posso gerar?"
 4. Se o cliente confirmar → retorne o JSON de execução:
-   {"action":"execute","product":"<tipo>","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"...","brand_context":${JSON.stringify(brandCtxForExecution)}}}
+   {"action":"execute","product":"<tipo>","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"...","brand_context":` + JSON.stringify(brandCtxForExecution) + `}}
 5. Para posts/carrossel, inclua SEMPRE no structured_data: "cor_primaria", "cor_secundaria", "nome_marca", "publico_detalhado"
 
 ## Schemas de Preview por Produto
