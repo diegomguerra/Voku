@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ProductId } from '@/lib/products'
+import { generateImage } from '@/lib/image-engine/router'
+import { ImageSlug } from '@/lib/image-engine/types'
 import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
@@ -428,26 +430,40 @@ Each variation must be complete and production-ready. Only output the JSON array
       } : {}
 
       if (insertedChoices?.length) {
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://voku.one'
-        // Await all image generations in parallel (within maxDuration=60s)
+        // Generate all images in parallel — direct call, no HTTP overhead
         await Promise.all(insertedChoices.map(choice =>
-          fetch(`${appUrl}/api/generate-image`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              order_id,
-              choice_id: choice.id,
-              choice_position: choice.position,
-              choice_label: choice.label,
-              choice_text: choice.content?.text || '',
-              slug: imageSlug,
-              brand,
-              briefing_text: briefingText,
-              product,
-              reference_image_url: reference_image_url || undefined,
-            }),
+          generateImage({
+            slug: imageSlug as ImageSlug,
+            product,
+            briefing_text: briefingText,
+            choice_label: choice.label || '',
+            choice_text: choice.content?.text || '',
+            brand,
+            reference_image_url: reference_image_url || undefined,
+            order_id: order_id!,
+            choice_id: choice.id,
+            choice_position: choice.position,
           }).catch(e => console.error('Image gen error for choice:', choice.id, e))
         ))
+
+        // All images done → advance project phases in parallel
+        const now = new Date().toISOString()
+        const { data: allChoices } = await supabase
+          .from('choices').select('id, image_url').eq('order_id', order_id)
+        if (allChoices?.every(c => c.image_url)) {
+          const [imgStep, prodPhase, approvalPhase, chooseStep] = await Promise.all([
+            supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 2).single(),
+            supabase.from('project_phases').select('id').eq('order_id', order_id).eq('phase_number', 1).single(),
+            supabase.from('project_phases').select('id').eq('order_id', order_id).eq('phase_number', 2).single(),
+            supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 3).single(),
+          ])
+          await Promise.all([
+            imgStep.data ? supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('id', imgStep.data.id) : Promise.resolve(),
+            prodPhase.data ? supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('id', prodPhase.data.id) : Promise.resolve(),
+            approvalPhase.data ? supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('id', approvalPhase.data.id) : Promise.resolve(),
+            chooseStep.data ? supabase.from('project_steps').update({ status: 'active' }).eq('id', chooseStep.data.id) : Promise.resolve(),
+          ])
+        }
       }
     }
 

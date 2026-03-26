@@ -163,26 +163,6 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
       }).eq('id', req.choice_id),
     ])
 
-    // Check if ALL choices for this order have images → advance phases in parallel
-    const { data: allChoices } = await supabase
-      .from('choices').select('id, image_url')
-      .eq('order_id', req.order_id)
-    const allDone = allChoices?.every(c => c.image_url)
-    if (allDone) {
-      const [imgStep, prodPhase, approvalPhase, chooseStep] = await Promise.all([
-        supabase.from('project_steps').select('id').eq('order_id', req.order_id).eq('step_number', 2).single(),
-        supabase.from('project_phases').select('id').eq('order_id', req.order_id).eq('phase_number', 1).single(),
-        supabase.from('project_phases').select('id').eq('order_id', req.order_id).eq('phase_number', 2).single(),
-        supabase.from('project_steps').select('id').eq('order_id', req.order_id).eq('step_number', 3).single(),
-      ])
-      await Promise.all([
-        imgStep.data ? supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('id', imgStep.data.id) : Promise.resolve(),
-        prodPhase.data ? supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('id', prodPhase.data.id) : Promise.resolve(),
-        approvalPhase.data ? supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('id', approvalPhase.data.id) : Promise.resolve(),
-        chooseStep.data ? supabase.from('project_steps').update({ status: 'active' }).eq('id', chooseStep.data.id) : Promise.resolve(),
-      ])
-    }
-
     return result
   } catch (err) {
     // Mark as failed
