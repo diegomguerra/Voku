@@ -1,6 +1,8 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import { useUserContext } from "@/hooks/useUserContext";
 
 /* ── Design tokens ── */
 const C = {
@@ -20,63 +22,42 @@ const FFH = "'DM Serif Display', serif";
 type Phase = "briefing" | "generating" | "preview" | "approved";
 type StepState = "done" | "active" | "pending";
 interface Message {
-  role: "bot" | "user";
-  text: string;
-  quickReplies?: { label: string; primary?: boolean; action?: string }[];
+  role: "user" | "assistant";
+  content: string;
+  preview?: any;
 }
 interface Post {
-  hook: string;
-  caption: string;
-  hashtags: string;
-  pilar: string;
-  tipo: string;
-  dia: string;
+  type?: string;
+  hook?: string;
+  headline?: string;
+  caption?: string;
+  body?: string;
+  hashtags?: string[] | string;
+  cover_title?: string;
+  cover_subtitle?: string;
+  hero_headline?: string;
+  hero_subheadline?: string;
+  value_prop?: string;
+  subject?: string;
+  first_paragraph?: string;
+  first_15s?: string;
+  name?: string;
+  features?: string[];
   imageUrl?: string;
 }
 
-/* ── Briefing flow ── */
-const FLOW: {
-  bot: string;
-  collect?: string;
-  final?: boolean;
-  quickReplies?: { label: string; primary?: boolean; action?: string }[];
-}[] = [
-  {
-    bot: "Ola! Sou o **RORDENS**, assistente da Voku. Vou criar seu **Social Media Pack** de 12 posts.\n\nPrimeira pergunta: sobre o que e o seu negocio ou projeto?",
-  },
-  {
-    collect: "negocio",
-    bot: "Entendido. Quem e o seu **publico**? Quem voce quer atingir com esses posts?",
-  },
-  {
-    collect: "publico",
-    bot: "Perfeito. Qual e o **objetivo principal** — crescer seguidores, vender ou educar?",
-  },
-  {
-    collect: "objetivo",
-    bot: "Otimo. Qual e o **tom de voz** que voce quer? Ex: direto e ousado, inspirador, tecnico...",
-  },
-  {
-    collect: "tom",
-    bot: "Ultima pergunta: voce tem alguma **referencia de post ou conta** que admira?",
-  },
-  {
-    collect: "referencia",
-    final: true,
-    bot: "Briefing completo! Vou gerar o **post de amostra** agora — aparece ao vivo no painel ao lado.",
-    quickReplies: [{ label: "Gerar meu post →", primary: true, action: "generate" }],
-  },
-];
-
-const FALLBACK_POST: Post = {
-  hook: "O segredo que ninguem te conta sobre engajamento",
-  caption:
-    "A maioria dos perfis morre no silencio porque publica sem estrategia.\n\nNao e sobre postar todo dia — e sobre postar certo.\n\nCada legenda precisa ter:\n1. Um gancho que para o scroll\n2. Valor real em 3 linhas\n3. CTA que converte\n\nSalva esse post e aplica hoje.",
-  hashtags: "#marketing #socialmedia #engajamento #estrategia #voku #conteudo",
-  pilar: "Educativo",
-  tipo: "Carrossel",
-  dia: "Segunda",
-};
+/* ── Preview extraction ── */
+function parsePreviewFromContent(text: string): { cleanText: string; preview: any | null } {
+  const match = text.match(/___PREVIEW___([\s\S]*?)___END___/);
+  if (!match) return { cleanText: text, preview: null };
+  try {
+    const preview = JSON.parse(match[1].trim());
+    const cleanText = text.replace(/___PREVIEW___[\s\S]*?___END___/g, "").trim();
+    return { cleanText, preview };
+  } catch {
+    return { cleanText: text, preview: null };
+  }
+}
 
 /* ── Inline SVG icons ── */
 function PlusIcon() {
@@ -124,7 +105,7 @@ function renderBold(text: string) {
   );
 }
 
-/* ── CSS keyframes (injected once) ── */
+/* ── CSS keyframes ── */
 const KEYFRAMES = `
 @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
 @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
@@ -132,157 +113,314 @@ const KEYFRAMES = `
 @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
 `;
 
+/* ── Product label for preview ── */
+function previewLabel(type?: string): string {
+  const map: Record<string, string> = {
+    post_instagram: "POST INSTAGRAM",
+    carrossel: "CARROSSEL",
+    landing_page_copy: "LANDING PAGE",
+    email_sequence: "E-MAIL",
+    ad_copy: "ANÚNCIO",
+    reels_script: "REELS",
+    content_pack: "PACK DE CONTEÚDO",
+    app: "APP",
+  };
+  return map[type || ""] || "CONTEÚDO";
+}
+
 /* ══════════════════════════════════════════════════════════════════
    PAGE COMPONENT
    ══════════════════════════════════════════════════════════════════ */
 export default function ProjetoPage() {
   const { orderId } = useParams<{ orderId: string }>();
+  const { ctx } = useUserContext();
 
   /* ── State ── */
   const [phase, setPhase] = useState<Phase>("briefing");
   const [stepStates, setStepStates] = useState<StepState[]>(["done", "active", "pending", "pending"]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [briefingAnswers, setBriefingAnswers] = useState<Record<string, string>>({});
   const [post, setPost] = useState<Post | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [micActive, setMicActive] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [flowIdx, setFlowIdx] = useState(0);
-  const [previewTitle, setPreviewTitle] = useState("Area de Previa");
+  const [chatLoading, setChatLoading] = useState(false);
+  const [previewTitle, setPreviewTitle] = useState("Área de Prévia");
   const [previewSub, setPreviewSub] = useState("O post gerado aparece aqui ao confirmar o briefing");
   const [progress, setProgress] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const userIdRef = useRef<string | null>(null);
 
   /* ── Nav steps config ── */
   const NAV_STEPS = [
     { number: 1, label: "Cadastro" },
     { number: 2, label: "Briefing" },
-    { number: 3, label: "Geracao" },
-    { number: 4, label: "Aprovacao" },
+    { number: 3, label: "Geração" },
+    { number: 4, label: "Aprovação" },
   ];
 
   /* ── Auto-scroll ── */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, chatLoading]);
 
-  /* ── Start flow on mount ── */
+  /* ── Load user + chat history on mount ── */
   useEffect(() => {
-    addBotMessage(FLOW[0].bot, FLOW[0].quickReplies);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const sb = supabase();
+    sb.auth.getUser().then(async ({ data: authData }) => {
+      if (!authData.user) return;
+      userIdRef.current = authData.user.id;
 
-  /* ── Bot message with typing delay ── */
-  const addBotMessage = useCallback((text: string, quickReplies?: Message["quickReplies"]) => {
-    setIsTyping(true);
-    const delay = Math.min(300 + text.length * 4, 900);
-    setTimeout(() => {
-      setIsTyping(false);
-      setMessages((prev) => [...prev, { role: "bot", text, quickReplies }]);
-    }, delay);
-  }, []);
+      // Load existing chat messages
+      const { data: msgs } = await sb
+        .from("chat_messages")
+        .select("*")
+        .eq("user_id", authData.user.id)
+        .eq("channel", "project_" + orderId)
+        .order("created_at", { ascending: true });
 
-  /* ── Handle user send ── */
-  const handleSend = useCallback(() => {
-    const text = inputValue.trim();
-    if (!text || isTyping || phase !== "briefing") return;
-    setInputValue("");
-
-    setMessages((prev) => [...prev, { role: "user", text }]);
-
-    const nextIdx = flowIdx + 1;
-    if (nextIdx < FLOW.length) {
-      const step = FLOW[nextIdx];
-      if (step.collect) {
-        setBriefingAnswers((prev) => ({ ...prev, [step.collect!]: text }));
-      }
-      addBotMessage(step.bot, step.quickReplies);
-      setFlowIdx(nextIdx);
-    }
-  }, [inputValue, isTyping, phase, flowIdx, addBotMessage]);
-
-  /* ── Handle quick reply ── */
-  const handleReply = useCallback(
-    (r: { label: string; action?: string }) => {
-      if (r.action === "generate") {
-        generate();
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [briefingAnswers]
-  );
-
-  /* ── Generate preview ── */
-  const generate = useCallback(async () => {
-    setPhase("generating");
-    setStepStates(["done", "done", "active", "pending"]);
-    setPreviewTitle("Gerando copy e imagem...");
-    setPreviewSub("IA escrevendo + foto realista sendo criada");
-    setProgress(0);
-
-    const progressTimer = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 90) { clearInterval(progressTimer); return 90; }
-        return p + Math.random() * 15;
-      });
-    }, 400);
-
-    let result: Post | null = null;
-    try {
-      const res = await fetch("/api/gerar-preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...briefingAnswers, order_id: orderId }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.success) {
-          result = {
-            hook: data.post?.hook || FALLBACK_POST.hook,
-            caption: data.post?.caption || FALLBACK_POST.caption,
-            hashtags: data.post?.hashtags || FALLBACK_POST.hashtags,
-            pilar: data.post?.pilar || FALLBACK_POST.pilar,
-            tipo: data.post?.tipo || FALLBACK_POST.tipo,
-            dia: data.post?.dia || FALLBACK_POST.dia,
-            imageUrl: data.image?.url,
-          };
+      if (msgs && msgs.length > 0) {
+        const loaded: Message[] = msgs.map((m: any) => {
+          const { cleanText, preview } = parsePreviewFromContent(m.content || "");
+          return { role: m.role, content: cleanText, preview: preview || undefined };
+        });
+        setMessages(loaded);
+        // Check if there's already a preview in history
+        const lastPreview = [...loaded].reverse().find(m => m.preview);
+        if (lastPreview?.preview) {
+          setPost(lastPreview.preview);
+          setPhase("preview");
+          setStepStates(["done", "done", "done", "active"]);
+          setPreviewTitle("Amostra — " + previewLabel(lastPreview.preview.type));
+          setPreviewSub("Legenda e hashtags completas abaixo");
+          setProgress(100);
         }
       }
-    } catch (_) {
-      /* fallback */
-    }
+    });
+  }, [orderId]);
 
-    clearInterval(progressTimer);
-    setProgress(100);
+  /* ── Persist message to DB ── */
+  const persistMessage = useCallback(async (role: string, content: string) => {
+    if (!userIdRef.current) return;
+    const sb = supabase();
+    await sb.from("chat_messages").insert({
+      user_id: userIdRef.current,
+      role,
+      content,
+      channel: "project_" + orderId,
+    });
+  }, [orderId]);
 
-    if (!result) result = FALLBACK_POST;
-
-    setTimeout(() => {
-      setPost(result);
-      setPhase("preview");
-      setStepStates(["done", "done", "done", "active"]);
-      setPreviewTitle("Amostra — Post 1 de 12");
-      setPreviewSub("Legenda e hashtags completas abaixo");
-    }, 300);
-  }, [briefingAnswers, orderId]);
-
-  /* ── Approve ── */
-  const approveAll = useCallback(() => {
+  /* ── Handle execute action (create order) ── */
+  const handleExecuteAction = useCallback(async (action: any) => {
     setPhase("approved");
     setStepStates(["done", "done", "done", "done"]);
     setPreviewTitle("Pedido aprovado!");
-    setPreviewSub("Seus 12 posts estao sendo finalizados");
-    addBotMessage("Pedido aprovado! Seus **12 posts completos** estao sendo finalizados. Voce recebe tudo em breve.");
-  }, [addBotMessage]);
+    setPreviewSub("Seus posts estão sendo finalizados com imagens reais");
 
-  /* ── Request revision ── */
+    try {
+      const sb = supabase();
+      const { data: sessionData } = await sb.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+
+      await fetch("/api/execute-product", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          product: action.product,
+          structured_data: action.structured_data,
+          order_id: orderId,
+        }),
+      });
+    } catch (err) {
+      console.error("Execute error:", err);
+    }
+  }, [orderId]);
+
+  /* ── Send message via voku-chat with SSE streaming ── */
+  const sendMessage = useCallback(async (text?: string) => {
+    const userText = text || inputValue.trim();
+    if (!userText || chatLoading) return;
+    setInputValue("");
+
+    const newMessages: Message[] = [...messages, { role: "user", content: userText }];
+    setMessages(newMessages);
+    setChatLoading(true);
+    await persistMessage("user", userText);
+
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/voku-chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseKey}`,
+          Accept: "text/event-stream",
+        },
+        body: JSON.stringify({
+          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          user_context: {
+            name: ctx?.name || "você",
+            plan: ctx?.plan || "free",
+            credits: ctx?.credits ?? 0,
+            channel: "project",
+            user_id: userIdRef.current,
+          },
+        }),
+      });
+
+      const contentType = res.headers.get("content-type") || "";
+
+      if (contentType.includes("text/event-stream") && res.body) {
+        // ─── SSE Streaming ───
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let accumulated = "";
+        const streamIdx = newMessages.length;
+        setMessages([...newMessages, { role: "assistant", content: "" }]);
+
+        let finalAction: any = null;
+        let finalPreview: any = null;
+        let finalCleanText = "";
+        let fullTextRaw = "";
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const payload = line.slice(6).trim();
+              try {
+                const evt = JSON.parse(payload);
+                if (evt.type === "delta" && evt.text) {
+                  accumulated += evt.text;
+                  // Detect preview starting
+                  if (accumulated.includes("___PREVIEW___") && phase !== "generating") {
+                    setPhase("generating");
+                    setStepStates(["done", "done", "active", "pending"]);
+                    setPreviewTitle("Gerando copy e imagem...");
+                    setPreviewSub("IA escrevendo + foto realista sendo criada");
+                    setProgress(0);
+                    // Animate progress
+                    const timer = setInterval(() => {
+                      setProgress(p => { if (p >= 90) { clearInterval(timer); return 90; } return p + Math.random() * 12; });
+                    }, 400);
+                  }
+                  // Hide partial ___PREVIEW___ from display
+                  const displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "").replace(/\{[\s\S]*"action"[\s\S]*$/g, "");
+                  setMessages(prev => {
+                    const copy = [...prev];
+                    copy[streamIdx] = { role: "assistant", content: displayText };
+                    return copy;
+                  });
+                }
+                if (evt.type === "done") {
+                  finalCleanText = evt.text || accumulated;
+                  finalAction = evt.action || null;
+                  finalPreview = evt.preview || null;
+                  fullTextRaw = evt.fullText || accumulated;
+                }
+              } catch { /* skip */ }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
+
+        // Fallback if "done" never arrived
+        if (!finalCleanText && accumulated) {
+          const { cleanText: fbClean, preview: fbPreview } = parsePreviewFromContent(accumulated);
+          finalCleanText = fbClean.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+          finalPreview = finalPreview || fbPreview;
+          fullTextRaw = fullTextRaw || accumulated;
+        }
+
+        // Finalize
+        const withReply: Message[] = [
+          ...newMessages,
+          { role: "assistant", content: finalCleanText || "Ops, a conexão caiu. Tenta de novo!", preview: finalPreview || undefined },
+        ];
+        setMessages(withReply);
+        await persistMessage("assistant", fullTextRaw || finalCleanText);
+
+        // Show preview
+        if (finalPreview) {
+          setPost(finalPreview);
+          setPhase("preview");
+          setStepStates(["done", "done", "done", "active"]);
+          setPreviewTitle("Amostra — " + previewLabel(finalPreview.type));
+          setPreviewSub("Legenda e hashtags completas abaixo");
+          setProgress(100);
+        }
+
+        // Execute action
+        if (finalAction?.action === "execute") {
+          await handleExecuteAction(finalAction);
+        }
+      } else {
+        // ─── Non-streaming fallback ───
+        const data = await res.json();
+        const reply = data?.content?.[0]?.text || "Ops, tive um problema. Pode repetir?";
+        const fullTextRaw = data?.fullText || reply;
+        const { cleanText: noPreview, preview: parsedPreview } = parsePreviewFromContent(reply);
+        const cleanReply = noPreview.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+        const preview = parsedPreview || data?.preview || null;
+
+        const withReply: Message[] = [
+          ...newMessages,
+          { role: "assistant", content: cleanReply, preview: preview || undefined },
+        ];
+        setMessages(withReply);
+        await persistMessage("assistant", fullTextRaw);
+
+        if (preview) {
+          setPost(preview);
+          setPhase("preview");
+          setStepStates(["done", "done", "done", "active"]);
+          setPreviewTitle("Amostra — " + previewLabel(preview.type));
+          setPreviewSub("Legenda e hashtags completas abaixo");
+          setProgress(100);
+        }
+
+        if (data?.action?.action === "execute") {
+          await handleExecuteAction(data.action);
+        }
+      }
+    } catch {
+      const errMsg = "Ops, algo deu errado. Tenta de novo!";
+      setMessages([...newMessages, { role: "assistant", content: errMsg }]);
+      await persistMessage("assistant", errMsg);
+    }
+
+    setChatLoading(false);
+  }, [inputValue, chatLoading, messages, ctx, persistMessage, phase, handleExecuteAction]);
+
+  /* ── Approve from preview bar ── */
+  const approveAll = useCallback(() => {
+    // Send approval message back to chat — the AI will respond with execute action
+    sendMessage("Sim, aprovado! Pode gerar tudo.");
+  }, [sendMessage]);
+
+  /* ── Request revision from preview bar ── */
   const requestRevision = useCallback(() => {
-    addBotMessage("Sem problema! Me diz o que ajustar — tom, estilo, assunto?");
-    setPhase("briefing");
-    setStepStates(["done", "done", "active", "pending"]);
-  }, [addBotMessage]);
+    sendMessage("Quero ajustar o tom. Pode refazer?");
+  }, [sendMessage]);
+
+  /* ── Get display values from preview ── */
+  const postHook = post?.hook || post?.headline || post?.cover_title || post?.hero_headline || post?.subject || post?.name || "";
+  const postCaption = post?.caption || post?.body || post?.value_prop || post?.first_paragraph || post?.first_15s || post?.cover_subtitle || post?.hero_subheadline || "";
+  const postHashtags = Array.isArray(post?.hashtags) ? post.hashtags.join(" ") : (post?.hashtags || "");
+  const postType = previewLabel(post?.type);
+  const postFeatures = post?.features || [];
 
   /* ══════════════════════════════════════════════════════════════
      RENDER
@@ -311,15 +449,7 @@ export default function ProjetoPage() {
             flexShrink: 0,
           }}
         >
-          <span
-            style={{
-              fontWeight: 900,
-              color: C.lime,
-              fontSize: 13,
-              letterSpacing: "0.05em",
-              marginRight: 24,
-            }}
-          >
+          <span style={{ fontWeight: 900, color: C.lime, fontSize: 13, letterSpacing: "0.05em", marginRight: 24 }}>
             VOKU
           </span>
           {NAV_STEPS.map((s, i) => {
@@ -342,19 +472,11 @@ export default function ProjetoPage() {
                 >
                   <div
                     style={{
-                      width: 19,
-                      height: 19,
-                      borderRadius: "50%",
-                      background:
-                        state === "done" ? "#252525" : state === "active" ? C.lime : "transparent",
-                      border: `1.5px solid ${
-                        state === "done" ? "#303030" : state === "active" ? C.lime : "#333"
-                      }`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 9,
-                      fontWeight: 800,
+                      width: 19, height: 19, borderRadius: "50%",
+                      background: state === "done" ? "#252525" : state === "active" ? C.lime : "transparent",
+                      border: `1.5px solid ${state === "done" ? "#303030" : state === "active" ? C.lime : "#333"}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 9, fontWeight: 800,
                       color: state === "done" ? "#555" : state === "active" ? C.ink : "#333",
                     }}
                   >
@@ -372,228 +494,67 @@ export default function ProjetoPage() {
           {/* ── CHAT COLUMN ── */}
           <div
             style={{
-              width: 380,
-              flexShrink: 0,
+              width: 380, flexShrink: 0,
               borderRight: `1px solid ${C.border}`,
-              display: "flex",
-              flexDirection: "column",
-              background: C.bg,
+              display: "flex", flexDirection: "column", background: C.bg,
             }}
           >
             {/* Chat header */}
             <div
               style={{
-                padding: "13px 16px",
-                borderBottom: `1px solid ${C.border}`,
-                display: "flex",
-                alignItems: "center",
-                gap: 11,
-                flexShrink: 0,
+                padding: "13px 16px", borderBottom: `1px solid ${C.border}`,
+                display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
               }}
             >
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "50%",
-                  background: C.ink,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 11,
-                  fontWeight: 900,
-                  color: C.lime,
-                }}
-              >
-                V
-              </div>
+              <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.ink, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: C.lime }}>V</div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>RORDENS</div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: C.muted,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 5,
-                    marginTop: 1,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: C.lime,
-                      animation: "pulse 2s ease-in-out infinite",
-                    }}
-                  />
+                <div style={{ fontSize: 11, color: C.muted, display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
+                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.lime, animation: "pulse 2s ease-in-out infinite" }} />
                   online agora
                 </div>
               </div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  padding: "3px 9px",
-                  background: "#F0F0EA",
-                  color: C.ink2,
-                  borderRadius: 20,
-                }}
-              >
-                POSTS #{orderId?.toString().slice(0, 6) || "---"}
+              <div style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", background: "#F0F0EA", color: C.ink2, borderRadius: 20 }}>
+                #{orderId?.toString().slice(0, 6) || "---"}
               </div>
             </div>
 
             {/* Messages area */}
             <div
               style={{
-                flex: 1,
-                overflowY: "auto",
-                padding: "16px 14px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 12,
+                flex: 1, overflowY: "auto", padding: "16px 14px",
+                display: "flex", flexDirection: "column", gap: 12,
               }}
             >
               {messages.map((msg, i) =>
-                msg.role === "bot" ? (
+                msg.role === "assistant" ? (
                   <div key={i} style={{ animation: "fadeUp 0.3s ease" }}>
                     <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                      <div
-                        style={{
-                          width: 26,
-                          height: 26,
-                          borderRadius: "50%",
-                          background: C.ink,
-                          color: C.lime,
-                          fontSize: 9,
-                          fontWeight: 900,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        V
-                      </div>
-                      <div
-                        style={{
-                          maxWidth: "82%",
-                          padding: "10px 14px",
-                          fontSize: 12.5,
-                          lineHeight: 1.65,
-                          background: C.surface,
-                          color: C.ink,
-                          borderRadius: "4px 16px 16px 16px",
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {renderBold(msg.text)}
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.ink, color: C.lime, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>V</div>
+                      <div style={{ maxWidth: "82%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.surface, color: C.ink, borderRadius: "4px 16px 16px 16px", whiteSpace: "pre-wrap" }}>
+                        {renderBold(msg.content)}
                       </div>
                     </div>
-                    {msg.quickReplies && (
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 5, paddingLeft: 34 }}>
-                        {msg.quickReplies.map((r, ri) => (
-                          <button
-                            key={ri}
-                            onClick={() => handleReply(r)}
-                            style={{
-                              padding: "6px 14px",
-                              borderRadius: 20,
-                              fontSize: 11.5,
-                              fontWeight: 700,
-                              border: `1.5px solid ${r.primary ? C.lime : C.mid}`,
-                              background: r.primary ? C.lime : C.bg,
-                              color: C.ink,
-                              cursor: "pointer",
-                              fontFamily: "inherit",
-                            }}
-                          >
-                            {r.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 ) : (
                   <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexDirection: "row-reverse", animation: "fadeUp 0.2s ease" }}>
-                    <div
-                      style={{
-                        width: 26,
-                        height: 26,
-                        borderRadius: "50%",
-                        background: C.lime,
-                        color: C.ink,
-                        fontSize: 9,
-                        fontWeight: 900,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      D
+                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.lime, color: C.ink, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {(ctx?.name || "V")[0].toUpperCase()}
                     </div>
-                    <div
-                      style={{
-                        maxWidth: "82%",
-                        padding: "10px 14px",
-                        fontSize: 12.5,
-                        lineHeight: 1.65,
-                        background: C.ink,
-                        color: "#F8F8F4",
-                        borderRadius: "16px 16px 4px 16px",
-                      }}
-                    >
-                      {msg.text}
+                    <div style={{ maxWidth: "82%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.ink, color: "#F8F8F4", borderRadius: "16px 16px 4px 16px" }}>
+                      {msg.content}
                     </div>
                   </div>
                 )
               )}
 
               {/* Typing indicator */}
-              {isTyping && (
+              {chatLoading && (
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                  <div
-                    style={{
-                      width: 26,
-                      height: 26,
-                      borderRadius: "50%",
-                      background: C.ink,
-                      color: C.lime,
-                      fontSize: 9,
-                      fontWeight: 900,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    V
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "11px 14px",
-                      background: C.surface,
-                      borderRadius: "4px 16px 16px 16px",
-                      width: "fit-content",
-                    }}
-                  >
-                    {[0, 0.18, 0.36].map((delay, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          width: 5,
-                          height: 5,
-                          borderRadius: "50%",
-                          background: "#bbb",
-                          animation: `bounce 1.2s ease-in-out ${delay}s infinite`,
-                        }}
-                      />
+                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.ink, color: C.lime, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>V</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "11px 14px", background: C.surface, borderRadius: "4px 16px 16px 16px", width: "fit-content" }}>
+                    {[0, 0.18, 0.36].map((delay, di) => (
+                      <div key={di} style={{ width: 5, height: 5, borderRadius: "50%", background: "#bbb", animation: `bounce 1.2s ease-in-out ${delay}s infinite` }} />
                     ))}
                   </div>
                 </div>
@@ -603,448 +564,163 @@ export default function ProjetoPage() {
             </div>
 
             {/* Input row */}
-            <div
-              style={{
-                padding: "11px 13px",
-                borderTop: `1px solid ${C.border}`,
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-                flexShrink: 0,
-              }}
-            >
+            <div style={{ padding: "11px 13px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: C.surface,
-                  border: `1px solid ${C.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  color: C.muted,
-                  flexShrink: 0,
-                }}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.muted, flexShrink: 0 }}
               >
                 <PlusIcon />
               </button>
               <button
-                onClick={() => setMicActive((v) => !v)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: micActive ? C.lime : C.surface,
-                  border: `1px solid ${micActive ? C.lime : C.border}`,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  color: micActive ? C.ink : C.muted,
-                  flexShrink: 0,
-                }}
+                onClick={() => setMicActive(v => !v)}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: micActive ? C.lime : C.surface, border: `1px solid ${micActive ? C.lime : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: micActive ? C.ink : C.muted, flexShrink: 0 }}
               >
                 <MicIcon />
               </button>
               <input
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onChange={e => setInputValue(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                 placeholder="Digite aqui..."
-                style={{
-                  flex: 1,
-                  height: 38,
-                  border: `1.5px solid ${C.mid}`,
-                  borderRadius: 20,
-                  padding: "0 14px",
-                  fontSize: 12.5,
-                  fontFamily: "inherit",
-                  color: C.ink,
-                  background: C.bg,
-                  outline: "none",
-                }}
+                disabled={chatLoading}
+                style={{ flex: 1, height: 38, border: `1.5px solid ${C.mid}`, borderRadius: 20, padding: "0 14px", fontSize: 12.5, fontFamily: "inherit", color: C.ink, background: C.bg, outline: "none" }}
               />
               <button
-                onClick={handleSend}
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: "50%",
-                  background: C.lime,
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
+                onClick={() => sendMessage()}
+                disabled={chatLoading || !inputValue.trim()}
+                style={{ width: 34, height: 34, borderRadius: "50%", background: C.lime, border: "none", cursor: chatLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: chatLoading ? 0.5 : 1 }}
               >
                 <ArrowRightIcon />
               </button>
             </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              accept="image/*,.pdf,.doc,.docx"
-              onChange={() => {}}
-            />
+            <input type="file" ref={fileInputRef} style={{ display: "none" }} accept="image/*,.pdf,.doc,.docx" onChange={() => {}} />
           </div>
 
           {/* ── PREVIEW COLUMN ── */}
-          <div
-            style={{
-              flex: 1,
-              background: C.surface,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
-          >
+          <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {/* Preview header */}
-            <div
-              style={{
-                padding: "13px 20px",
-                background: C.bg,
-                borderBottom: `1px solid ${C.border}`,
-                flexShrink: 0,
-              }}
-            >
+            <div style={{ padding: "13px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{previewTitle}</div>
               <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{previewSub}</div>
-              {(phase === "generating" || phase === "preview") && (
-                <div
-                  style={{
-                    height: 3,
-                    background: C.border,
-                    borderRadius: 2,
-                    marginTop: 5,
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      background: C.lime,
-                      borderRadius: 2,
-                      width: `${Math.min(progress, 100)}%`,
-                      transition: "width 0.6s ease",
-                    }}
-                  />
+              {(phase === "generating" || phase === "preview" || phase === "approved") && (
+                <div style={{ height: 3, background: C.border, borderRadius: 2, marginTop: 5, overflow: "hidden" }}>
+                  <div style={{ height: "100%", background: C.lime, borderRadius: 2, width: `${Math.min(progress, 100)}%`, transition: "width 0.6s ease" }} />
                 </div>
               )}
             </div>
 
-            {/* Preview body */}
+            {/* Preview body — State 1: Empty */}
             {phase === "briefing" && (
-              /* ── Estado 1: Empty ── */
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 12,
-                  padding: 40,
-                  textAlign: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 52,
-                    height: 52,
-                    borderRadius: 13,
-                    background: C.border,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 40, textAlign: "center" }}>
+                <div style={{ width: 52, height: 52, borderRadius: 13, background: C.border, display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <GridIcon />
                 </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink2 }}>Nenhuma previa ainda</div>
-                <div
-                  style={{
-                    fontSize: 12.5,
-                    color: C.muted,
-                    lineHeight: 1.65,
-                    maxWidth: 240,
-                  }}
-                >
-                  Responda o briefing no chat. O primeiro post aparece aqui assim que confirmar.
+                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink2 }}>Nenhuma prévia ainda</div>
+                <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.65, maxWidth: 240 }}>
+                  Converse com o RORDENS no chat. O preview aparece aqui automaticamente.
                 </div>
               </div>
             )}
 
+            {/* Preview body — State 2: Generating */}
             {phase === "generating" && (
-              /* ── Estado 2: Gerando ── */
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 16,
-                }}
-              >
-                <div
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: "50%",
-                    border: `3px solid ${C.border}`,
-                    borderTopColor: C.lime,
-                    animation: "spin 0.75s linear infinite",
-                  }}
-                />
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+                <div style={{ width: 42, height: 42, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.lime, animation: "spin 0.75s linear infinite" }} />
                 <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Gerando copy e imagem...</div>
                 <div style={{ fontSize: 12, color: C.muted }}>IA escrevendo + foto realista sendo criada</div>
               </div>
             )}
 
+            {/* Preview body — State 3: Post card */}
             {(phase === "preview" || phase === "approved") && post && (
-              /* ── Estado 3: Post gerado ── */
               <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                {/* Scrollable content */}
                 <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px" }}>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 800,
-                      letterSpacing: "0.08em",
-                      color: C.muted,
-                      marginBottom: 12,
-                    }}
-                  >
-                    AMOSTRA — POST 1 DE 12
+                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: C.muted, marginBottom: 12 }}>
+                    AMOSTRA — {postType}
                   </div>
 
                   {/* Post card */}
-                  <div
-                    style={{
-                      background: C.bg,
-                      border: `1px solid ${C.border}`,
-                      borderRadius: 12,
-                      overflow: "hidden",
-                      maxWidth: 440,
-                      animation: "fadeUp 0.4s ease",
-                    }}
-                  >
+                  <div style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, overflow: "hidden", maxWidth: 440, animation: "fadeUp 0.4s ease" }}>
                     {/* Visual area */}
-                    <div
-                      style={{
-                        height: 190,
-                        background: C.ink,
-                        position: "relative",
-                        overflow: "hidden",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: post.imageUrl ? 0 : 22,
-                      }}
-                    >
+                    <div style={{ height: 190, background: C.ink, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", padding: post.imageUrl ? 0 : 22 }}>
                       {post.imageUrl ? (
-                        <img
-                          src={post.imageUrl}
-                          alt=""
-                          style={{
-                            width: "100%",
-                            height: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
+                        <img src={post.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                       ) : (
-                        <div
-                          style={{
-                            fontFamily: FFH,
-                            fontStyle: "italic",
-                            fontSize: 20,
-                            color: "#F8F8F4",
-                            lineHeight: 1.3,
-                            textAlign: "center",
-                          }}
-                        >
-                          {post.hook}
+                        <div style={{ fontFamily: FFH, fontStyle: "italic", fontSize: 20, color: "#F8F8F4", lineHeight: 1.3, textAlign: "center" }}>
+                          {postHook}
                         </div>
                       )}
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 11,
-                          right: 11,
-                          fontSize: 9,
-                          fontWeight: 800,
-                          letterSpacing: "0.06em",
-                          background: C.lime,
-                          color: C.ink,
-                          padding: "2px 7px",
-                          borderRadius: 4,
-                        }}
-                      >
-                        {post.tipo}
+                      <div style={{ position: "absolute", top: 11, right: 11, fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", background: C.lime, color: C.ink, padding: "2px 7px", borderRadius: 4 }}>
+                        {postType}
                       </div>
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: 11,
-                          left: 11,
-                          fontSize: 9,
-                          fontWeight: 600,
-                          color: post.imageUrl ? "#fff" : "#555",
-                          background: post.imageUrl ? "rgba(0,0,0,0.45)" : "transparent",
-                          borderRadius: 3,
-                          padding: post.imageUrl ? "2px 6px" : 0,
-                        }}
-                      >
-                        {post.imageUrl ? "IA gerada" : post.dia}
-                      </div>
+                      {post.imageUrl && (
+                        <div style={{ position: "absolute", top: 11, left: 11, fontSize: 9, fontWeight: 600, color: "#fff", background: "rgba(0,0,0,0.45)", borderRadius: 3, padding: "2px 6px" }}>
+                          IA gerada
+                        </div>
+                      )}
                     </div>
 
                     {/* Card body */}
                     <div style={{ padding: "16px 18px" }}>
-                      <div
-                        style={{
-                          fontFamily: FFH,
-                          fontStyle: "italic",
-                          fontSize: 17,
-                          fontWeight: 400,
-                          color: C.ink,
-                          marginBottom: 10,
-                        }}
-                      >
-                        {post.hook}
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 12.5,
-                          color: C.ink2,
-                          lineHeight: 1.75,
-                          whiteSpace: "pre-wrap",
-                          borderLeft: `2px solid ${C.lime}`,
-                          paddingLeft: 11,
-                          marginBottom: 12,
-                        }}
-                      >
-                        {post.caption}
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>
-                        Hashtags
-                      </div>
-                      <div style={{ fontSize: 11, color: "#3a8a3a", lineHeight: 1.9, marginBottom: 12 }}>
-                        {post.hashtags}
-                      </div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {[post.pilar, post.tipo, post.dia].filter(Boolean).map((tag, ti) => (
-                          <span
-                            key={ti}
-                            style={{
-                              fontSize: 9,
-                              fontWeight: 700,
-                              padding: "2px 7px",
-                              borderRadius: 4,
-                              background: "#F0F0EA",
-                              color: C.ink2,
-                              letterSpacing: "0.03em",
-                            }}
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
+                      {postHook && (
+                        <div style={{ fontFamily: FFH, fontStyle: "italic", fontSize: 17, fontWeight: 400, color: C.ink, marginBottom: 10 }}>
+                          {postHook}
+                        </div>
+                      )}
+                      {postCaption && (
+                        <div style={{ fontSize: 12.5, color: C.ink2, lineHeight: 1.75, whiteSpace: "pre-wrap", borderLeft: `2px solid ${C.lime}`, paddingLeft: 11, marginBottom: 12 }}>
+                          {postCaption}
+                        </div>
+                      )}
+                      {postHashtags && (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>Hashtags</div>
+                          <div style={{ fontSize: 11, color: "#3a8a3a", lineHeight: 1.9, marginBottom: 12 }}>{postHashtags}</div>
+                        </>
+                      )}
+                      {postFeatures.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: C.ink, marginBottom: 6 }}>Features</div>
+                          <ul style={{ fontSize: 12, color: C.ink2, lineHeight: 1.8, paddingLeft: 18, margin: 0 }}>
+                            {postFeatures.map((f, fi) => <li key={fi}>{f}</li>)}
+                          </ul>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Approve bar — sticky bottom */}
+                {/* Approve bar */}
                 {phase === "preview" && (
-                  <div
-                    style={{
-                      background: C.bg,
-                      borderTop: `1px solid ${C.border}`,
-                      padding: "12px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      flexShrink: 0,
-                    }}
-                  >
+                  <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "12px 20px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
                     <div style={{ fontSize: 12, color: C.muted, flex: 1, lineHeight: 1.5 }}>
-                      Gostou da direcao? Aprovando, voce recebe os{" "}
-                      <strong style={{ color: C.ink }}>12 posts completos</strong> — legendas, hashtags e
-                      calendario.
+                      Gostou da direção? Aprovando, você recebe o{" "}
+                      <strong style={{ color: C.ink }}>produto completo com imagens reais</strong>.
                     </div>
                     <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
                       <button
                         onClick={requestRevision}
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 700,
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          border: `1.5px solid ${C.mid}`,
-                          background: C.bg,
-                          color: C.ink,
-                        }}
+                        disabled={chatLoading}
+                        style={{ fontSize: 11.5, fontWeight: 700, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `1.5px solid ${C.mid}`, background: C.bg, color: C.ink }}
                       >
                         Ajustar tom
                       </button>
                       <button
                         onClick={approveAll}
-                        style={{
-                          fontSize: 11.5,
-                          fontWeight: 700,
-                          padding: "8px 16px",
-                          borderRadius: 8,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                          border: `1.5px solid ${C.lime}`,
-                          background: C.lime,
-                          color: C.ink,
-                        }}
+                        disabled={chatLoading}
+                        style={{ fontSize: 11.5, fontWeight: 700, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `1.5px solid ${C.lime}`, background: C.lime, color: C.ink }}
                       >
-                        Aprovar e receber todos →
+                        Aprovar e gerar →
                       </button>
                     </div>
                   </div>
                 )}
 
                 {phase === "approved" && (
-                  <div
-                    style={{
-                      background: C.ink,
-                      padding: "14px 20px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                      flexShrink: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 22,
-                        height: 22,
-                        borderRadius: "50%",
-                        background: C.lime,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 12,
-                        fontWeight: 900,
-                        color: C.ink,
-                      }}
-                    >
-                      ✓
-                    </div>
+                  <div style={{ background: C.ink, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.lime, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: C.ink }}>✓</div>
                     <div style={{ fontSize: 12.5, fontWeight: 700, color: C.lime }}>
-                      Pedido aprovado — seus 12 posts estao sendo finalizados
+                      Pedido aprovado — gerando com imagens reais
                     </div>
                   </div>
                 )}
