@@ -422,6 +422,16 @@ export default function PedidosPage() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
+      // Sanitize history: strip action JSONs & preview markers so the model doesn't re-execute
+      const sanitizedMessages = newMessages.map(m => {
+        if (m.role !== "assistant") return { role: m.role, content: m.content };
+        let c = m.content;
+        c = c.replace(/___PREVIEW___[\s\S]*?___END___/g, "[preview gerado]");
+        c = c.replace(/\{[\s\S]*?"action"\s*:\s*"execute"[\s\S]*?\}/g, "");
+        c = c.replace(/✦ Criando seu pedido\.\.\./g, "");
+        return { role: m.role, content: c.trim() };
+      });
+
       const res = await fetch(`${supabaseUrl}/functions/v1/voku-chat`, {
         method: "POST",
         headers: {
@@ -430,7 +440,7 @@ export default function PedidosPage() {
           "Accept": "text/event-stream",
         },
         body: JSON.stringify({
-          messages: newMessages,
+          messages: sanitizedMessages,
           user_context: {
             name: ctx?.name || "você",
             plan: ctx?.plan || "free",
