@@ -99,6 +99,7 @@ export default function ProjetosPage() {
   const [feedbacks, setFeedbacks] = useState({});
   const [actionLoading, setActionLoading] = useState(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [orderChoices, setOrderChoices] = useState([]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 900);
@@ -184,15 +185,23 @@ export default function ProjetosPage() {
     }
   }, []);
 
+  /* ─── Load choices for selected order ─── */
+  const loadChoices = useCallback(async (orderId) => {
+    const sb = supabase();
+    const { data } = await sb.from("choices").select("*").eq("order_id", orderId).order("position");
+    setOrderChoices(data || []);
+  }, []);
+
   /* ─── When order selected ─── */
   useEffect(() => {
     if (!selectedId) return;
     loadPhases(selectedId);
     loadDeliverables(selectedId);
+    loadChoices(selectedId);
     setActiveTab("etapas");
     setExpandedDel(null);
     setFeedbacks({});
-  }, [selectedId, loadPhases, loadDeliverables]);
+  }, [selectedId, loadPhases, loadDeliverables, loadChoices]);
 
   /* ─── Progress calc ─── */
   const calcProgress = useCallback(() => {
@@ -438,6 +447,46 @@ export default function ProjetosPage() {
           );
         })()}
       </div>
+
+      {/* ── Choices Banner (when choices exist and none selected) ── */}
+      {orderChoices.length > 0 && !orderChoices.some(c => c.is_selected) && selected.status !== "delivered" && (
+        <div style={{ padding: isMobile ? "16px" : "20px 36px", background: T.lime + "15", borderBottom: `1px solid ${T.lime}40` }}>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 6 }}>
+            Suas {orderChoices.length} opções estão prontas!
+          </div>
+          <div style={{ fontSize: 13, color: T.inkMid, marginBottom: 16 }}>
+            Escolha sua variação favorita para finalizar o projeto.
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${Math.min(orderChoices.length, 3)}, 1fr)`, gap: 12, marginBottom: 16 }}>
+            {orderChoices.map((choice, i) => {
+              const label = ["A", "B", "C"][i] || String(i + 1);
+              return (
+                <div key={choice.id} style={{
+                  background: T.white, border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden",
+                }}>
+                  {choice.image_url && (
+                    <div style={{ aspectRatio: "1/1", overflow: "hidden" }}>
+                      <img src={choice.image_url} alt={`Opção ${label}`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </div>
+                  )}
+                  <div style={{ padding: "12px 14px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: T.lime, marginBottom: 4 }}>OPÇÃO {label}</div>
+                    <div style={{ fontSize: 12, color: T.inkSub, lineHeight: 1.5, maxHeight: 60, overflow: "hidden" }}>
+                      {(choice.content?.text || "").split("\n").filter(l => l.trim()).slice(0, 2).join("\n")}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <a href={`/cliente/pedidos/${selected.id}`} style={{
+            display: "inline-block", background: T.lime, color: T.ink, border: "none", borderRadius: 10,
+            padding: "12px 28px", fontSize: 14, fontWeight: 700, textDecoration: "none",
+          }}>
+            Escolher variação favorita →
+          </a>
+        </div>
+      )}
 
       {/* ── Tabs ── */}
       <div style={{ display: "flex", background: T.white, borderBottom: `1px solid ${T.border}` }}>
