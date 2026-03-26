@@ -20,9 +20,9 @@ export const SLUG_ENGINE_MAP: Record<ImageSlug, ImageEngine> = {
   'split-layout': 'ideogram',
   'product-scene': 'ideogram',
   'atmospheric': 'ideogram',
-  'multi-screen': 'imagineart',
-  'screen-mockup': 'flux-pro',
-  'photo-text': 'flux-i2i',
+  'multi-screen': 'ideogram',
+  'screen-mockup': 'ideogram',
+  'photo-text': 'ideogram',
 }
 
 export const SLUG_LABELS: Record<ImageSlug, string> = {

@@ -1,9 +1,9 @@
 import { supabaseAdmin } from '@/lib/supabase'
 import { ImageResult } from './types'
 
-const IDEOGRAM_V3_URL = 'https://api.ideogram.ai/v1/ideogram-v3/generate'
+const IDEOGRAM_BASE = 'https://api.ideogram.ai/v1/ideogram-v3'
 
-// Map legacy ASPECT_X_Y format to v3 format (WxH)
+// Map ASPECT_X_Y format to Ideogram v3 format (WxH)
 const ASPECT_MAP: Record<string, string> = {
   ASPECT_1_1: '1x1',
   ASPECT_2_1: '2x1',
@@ -23,13 +23,21 @@ interface IdeogramOptions {
   style_type?: 'DESIGN' | 'REALISTIC' | 'AUTO'
 }
 
+interface IdeogramRemixOptions extends IdeogramOptions {
+  reference_image_url: string
+  image_weight?: number  // 1-100, default 50
+}
+
+/**
+ * Text-to-image generation using Ideogram v3
+ */
 export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResult> {
   const apiKey = process.env.IDEOGRAM_API_KEY
   if (!apiKey) throw new Error('IDEOGRAM_API_KEY not configured')
 
   const aspect = opts.aspect_ratio ? (ASPECT_MAP[opts.aspect_ratio] || '1x1') : '1x1'
 
-  const res = await fetch(IDEOGRAM_V3_URL, {
+  const res = await fetch(`${IDEOGRAM_BASE}/generate`, {
     method: 'POST',
     headers: {
       'Api-Key': apiKey,
@@ -46,23 +54,89 @@ export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResu
 
   if (!res.ok) {
     const err = await res.text()
-    throw new Error(`Ideogram API error (${res.status}): ${err}`)
+    throw new Error(`Ideogram generate error (${res.status}): ${err}`)
   }
 
   const data = await res.json()
   const imageUrl = data.data?.[0]?.url
   if (!imageUrl) throw new Error('Ideogram returned no image URL')
 
-  // Download and upload to Supabase Storage
+  return uploadToStorage(imageUrl, opts.order_id, opts.choice_position)
+}
+
+/**
+ * Image-to-image remix using Ideogram v3
+ * This is the key feature — Ideogram UNDERSTANDS the reference image content
+ * and generates based on both the prompt and the image context.
+ */
+export async function remixIdeogram(opts: IdeogramRemixOptions): Promise<ImageResult> {
+  const apiKey = process.env.IDEOGRAM_API_KEY
+  if (!apiKey) throw new Error('IDEOGRAM_API_KEY not configured')
+
+  const aspect = opts.aspect_ratio ? (ASPECT_MAP[opts.aspect_ratio] || '1x1') : '1x1'
+
+  // Download the reference image to send as binary
+  const imgRes = await fetch(opts.reference_image_url)
+  if (!imgRes.ok) throw new Error(`Failed to download reference image: ${imgRes.status}`)
+  const imgBuffer = await imgRes.arrayBuffer()
+
+  // Detect content type from response or default to jpeg
+  const contentType = imgRes.headers.get('content-type') || 'image/jpeg'
+  const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpeg'
+
+  // Build multipart form data
+  const formData = new FormData()
+  const blob = new Blob([imgBuffer], { type: contentType })
+  formData.append('image', blob, `reference.${ext}`)
+  formData.append('prompt', opts.prompt)
+  formData.append('image_weight', String(opts.image_weight ?? 60))
+  formData.append('rendering_speed', 'DEFAULT')
+  formData.append('magic_prompt', 'AUTO')
+  formData.append('aspect_ratio', aspect)
+  if (opts.style_type) {
+    formData.append('style_type', opts.style_type)
+  }
+
+  const res = await fetch(`${IDEOGRAM_BASE}/remix`, {
+    method: 'POST',
+    headers: {
+      'Api-Key': apiKey,
+    },
+    body: formData,
+  })
+
+  if (!res.ok) {
+    const err = await res.text()
+    throw new Error(`Ideogram remix error (${res.status}): ${err}`)
+  }
+
+  const data = await res.json()
+  const imageUrl = data.data?.[0]?.url
+  if (!imageUrl) throw new Error('Ideogram remix returned no image URL')
+
+  return uploadToStorage(imageUrl, opts.order_id, opts.choice_position)
+}
+
+/**
+ * Download generated image and upload to Supabase Storage
+ */
+async function uploadToStorage(imageUrl: string, orderId: string, position: number): Promise<ImageResult> {
   const imageRes = await fetch(imageUrl)
   const imageBuffer = Buffer.from(await imageRes.arrayBuffer())
-  const storagePath = `generated/${opts.order_id}/choice-${opts.choice_position}.webp`
+
+  // Detect format from URL or content-type
+  const ct = imageRes.headers.get('content-type') || ''
+  const isWebp = ct.includes('webp') || imageUrl.includes('.webp')
+  const ext = isWebp ? 'webp' : 'jpg'
+  const mime = isWebp ? 'image/webp' : 'image/jpeg'
+
+  const storagePath = `generated/${orderId}/choice-${position}.${ext}`
 
   const supabase = supabaseAdmin()
   const { error: uploadErr } = await supabase.storage
     .from('generated-images')
     .upload(storagePath, imageBuffer, {
-      contentType: 'image/webp',
+      contentType: mime,
       upsert: true,
     })
 
@@ -76,6 +150,6 @@ export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResu
     url: urlData.publicUrl,
     storage_path: storagePath,
     engine: 'ideogram',
-    slug: 'type-first',
+    slug: 'product-scene',
   }
 }
