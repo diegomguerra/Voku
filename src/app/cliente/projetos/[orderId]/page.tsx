@@ -44,6 +44,7 @@ interface Post {
   name?: string;
   features?: string[];
   imageUrl?: string;
+  image_slug?: string;
 }
 
 /* ── Preview extraction ── */
