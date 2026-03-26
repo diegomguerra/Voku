@@ -19,6 +19,7 @@ export async function generateImagineArt(opts: ImagineOptions): Promise<ImageRes
   formData.append('prompt', opts.prompt)
   formData.append('style', opts.style || 'realistic')
   formData.append('aspect_ratio', opts.aspect_ratio || '1:1')
+  formData.append('variation', 'mid')
 
   const res = await fetch(IMAGINE_URL, {
     method: 'POST',
