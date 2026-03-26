@@ -20,6 +20,7 @@ interface IdeogramOptions {
   order_id: string
   choice_position: number
   aspect_ratio?: string
+  style_type?: 'DESIGN' | 'REALISTIC' | 'AUTO'
 }
 
 export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResult> {
@@ -39,7 +40,7 @@ export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResu
       rendering_speed: 'DEFAULT',
       magic_prompt: 'AUTO',
       aspect_ratio: aspect,
-      style_type: 'DESIGN',
+      style_type: opts.style_type || 'REALISTIC',
     }),
   })
 

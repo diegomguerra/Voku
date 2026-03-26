@@ -18,8 +18,8 @@ export type ImageEngine =
 export const SLUG_ENGINE_MAP: Record<ImageSlug, ImageEngine> = {
   'type-first': 'ideogram',
   'split-layout': 'ideogram',
-  'product-scene': 'imagineart',
-  'atmospheric': 'imagineart',
+  'product-scene': 'ideogram',
+  'atmospheric': 'ideogram',
   'multi-screen': 'imagineart',
   'screen-mockup': 'flux-pro',
   'photo-text': 'flux-i2i',

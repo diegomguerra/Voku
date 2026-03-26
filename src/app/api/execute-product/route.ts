@@ -377,14 +377,14 @@ Each variation must be complete and production-ready. Only output the JSON array
     const productName = PRODUCT_NAMES[product as ProductId]
     const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
 
-    // Fire image generation for visual products (non-blocking)
+    // Fire image generation for visual products
     const IMAGE_PRODUCTS: Record<string, string> = {
-      post_instagram: 'type-first',
-      carrossel: 'type-first',
-      content_pack: 'type-first',
-      email_sequence: 'type-first',
+      post_instagram: 'product-scene',
+      carrossel: 'product-scene',
+      content_pack: 'product-scene',
+      email_sequence: 'product-scene',
       ad_copy: 'product-scene',
-      reels_script: 'atmospheric',
+      reels_script: 'product-scene',
       landing_page_copy: 'atmospheric',
       app: 'screen-mockup',
     }

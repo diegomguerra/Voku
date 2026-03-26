@@ -39,15 +39,20 @@ export async function generateImage(req: ImageRequest): Promise<ImageResult> {
     let result: ImageResult
 
     switch (engine) {
-      case 'ideogram':
+      case 'ideogram': {
+        // Typography slugs use DESIGN style, everything else uses REALISTIC
+        const typoSlugs = ['type-first', 'split-layout']
+        const styleType = typoSlugs.includes(req.slug) ? 'DESIGN' : 'REALISTIC'
         result = await generateIdeogram({
           prompt,
           order_id: req.order_id,
           choice_position: req.choice_position,
           aspect_ratio: dims?.aspect,
+          style_type: styleType,
         })
         result.slug = req.slug
         break
+      }
 
       case 'imagineart':
         result = await generateImagineArt({
