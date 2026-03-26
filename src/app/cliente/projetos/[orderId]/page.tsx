@@ -268,6 +268,34 @@ export default function ProjetoPage() {
     if (!userText || chatLoading) return;
     setInputValue("");
 
+    // Auto-execute if user confirms and preview already exists
+    const affirmWords = /^(sim|ok|pode|gera|aprova|manda|vai|bora|confirma|quero|yes|go)/i;
+    if (phase === "preview" && post && affirmWords.test(userText.trim())) {
+      const chatContext = messages
+        .filter(m => m.role === "user")
+        .map(m => m.content)
+        .join("\n");
+      const action = {
+        action: "execute",
+        product: post.type || "post_instagram",
+        structured_data: {
+          ...post,
+          resumo: chatContext,
+          image_slug: post.image_slug || "product-scene",
+        },
+      };
+      const confirmMsg = "Aprovado! Gerando o produto completo com imagens reais...";
+      setMessages(prev => [
+        ...prev,
+        { role: "user", content: userText },
+        { role: "assistant", content: confirmMsg },
+      ]);
+      await persistMessage("user", userText);
+      await persistMessage("assistant", confirmMsg);
+      await handleExecuteAction(action);
+      return;
+    }
+
     const newMessages: Message[] = [...messages, { role: "user", content: userText }];
     setMessages(newMessages);
     setChatLoading(true);
@@ -429,13 +457,41 @@ export default function ProjetoPage() {
     }
 
     setChatLoading(false);
-  }, [inputValue, chatLoading, messages, ctx, persistMessage, phase, handleExecuteAction]);
+  }, [inputValue, chatLoading, messages, ctx, persistMessage, phase, post, handleExecuteAction]);
 
   /* ── Approve from preview bar ── */
-  const approveAll = useCallback(() => {
-    // Send approval message back to chat — the AI will respond with execute action
-    sendMessage("Sim, aprovado! Pode gerar tudo.");
-  }, [sendMessage]);
+  const approveAll = useCallback(async () => {
+    if (!post) return;
+
+    // Build execute action directly from preview data — no need for AI round-trip
+    const chatContext = messages
+      .filter(m => m.role === "user")
+      .map(m => m.content)
+      .join("\n");
+
+    const action = {
+      action: "execute",
+      product: post.type || "post_instagram",
+      structured_data: {
+        ...post,
+        resumo: chatContext,
+        image_slug: post.image_slug || "product-scene",
+      },
+    };
+
+    // Add approval message to chat for history
+    const approvalMsg = "Aprovado! Gerando o produto completo com imagens reais...";
+    setMessages(prev => [
+      ...prev,
+      { role: "user", content: "Sim, aprovado! Pode gerar tudo." },
+      { role: "assistant", content: approvalMsg },
+    ]);
+    await persistMessage("user", "Sim, aprovado! Pode gerar tudo.");
+    await persistMessage("assistant", approvalMsg);
+
+    // Execute directly
+    await handleExecuteAction(action);
+  }, [post, messages, persistMessage, handleExecuteAction]);
 
   /* ── Request revision from preview bar ── */
   const requestRevision = useCallback(() => {
