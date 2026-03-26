@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generateImage } from '@/lib/image-engine/router'
-import { ImageSlug } from '@/lib/image-engine/types'
 import { supabaseAdmin } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60  // 60s por imagem — suficiente para Ideogram + upload
+export const maxDuration = 60
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
@@ -14,37 +15,54 @@ export async function POST(req: NextRequest) {
       order_id,
       choice_id,
       choice_position,
-      choice_label,
-      choice_text,
-      slug,
-      brand,
-      reference_image_url,
-      briefing_text,
-      product,
+      semana_key,
+      post_id,
     } = await req.json()
 
-    if (!order_id || !choice_id || !slug || !choice_text) {
+    if (!order_id || !choice_id) {
       return NextResponse.json(
-        { error: 'order_id, choice_id, slug, and choice_text are required' },
+        { error: 'order_id and choice_id are required' },
         { status: 400 }
       )
     }
 
-    const result = await generateImage({
-      slug: slug as ImageSlug,
-      product,
-      briefing_text: briefing_text || '',
-      choice_label: choice_label || '',
-      choice_text,
-      brand: brand || {},
-      reference_image_url,
-      order_id,
-      choice_id,
-      choice_position: choice_position ?? 0,
-    })
+    // Chama a Edge Function gerar-imagem do Supabase (fal.ai)
+    const edgeRes = await fetch(
+      `${SUPABASE_URL}/functions/v1/gerar-imagem`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SERVICE_KEY}`,
+        },
+        body: JSON.stringify({
+          semana_key: semana_key || 'default',
+          post_id: post_id || order_id,
+          upload: true,
+          engine: 'fal',
+        }),
+      }
+    )
 
-    // ── Verificar se TODAS as imagens do pedido já foram geradas ──
-    // Se sim, avançar as fases do projeto automaticamente
+    const edgeData = await edgeRes.json()
+
+    if (!edgeRes.ok || !edgeData.ok) {
+      console.error('[generate-image] Edge function error:', edgeData)
+      return NextResponse.json(
+        { ok: false, error: edgeData.error || 'Edge function failed', details: edgeData },
+        { status: 502 }
+      )
+    }
+
+    const imageUrl = edgeData.url
+
+    // Atualiza a choice com a image_url
+    await supabase
+      .from('choices')
+      .update({ image_url: imageUrl })
+      .eq('id', choice_id)
+
+    // Verificar se TODAS as imagens do pedido já foram geradas
     const { data: allChoices } = await supabase
       .from('choices').select('id, image_url').eq('order_id', order_id)
 
@@ -67,7 +85,12 @@ export async function POST(req: NextRequest) {
       ])
     }
 
-    return NextResponse.json({ ok: true, ...result })
+    return NextResponse.json({
+      ok: true,
+      url: imageUrl,
+      engine: edgeData.engine,
+      storage_path: edgeData.path,
+    })
 
   } catch (err) {
     console.error('Image generation error:', err)
