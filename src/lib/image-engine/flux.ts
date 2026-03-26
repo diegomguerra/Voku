@@ -15,9 +15,8 @@ interface FluxOptions {
   height?: number
 }
 
-async function pollResult(requestUrl: string, apiKey: string, maxWaitMs = 60000): Promise<any> {
+async function pollResult(statusUrl: string, responseUrl: string, apiKey: string, maxWaitMs = 60000): Promise<any> {
   const start = Date.now()
-  const statusUrl = requestUrl.replace('/queue/', '/requests/') + '/status'
 
   while (Date.now() - start < maxWaitMs) {
     const res = await fetch(statusUrl, {
@@ -26,7 +25,7 @@ async function pollResult(requestUrl: string, apiKey: string, maxWaitMs = 60000)
     const data = await res.json()
 
     if (data.status === 'COMPLETED') {
-      const resultRes = await fetch(requestUrl.replace('/queue/', '/requests/') + '/result', {
+      const resultRes = await fetch(responseUrl, {
         headers: { Authorization: `Key ${apiKey}` },
       })
       return await resultRes.json()
@@ -84,8 +83,10 @@ export async function generateFlux(opts: FluxOptions): Promise<ImageResult> {
   if (submitData.images?.[0]?.url) {
     imageUrl = submitData.images[0].url
   } else if (submitData.request_id) {
-    // Async mode — poll for result
-    const result = await pollResult(`${endpoint}/${submitData.request_id}`, apiKey)
+    // Async mode — use URLs from submit response (or construct them)
+    const statusUrl = submitData.status_url || `${endpoint}/requests/${submitData.request_id}/status`
+    const responseUrl = submitData.response_url || `${endpoint}/requests/${submitData.request_id}/response`
+    const result = await pollResult(statusUrl, responseUrl, apiKey)
     imageUrl = result.images?.[0]?.url
     if (!imageUrl) throw new Error('FLUX returned no image URL')
   } else {
