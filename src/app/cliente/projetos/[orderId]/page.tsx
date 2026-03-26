@@ -66,7 +66,7 @@ function renderBold(text: string) {
   );
 }
 
-/* ── Image helpers ── */
+/* ── Image / file helpers ── */
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -76,9 +76,41 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+/** Compress image via canvas to max 1200px and JPEG 0.8 quality */
+function compressImage(dataUrl: string, maxSize = 1200, quality = 0.8): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxSize || height > maxSize) {
+        const ratio = Math.min(maxSize / width, maxSize / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", quality));
+    };
+    img.onerror = () => resolve(dataUrl); // fallback to original
+    img.src = dataUrl;
+  });
+}
+
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
 function base64ToAnthropicBlock(dataUrl: string) {
   const [header, data] = dataUrl.split(",");
-  const mediaType = header.match(/data:(.*?);/)?.[1] || "image/png";
+  const mediaType = header.match(/data:(.*?);/)?.[1] || "image/jpeg";
   return { type: "image" as const, source: { type: "base64" as const, media_type: mediaType, data } };
 }
 
@@ -360,20 +392,47 @@ export default function ProjetoPage() {
   const handleFiles = useCallback(async (files: FileList | File[]) => {
     const sb = supabase();
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) continue;
-      if (file.size > 5 * 1024 * 1024) { alert("Imagem muito grande (máx 5MB)"); continue; }
+      if (file.size > 10 * 1024 * 1024) { alert("Arquivo muito grande (máx 10MB)"); continue; }
 
-      // Show preview immediately
-      const b64 = await fileToBase64(file);
-      setPendingImages(prev => [...prev, b64]);
+      if (file.type.startsWith("image/")) {
+        // Image: compress, show preview, upload to storage
+        const rawB64 = await fileToBase64(file);
+        const compressed = await compressImage(rawB64);
+        setPendingImages(prev => [...prev, compressed]);
 
-      // Upload to Supabase Storage in background
-      const ext = file.name.split(".").pop() || "png";
-      const path = `screenshots/${orderId}/${Date.now()}.${ext}`;
-      const { error } = await sb.storage.from("generated-images").upload(path, file, { contentType: file.type, upsert: true });
-      if (!error) {
-        const { data: urlData } = sb.storage.from("generated-images").getPublicUrl(path);
-        setUploadedImageUrls(prev => [...prev, urlData.publicUrl]);
+        // Upload original to Supabase Storage for generation pipeline
+        const ext = file.name.split(".").pop() || "png";
+        const path = `screenshots/${orderId}/${Date.now()}.${ext}`;
+        const { error } = await sb.storage.from("generated-images").upload(path, file, { contentType: file.type, upsert: true });
+        if (!error) {
+          const { data: urlData } = sb.storage.from("generated-images").getPublicUrl(path);
+          setUploadedImageUrls(prev => [...prev, urlData.publicUrl]);
+        }
+      } else {
+        // Non-image file: read as text and attach to input
+        const TEXT_TYPES = ["text/", "application/json", "application/xml", "text/csv", "application/csv"];
+        const isText = TEXT_TYPES.some(t => file.type.startsWith(t)) || /\.(txt|csv|json|xml|md|html|css|js|ts|jsx|tsx|log)$/i.test(file.name);
+
+        if (isText) {
+          try {
+            const text = await readFileAsText(file);
+            const truncated = text.length > 4000 ? text.slice(0, 4000) + "\n...[arquivo truncado]" : text;
+            const fileContext = `📎 Arquivo: ${file.name}\n\`\`\`\n${truncated}\n\`\`\``;
+            setInputValue(prev => prev ? `${prev}\n\n${fileContext}` : fileContext);
+          } catch {
+            setInputValue(prev => prev ? `${prev}\n📎 ${file.name} (não foi possível ler)` : `📎 ${file.name} (não foi possível ler)`);
+          }
+        } else {
+          // Binary files (PDF, DOC, etc.) — upload to storage and mention in chat
+          const ext = file.name.split(".").pop() || "bin";
+          const path = `uploads/${orderId}/${Date.now()}.${ext}`;
+          const { error } = await sb.storage.from("generated-images").upload(path, file, { contentType: file.type, upsert: true });
+          if (!error) {
+            const { data: urlData } = sb.storage.from("generated-images").getPublicUrl(path);
+            setUploadedImageUrls(prev => [...prev, urlData.publicUrl]);
+          }
+          setInputValue(prev => prev ? `${prev}\n📎 Arquivo enviado: ${file.name}` : `📎 Arquivo enviado: ${file.name}`);
+        }
       }
     }
   }, [orderId]);
@@ -732,7 +791,7 @@ export default function ProjetoPage() {
               type="file"
               ref={fileInputRef}
               style={{ display: "none" }}
-              accept="image/*,.pdf,.doc,.docx"
+              accept="image/*,.pdf,.doc,.docx,.txt,.csv,.json,.xml,.md,.html"
               multiple
               onChange={e => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
             />
