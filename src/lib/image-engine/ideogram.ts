@@ -3,6 +3,11 @@ import { ImageResult } from './types'
 
 const IDEOGRAM_BASE = 'https://api.ideogram.ai/v1/ideogram-v3'
 
+// Timeout para cada etapa (ms)
+const TIMEOUT_IDEOGRAM_API = 45_000   // 45s para a API do Ideogram gerar
+const TIMEOUT_DOWNLOAD_IMG = 15_000   // 15s para baixar imagem gerada
+const TIMEOUT_DOWNLOAD_REF = 20_000   // 20s para baixar imagem de referência
+
 // Map ASPECT_X_Y format to Ideogram v3 format (WxH)
 const ASPECT_MAP: Record<string, string> = {
   ASPECT_1_1: '1x1',
@@ -25,7 +30,14 @@ interface IdeogramOptions {
 
 interface IdeogramRemixOptions extends IdeogramOptions {
   reference_image_url: string
-  image_weight?: number  // 1-100, default 50
+  image_weight?: number
+}
+
+/** Wrapper de fetch com timeout via AbortController */
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer))
 }
 
 /**
@@ -37,20 +49,24 @@ export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResu
 
   const aspect = opts.aspect_ratio ? (ASPECT_MAP[opts.aspect_ratio] || '1x1') : '1x1'
 
-  const res = await fetch(`${IDEOGRAM_BASE}/generate`, {
-    method: 'POST',
-    headers: {
-      'Api-Key': apiKey,
-      'Content-Type': 'application/json',
+  const res = await fetchWithTimeout(
+    `${IDEOGRAM_BASE}/generate`,
+    {
+      method: 'POST',
+      headers: {
+        'Api-Key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        prompt: opts.prompt,
+        rendering_speed: 'TURBO',
+        magic_prompt: 'AUTO',
+        aspect_ratio: aspect,
+        style_type: opts.style_type || 'REALISTIC',
+      }),
     },
-    body: JSON.stringify({
-      prompt: opts.prompt,
-      rendering_speed: 'TURBO',
-      magic_prompt: 'AUTO',
-      aspect_ratio: aspect,
-      style_type: opts.style_type || 'REALISTIC',
-    }),
-  })
+    TIMEOUT_IDEOGRAM_API
+  )
 
   if (!res.ok) {
     const err = await res.text()
@@ -66,8 +82,6 @@ export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResu
 
 /**
  * Image-to-image remix using Ideogram v3
- * This is the key feature — Ideogram UNDERSTANDS the reference image content
- * and generates based on both the prompt and the image context.
  */
 export async function remixIdeogram(opts: IdeogramRemixOptions): Promise<ImageResult> {
   const apiKey = process.env.IDEOGRAM_API_KEY
@@ -75,16 +89,14 @@ export async function remixIdeogram(opts: IdeogramRemixOptions): Promise<ImageRe
 
   const aspect = opts.aspect_ratio ? (ASPECT_MAP[opts.aspect_ratio] || '1x1') : '1x1'
 
-  // Download the reference image to send as binary
-  const imgRes = await fetch(opts.reference_image_url)
+  // Download reference image com timeout
+  const imgRes = await fetchWithTimeout(opts.reference_image_url, {}, TIMEOUT_DOWNLOAD_REF)
   if (!imgRes.ok) throw new Error(`Failed to download reference image: ${imgRes.status}`)
   const imgBuffer = await imgRes.arrayBuffer()
 
-  // Detect content type from response or default to jpeg
   const contentType = imgRes.headers.get('content-type') || 'image/jpeg'
   const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpeg'
 
-  // Build multipart form data
   const formData = new FormData()
   const blob = new Blob([imgBuffer], { type: contentType })
   formData.append('image', blob, `reference.${ext}`)
@@ -97,13 +109,15 @@ export async function remixIdeogram(opts: IdeogramRemixOptions): Promise<ImageRe
     formData.append('style_type', opts.style_type)
   }
 
-  const res = await fetch(`${IDEOGRAM_BASE}/remix`, {
-    method: 'POST',
-    headers: {
-      'Api-Key': apiKey,
+  const res = await fetchWithTimeout(
+    `${IDEOGRAM_BASE}/remix`,
+    {
+      method: 'POST',
+      headers: { 'Api-Key': apiKey },
+      body: formData,
     },
-    body: formData,
-  })
+    TIMEOUT_IDEOGRAM_API
+  )
 
   if (!res.ok) {
     const err = await res.text()
@@ -121,10 +135,11 @@ export async function remixIdeogram(opts: IdeogramRemixOptions): Promise<ImageRe
  * Download generated image and upload to Supabase Storage
  */
 async function uploadToStorage(imageUrl: string, orderId: string, position: number): Promise<ImageResult> {
-  const imageRes = await fetch(imageUrl)
+  const imageRes = await fetchWithTimeout(imageUrl, {}, TIMEOUT_DOWNLOAD_IMG)
+  if (!imageRes.ok) throw new Error(`Failed to download generated image: ${imageRes.status}`)
+
   const imageBuffer = Buffer.from(await imageRes.arrayBuffer())
 
-  // Detect format from URL or content-type
   const ct = imageRes.headers.get('content-type') || ''
   const isWebp = ct.includes('webp') || imageUrl.includes('.webp')
   const ext = isWebp ? 'webp' : 'jpg'

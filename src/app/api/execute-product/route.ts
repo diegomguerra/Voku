@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ProductId } from '@/lib/products'
-import { generateImage } from '@/lib/image-engine/router'
 import { ImageSlug } from '@/lib/image-engine/types'
 import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 120
+export const maxDuration = 60  // Texto + DB only — images are fire-and-forget
 
 const SYSTEM_PROMPTS: Record<ProductId, string> = {
   landing_page_copy: `Você é RORDENS, o motor de execução da Voku. Escreva uma landing page copy completa e de alta conversão.
@@ -78,21 +77,7 @@ SLIDE 1: [tema]
 Headline: [frase curta e impactante]
 Texto: [2 linhas explicando o ponto]
 
-SLIDE 2: [tema]
-Headline: [frase curta e impactante]
-Texto: [2 linhas explicando o ponto]
-
-SLIDE 3: [tema]
-Headline: [frase curta e impactante]
-Texto: [2 linhas explicando o ponto]
-
-SLIDE 4: [tema]
-Headline: [frase curta e impactante]
-Texto: [2 linhas explicando o ponto]
-
-SLIDE 5: [tema]
-Headline: [frase curta e impactante]
-Texto: [2 linhas explicando o ponto]
+SLIDE 2-5: [mesma estrutura]
 
 CTA FINAL:
 [chamada para ação do último slide]
@@ -113,13 +98,9 @@ HOOK (0-3s):
 
 DESENVOLVIMENTO:
 [segundo a segundo, com indicações de corte]
-[ex: 0:03-0:15 — Explique X mostrando Y]
-[ex: 0:15-0:25 — Mostre resultado Z com legenda "texto"]
 
 CTA (últimos 5s):
 [chamada para ação falada]
-[texto na tela]
-[indicação de CTA no sticker/link]
 
 LEGENDA DO POST:
 [legenda para acompanhar o Reels]
@@ -127,41 +108,23 @@ LEGENDA DO POST:
 REGRAS:
 - Variação A: 30 segundos — direto ao ponto
 - Variação B: 60 segundos — com desenvolvimento
-- Variação C: 90 segundos — storytelling completo
-- Sempre incluir indicações de corte e elementos visuais`,
+- Variação C: 90 segundos — storytelling completo`,
 
   ad_copy: `Você é RORDENS, o motor de execução da Voku. Crie 3 variações de copy para Meta Ads.
 
 FORMATO OBRIGATÓRIO para cada variação:
 **VARIAÇÃO [A/B/C] — Ângulo [Nome do ângulo]**
 
-HEADLINE PRIMÁRIO:
-[até 40 caracteres — aparece em destaque]
-
-HEADLINE SECUNDÁRIO:
-[até 40 caracteres — variação do primário]
-
-HEADLINE TERCIÁRIO:
-[até 40 caracteres — terceira opção]
-
-TEXTO PRIMÁRIO:
-[corpo do anúncio, até 125 caracteres ideais, máximo 500]
-
-DESCRIÇÃO:
-[até 30 caracteres — aparece abaixo do criativo]
-
-CALL TO ACTION:
-[botão: Saiba Mais / Comprar Agora / Cadastre-se / etc]
+HEADLINE PRIMÁRIO: [até 40 caracteres]
+HEADLINE SECUNDÁRIO: [até 40 caracteres]
+TEXTO PRIMÁRIO: [corpo do anúncio, até 125 caracteres ideais, máximo 500]
+DESCRIÇÃO: [até 30 caracteres]
+CALL TO ACTION: [botão: Saiba Mais / Comprar Agora / etc]
 
 ÂNGULO:
-- Variação A: dor — foca no problema que o produto resolve
-- Variação B: benefício — foca na transformação positiva
-- Variação C: prova social — foca em resultados e credibilidade
-
-REGRAS:
-- Respeitar limites de caracteres do Meta rigorosamente
-- Headline deve parar o scroll em 2 segundos
-- Texto primário deve qualificar e converter`,
+- Variação A: dor — foca no problema
+- Variação B: benefício — foca na transformação
+- Variação C: prova social — foca em resultados`,
 
   app: `Você é RORDENS, o motor de execução da Voku. Gere a especificação completa de um app web simples focado em marketing.
 
@@ -175,7 +138,7 @@ FUNCIONALIDADES:
 - [funcionalidade 2]
 - [funcionalidade 3]
 CTA_PRINCIPAL: [ação principal do botão]
-COR_DESTAQUE: [cor hex sugerida para o negócio]
+COR_DESTAQUE: [cor hex sugerida]
 
 VARIAÇÃO B — [tipo diferente]
 [mesma estrutura]
@@ -196,9 +159,9 @@ const CREDIT_COST: Record<string, number> = {
 }
 
 const TONE_INSTRUCTIONS = [
-  { label: 'Option A — Direct & bold tone', instruction: 'Use a direct, bold, no-nonsense tone. Short sentences. Strong verbs. Go straight to the point.' },
-  { label: 'Option B — Consultive & empathetic tone', instruction: 'Use a consultive, empathetic tone. Show understanding of the reader\'s pain. Guide them step by step.' },
-  { label: 'Option C — Creative & provocative tone', instruction: 'Use a creative, provocative tone. Challenge assumptions. Use unexpected angles and compelling hooks.' },
+  { label: 'Option A — Direct & bold tone', instruction: '' },
+  { label: 'Option B — Consultive & empathetic tone', instruction: '' },
+  { label: 'Option C — Creative & provocative tone', instruction: '' },
 ]
 
 const PRODUCT_NAMES: Record<ProductId, string> = {
@@ -212,6 +175,44 @@ const PRODUCT_NAMES: Record<ProductId, string> = {
   app: 'App Web',
 }
 
+const IMAGE_PRODUCTS: Record<string, string> = {
+  post_instagram: 'product-scene',
+  carrossel: 'product-scene',
+  content_pack: 'product-scene',
+  email_sequence: 'product-scene',
+  ad_copy: 'product-scene',
+  reels_script: 'product-scene',
+  landing_page_copy: 'atmospheric',
+  app: 'screen-mockup',
+}
+
+/**
+ * Dispara geração de imagem de forma NÃO BLOQUEANTE.
+ * Usa fetch fire-and-forget — não aguarda resposta.
+ * A rota /api/generate-image tem maxDuration=60 e cuida do timeout internamente.
+ */
+function fireImageGeneration(params: {
+  order_id: string
+  choice_id: string
+  choice_position: number
+  choice_label: string
+  choice_text: string
+  slug: string
+  brand: Record<string, string>
+  reference_image_url?: string
+  briefing_text: string
+  product: string
+}) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+  // Fire-and-forget: não awaita, não bloqueia
+  fetch(`${baseUrl}/api/generate-image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  }).catch(e => console.error('[fire-image] fetch error:', e))
+}
+
 export async function POST(req: NextRequest) {
   let order_id: string | undefined
   let supabase: ReturnType<typeof supabaseAdmin> | undefined
@@ -219,7 +220,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     order_id = body.order_id
-    const { user_id, email, name, product, structured_data, currency, reference_image_url } = body
+    const { user_id, email, name, product, structured_data, reference_image_url } = body
     supabase = supabaseAdmin()
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
@@ -232,17 +233,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, order_id, skipped: true })
     }
 
-    // ── 1. Credit check FIRST (before any expensive operations) ──
+    // ── 1. Credit check ──
     const cost = CREDIT_COST[product] || 0
     if (cost > 0) {
       const { data: creditRow, error: creditError } = await supabase
-        .from('credits')
-        .select('balance')
-        .eq('user_id', user_id)
-        .single()
+        .from('credits').select('balance').eq('user_id', user_id).single()
 
       if (creditError || !creditRow || creditRow.balance < cost) {
-        console.error(`[execute-product] Insufficient credits: order=${order_id} balance=${creditRow?.balance} cost=${cost}`)
         await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
         return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 402 })
       }
@@ -254,7 +251,7 @@ export async function POST(req: NextRequest) {
     const baseSystem = SYSTEM_PROMPTS[product as ProductId]
     const briefingText = JSON.stringify(structured_data, null, 2)
 
-    // ── 2. Create project phases & steps for tracking (parallelized) ──
+    // ── 2. Create project phases ──
     const [{ data: phase1 }, { data: phase2 }] = await Promise.all([
       supabase.from('project_phases').insert({
         order_id, title: 'Produção', phase_number: 1, status: 'active', started_at: new Date().toISOString(),
@@ -275,9 +272,7 @@ export async function POST(req: NextRequest) {
       ]) : Promise.resolve(),
     ])
 
-    console.log(`[execute-product] Phases created, calling Anthropic API for order=${order_id}`)
-
-    // ── 3. Generate 3 variations via Anthropic API ──
+    // ── 3. Gerar variações via Anthropic ──
     const SIMPLE_PRODUCTS = ['post_instagram', 'ad_copy', 'reels_script']
     const maxTokens = SIMPLE_PRODUCTS.includes(product) ? 4000 : 6000
     const message = await anthropic.messages.create({
@@ -302,35 +297,24 @@ Each variation must be complete and production-ready. Only output the JSON array
 
     const rawOutput = message.content[0].type === 'text' ? message.content[0].text : '[]'
 
-    console.log(`[execute-product] Raw output length=${rawOutput.length} for order=${order_id}`)
-
-    // Parse the 3 variations
     let variations: { label: string; text: string }[]
     try {
-      // Strip markdown code fences (```json ... ```) before parsing
       const cleaned = rawOutput.replace(/```(?:json|JSON)?\s*\n?/g, '').trim()
       const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
       if (!jsonMatch) throw new Error('No JSON array found')
       variations = JSON.parse(jsonMatch[0])
-      if (!Array.isArray(variations) || variations.length === 0) {
-        throw new Error('Parsed result is not a non-empty array')
-      }
+      if (!Array.isArray(variations) || variations.length === 0) throw new Error('Empty array')
     } catch (parseErr) {
-      console.error(`[execute-product] JSON parse failed for order=${order_id}:`, (parseErr as Error).message, 'Raw start:', rawOutput.slice(0, 200))
-      // Fallback: if JSON parsing fails, create 1 choice with the raw output
+      console.error(`[execute-product] JSON parse failed:`, (parseErr as Error).message)
       variations = [{ label: 'Option A', text: rawOutput }]
     }
 
-    // Ensure we have at least 1 and at most 3 variations
     variations = variations.slice(0, 3)
 
-    console.log(`[execute-product] Generated ${variations.length} variations for order=${order_id}`)
-
-    // ── 4. Save preview_text (first 300 chars of first variation) ──
+    // ── 4. Salvar preview + choices ──
     const previewText = (variations[0]?.text || '').slice(0, 300)
     await supabase.from('orders').update({ preview_text: previewText }).eq('id', order_id)
 
-    // ── 5. Batch insert choices (single query) ──
     await supabase.from('choices').insert(
       variations.map((v, i) => ({
         order_id,
@@ -342,7 +326,7 @@ Each variation must be complete and production-ready. Only output the JSON array
       }))
     )
 
-    // ── Mark "Gerar texto" step as done, activate "Gerar imagens" (parallelized) ──
+    // ── Avançar steps de texto ──
     const [{ data: textStep }, { data: imageStep }] = await Promise.all([
       supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 1).single(),
       supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 2).single(),
@@ -352,7 +336,6 @@ Each variation must be complete and production-ready. Only output the JSON array
       imageStep ? supabase.from('project_steps').update({ status: 'active' }).eq('id', imageStep.id) : Promise.resolve(),
     ])
 
-    // Insert iteration
     await supabase.from('iterations').insert({
       order_id,
       iteration_num: 1,
@@ -360,114 +343,56 @@ Each variation must be complete and production-ready. Only output the JSON array
       choices_sent_at: new Date().toISOString(),
     })
 
-    // Do NOT update orders.status — it stays as 'in_production'
-    // Do NOT insert into deliverables — client must choose first
-
-    // ── 6. Deduct credits (already validated at the top) ──
+    // ── 5. Deduzir créditos ──
     if (cost > 0) {
-      const { data: creditRow } = await supabase
-        .from('credits')
-        .select('balance')
-        .eq('user_id', user_id)
-        .single()
-
+      const { data: creditRow } = await supabase.from('credits').select('balance').eq('user_id', user_id).single()
       if (creditRow) {
-        await supabase
-          .from('credits')
-          .update({ balance: creditRow.balance - cost })
-          .eq('user_id', user_id)
-
+        await supabase.from('credits').update({ balance: creditRow.balance - cost }).eq('user_id', user_id)
         await supabase.from('credit_transactions').insert({
-          user_id,
-          amount: -cost,
-          type: 'debit',
+          user_id, amount: -cost, type: 'debit',
           description: `Geração de ${PRODUCT_NAMES[product as ProductId] || product}`,
           order_id,
         })
       }
     }
 
-    // Get order number for email
-    const { data: order } = await supabase
-      .from('orders').select('order_number').eq('id', order_id).single()
-
-    // Send email: choices are ready
-    const productName = PRODUCT_NAMES[product as ProductId]
-    const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
-
-    // Fire image generation for visual products
-    const IMAGE_PRODUCTS: Record<string, string> = {
-      post_instagram: 'product-scene',
-      carrossel: 'product-scene',
-      content_pack: 'product-scene',
-      email_sequence: 'product-scene',
-      ad_copy: 'product-scene',
-      reels_script: 'product-scene',
-      landing_page_copy: 'atmospheric',
-      app: 'screen-mockup',
-    }
-    let imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
-    // Reference images are handled by Ideogram remix in the router — keep user's chosen slug
+    // ── 6. Disparar imagens — FIRE AND FORGET ──
+    const imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
     if (imageSlug) {
-      // Fetch inserted choices to get their IDs
       const { data: insertedChoices } = await supabase
-        .from('choices')
-        .select('id, position, label, content')
-        .eq('order_id', order_id)
-        .order('position')
+        .from('choices').select('id, position, label, content').eq('order_id', order_id).order('position')
 
-      // Fetch brand context if available
       const { data: brandRow } = await supabase
-        .from('brand_contexts')
-        .select('nome_marca, tom, palavras_chave')
-        .eq('user_id', user_id)
-        .limit(1)
-        .single()
+        .from('brand_contexts').select('nome_marca, tom').eq('user_id', user_id).limit(1).single()
 
-      const brand = brandRow ? {
-        nome_marca: brandRow.nome_marca,
-        tom: brandRow.tom,
-      } : {}
+      const brand: Record<string, string> = brandRow
+        ? { nome_marca: brandRow.nome_marca || '', tom: brandRow.tom || '' }
+        : {}
 
       if (insertedChoices?.length) {
-        // Generate all images in parallel — direct call, no HTTP overhead
-        await Promise.all(insertedChoices.map(choice =>
-          generateImage({
-            slug: imageSlug as ImageSlug,
-            product,
-            briefing_text: briefingText,
-            choice_label: choice.label || '',
-            choice_text: choice.content?.text || '',
-            brand,
-            reference_image_url: reference_image_url || undefined,
+        for (const choice of insertedChoices) {
+          fireImageGeneration({
             order_id: order_id!,
             choice_id: choice.id,
             choice_position: choice.position,
-          }).catch(e => console.error('Image gen error for choice:', choice.id, e))
-        ))
-
-        // All images done → advance project phases in parallel
-        const now = new Date().toISOString()
-        const { data: allChoices } = await supabase
-          .from('choices').select('id, image_url').eq('order_id', order_id)
-        if (allChoices?.every(c => c.image_url)) {
-          const [imgStep, prodPhase, approvalPhase, chooseStep] = await Promise.all([
-            supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 2).single(),
-            supabase.from('project_phases').select('id').eq('order_id', order_id).eq('phase_number', 1).single(),
-            supabase.from('project_phases').select('id').eq('order_id', order_id).eq('phase_number', 2).single(),
-            supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 3).single(),
-          ])
-          await Promise.all([
-            imgStep.data ? supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('id', imgStep.data.id) : Promise.resolve(),
-            prodPhase.data ? supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('id', prodPhase.data.id) : Promise.resolve(),
-            approvalPhase.data ? supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('id', approvalPhase.data.id) : Promise.resolve(),
-            chooseStep.data ? supabase.from('project_steps').update({ status: 'active' }).eq('id', chooseStep.data.id) : Promise.resolve(),
-          ])
+            choice_label: choice.label || '',
+            choice_text: choice.content?.text || '',
+            slug: imageSlug,
+            brand,
+            reference_image_url: reference_image_url || undefined,
+            briefing_text: briefingText,
+            product,
+          })
         }
+        console.log(`[execute-product] Fired ${insertedChoices.length} image jobs for order=${order_id}`)
       }
     }
 
-    // E-mail (non-blocking — não impede geração das choices)
+    // ── 7. Email (non-blocking) ──
+    const { data: order } = await supabase.from('orders').select('order_number').eq('id', order_id).single()
+    const productName = PRODUCT_NAMES[product as ProductId]
+    const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
+
     resend.emails.send({
       from: 'Voku <ola@voku.one>',
       to: email,
@@ -480,17 +405,17 @@ Each variation must be complete and production-ready. Only output the JSON array
           <div style="margin: 24px 0;">
             <a href="${choicesUrl}" style="background: #C8F135; color: #0A0A0A; padding: 14px 28px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 13px; display: inline-block;">Choose your favorite →</a>
           </div>
-          <p style="color: #555; font-size: 12px;">Order #${order?.order_number} · Don't like any of them? Reply to this email and we'll redo it. No questions asked.</p>
+          <p style="color: #555; font-size: 12px;">Order #${order?.order_number} · Don't like any of them? Reply to this email and we'll redo it.</p>
           <div style="margin-top: 32px; padding-top: 20px; border-top: 1px solid #1F1F1F; color: #333; font-size: 11px;">Voku LLC · Wyoming, USA · voku.one</div>
         </div>
       `,
     }).catch(e => console.error('Resend email error:', e))
 
-    console.log(`[execute-product] Completed successfully for order=${order_id}`)
+    console.log(`[execute-product] Completed for order=${order_id}`)
     return NextResponse.json({ success: true, order_id, choices: variations.length, preview_text: previewText })
+
   } catch (err) {
     console.error(`[execute-product] FAILED for order=${order_id}:`, err)
-    // Mark order as failed so frontend stops polling
     if (supabase && order_id) {
       try { await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id) } catch {}
     }
