@@ -211,41 +211,68 @@ const PRODUCT_NAMES: Record<ProductId, string> = {
 }
 
 export async function POST(req: NextRequest) {
+  let order_id: string | undefined
+  let supabase: ReturnType<typeof supabaseAdmin> | undefined
+
   try {
-    const { order_id, user_id, email, name, product, structured_data, currency } = await req.json()
-    const supabase = supabaseAdmin()
+    const body = await req.json()
+    order_id = body.order_id
+    const { user_id, email, name, product, structured_data, currency } = body
+    supabase = supabaseAdmin()
+
+    console.log(`[execute-product] Starting order=${order_id} product=${product}`)
+
+    // ── 1. Credit check FIRST (before any expensive operations) ──
+    const cost = CREDIT_COST[product] || 0
+    if (cost > 0) {
+      const { data: creditRow, error: creditError } = await supabase
+        .from('credits')
+        .select('balance')
+        .eq('user_id', user_id)
+        .single()
+
+      if (creditError || !creditRow || creditRow.balance < cost) {
+        console.error(`[execute-product] Insufficient credits: order=${order_id} balance=${creditRow?.balance} cost=${cost}`)
+        await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
+        return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 402 })
+      }
+    }
+
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     const baseSystem = SYSTEM_PROMPTS[product as ProductId]
     const briefingText = JSON.stringify(structured_data, null, 2)
 
-    // ── Create project phases & steps for tracking ──
-    const { data: phase1 } = await supabase.from('project_phases').insert({
-      order_id, title: 'Produção', phase_number: 1, status: 'active', started_at: new Date().toISOString(),
-    }).select('id').single()
+    // ── 2. Create project phases & steps for tracking (parallelized) ──
+    const [{ data: phase1 }, { data: phase2 }] = await Promise.all([
+      supabase.from('project_phases').insert({
+        order_id, title: 'Produção', phase_number: 1, status: 'active', started_at: new Date().toISOString(),
+      }).select('id').single(),
+      supabase.from('project_phases').insert({
+        order_id, title: 'Aprovação', phase_number: 2, status: 'pending',
+      }).select('id').single(),
+    ])
 
-    const { data: phase2 } = await supabase.from('project_phases').insert({
-      order_id, title: 'Aprovação', phase_number: 2, status: 'pending',
-    }).select('id').single()
-
-    if (phase1?.id) {
-      await supabase.from('project_steps').insert([
+    await Promise.all([
+      phase1?.id ? supabase.from('project_steps').insert([
         { order_id, phase_id: phase1.id, label: 'Gerar 3 variações de texto', step_number: 1, status: 'active' },
         { order_id, phase_id: phase1.id, label: 'Gerar imagens', step_number: 2, status: 'pending' },
-      ])
-    }
-    if (phase2?.id) {
-      await supabase.from('project_steps').insert([
+      ]) : Promise.resolve(),
+      phase2?.id ? supabase.from('project_steps').insert([
         { order_id, phase_id: phase2.id, label: 'Escolher variação favorita', step_number: 3, status: 'pending' },
         { order_id, phase_id: phase2.id, label: 'Aprovar entrega final', step_number: 4, status: 'pending' },
-      ])
-    }
+      ]) : Promise.resolve(),
+    ])
 
-    // Generate 3 variations in a single API call
+    console.log(`[execute-product] Phases created, calling Anthropic API for order=${order_id}`)
+
+    // ── 3. Generate 3 variations via Anthropic API ──
+    const SIMPLE_PRODUCTS = ['post_instagram', 'ad_copy', 'reels_script']
+    const maxTokens = SIMPLE_PRODUCTS.includes(product) ? 4000 : 6000
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 6000,
+      max_tokens: maxTokens,
       system: `${baseSystem}
 
 IMPORTANT: You must generate EXACTLY 3 variations of the deliverable, each with a different tone.
@@ -279,31 +306,33 @@ Each variation must be complete and production-ready. Only output the JSON array
     // Ensure we have at least 1 and at most 3 variations
     variations = variations.slice(0, 3)
 
-    // Insert choices
-    for (let i = 0; i < variations.length; i++) {
-      await supabase.from('choices').insert({
+    console.log(`[execute-product] Generated ${variations.length} variations for order=${order_id}`)
+
+    // ── 4. Save preview_text (first 300 chars of first variation) ──
+    const previewText = (variations[0]?.text || '').slice(0, 300)
+    await supabase.from('orders').update({ preview_text: previewText }).eq('id', order_id)
+
+    // ── 5. Batch insert choices (single query) ──
+    await supabase.from('choices').insert(
+      variations.map((v, i) => ({
         order_id,
         type: product,
-        label: variations[i].label || TONE_INSTRUCTIONS[i]?.label || `Option ${i + 1}`,
-        content: { text: variations[i].text },
+        label: v.label || TONE_INSTRUCTIONS[i]?.label || `Option ${i + 1}`,
+        content: { text: v.text },
         is_selected: false,
         position: i,
-      })
-    }
+      }))
+    )
 
-    // ── Mark "Gerar texto" step as done, activate "Gerar imagens" ──
-    const { data: textStep } = await supabase
-      .from('project_steps').select('id')
-      .eq('order_id', order_id).eq('step_number', 1).single()
-    if (textStep) {
-      await supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', textStep.id)
-    }
-    const { data: imageStep } = await supabase
-      .from('project_steps').select('id')
-      .eq('order_id', order_id).eq('step_number', 2).single()
-    if (imageStep) {
-      await supabase.from('project_steps').update({ status: 'active' }).eq('id', imageStep.id)
-    }
+    // ── Mark "Gerar texto" step as done, activate "Gerar imagens" (parallelized) ──
+    const [{ data: textStep }, { data: imageStep }] = await Promise.all([
+      supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 1).single(),
+      supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 2).single(),
+    ])
+    await Promise.all([
+      textStep ? supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', textStep.id) : Promise.resolve(),
+      imageStep ? supabase.from('project_steps').update({ status: 'active' }).eq('id', imageStep.id) : Promise.resolve(),
+    ])
 
     // Insert iteration
     await supabase.from('iterations').insert({
@@ -316,31 +345,28 @@ Each variation must be complete and production-ready. Only output the JSON array
     // Do NOT update orders.status — it stays as 'in_production'
     // Do NOT insert into deliverables — client must choose first
 
-    // Deduct credits
-    const cost = CREDIT_COST[product] || 0
+    // ── 6. Deduct credits (already validated at the top) ──
     if (cost > 0) {
-      const { data: creditRow, error: creditError } = await supabase
+      const { data: creditRow } = await supabase
         .from('credits')
         .select('balance')
         .eq('user_id', user_id)
         .single()
 
-      if (creditError || !creditRow || creditRow.balance < cost) {
-        return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 402 })
+      if (creditRow) {
+        await supabase
+          .from('credits')
+          .update({ balance: creditRow.balance - cost })
+          .eq('user_id', user_id)
+
+        await supabase.from('credit_transactions').insert({
+          user_id,
+          amount: -cost,
+          type: 'debit',
+          description: `Geração de ${PRODUCT_NAMES[product as ProductId] || product}`,
+          order_id,
+        })
       }
-
-      await supabase
-        .from('credits')
-        .update({ balance: creditRow.balance - cost })
-        .eq('user_id', user_id)
-
-      await supabase.from('credit_transactions').insert({
-        user_id,
-        amount: -cost,
-        type: 'debit',
-        description: `Geração de ${PRODUCT_NAMES[product as ProductId] || product}`,
-        order_id,
-      })
     }
 
     // Get order number for email
@@ -425,9 +451,14 @@ Each variation must be complete and production-ready. Only output the JSON array
       `,
     }).catch(e => console.error('Resend email error:', e))
 
-    return NextResponse.json({ success: true, choices: variations.length })
+    console.log(`[execute-product] Completed successfully for order=${order_id}`)
+    return NextResponse.json({ success: true, order_id, choices: variations.length, preview_text: previewText })
   } catch (err) {
-    console.error(err)
+    console.error(`[execute-product] FAILED for order=${order_id}:`, err)
+    // Mark order as failed so frontend stops polling
+    if (supabase && order_id) {
+      try { await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id) } catch {}
+    }
     return NextResponse.json({ error: 'Execution error' }, { status: 500 })
   }
 }

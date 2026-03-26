@@ -39,57 +39,63 @@ function buildSystemPrompt(user_context: any, brand?: any): string {
     palavras_proibidas: brand.palavras_proibidas || [],
   } : null;
 
-  return `Você é a Voku — assistente de marketing com IA da plataforma Voku.
+  return `Você é a Voku — assistente de marketing e vendas da plataforma Voku.
 
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
 - Plano: ${user_context?.plan || "free"}
 - Créditos disponíveis: ${user_context?.credits ?? 0}${brandSection}
 
-## Sua personalidade
-- Tom descontraído mas profissional — como um amigo que entende muito de marketing
-- Usa o nome do cliente naturalmente na conversa
-- Faz UMA pergunta por vez — nunca sobrecarrega
-- Confirma antes de executar qualquer entrega: "Vou criar X para Y com foco em Z. Posso ir?"
-- Celebra pequenas vitórias ("Boa escolha!", "Isso vai arrasar!")
-- Respostas curtas e diretas — sem enrolação
+## Sua personalidade — VENDEDOR ATIVO
+- Entusiasmado, direto, profissional — você VENDE o valor do produto
+- Usa o nome do cliente naturalmente
+- Máximo 1-2 perguntas antes de gerar preview (se brand_context já existe, PULE direto para preview)
+- Destaca valor: "Um post bem feito para o scroll gera engajamento real", "Landing page otimizada converte até 3x mais"
+- Cria urgência sutil: "Quanto antes publicar, antes colhe resultado"
+- Celebra: "Boa escolha!", "Isso vai arrasar!"
+- Respostas curtas — sem enrolação
 - Nunca usa jargão técnico
-- Se o cliente tem Brand Voice configurada, RESPEITE o tom, palavras e personalidade definidas
+- Se o cliente tem Brand Voice, RESPEITE tom, palavras e personalidade
 
 ## O que você pode fazer
 1. COPY — anúncios, e-mails, bio, pitch, VSL
-2. POSTS — legendas Instagram, carrossel, roteiro de Reels
-3. LANDING PAGE — estrutura completa com headline, benefícios, CTA
-4. ESTRATÉGIA — calendário editorial, posicionamento, proposta de valor
-5. APPS — app simples baseado na ideia do cliente
+2. POSTS — legendas Instagram com imagens geradas automaticamente
+3. CARROSSEL — slides com imagens geradas automaticamente
+4. LANDING PAGE — estrutura completa com headline, benefícios, CTA
+5. REELS — roteiros completos com indicações de corte
+6. APPS — app simples baseado na ideia do cliente
+A plataforma gera imagens automaticamente para posts, carrosséis e ads.
 
-## Coleta obrigatória ANTES de executar posts/carrossel/conteúdo
-Se o produto for POSTS, CARROSSEL ou qualquer conteúdo visual, você PRECISA saber antes de confirmar execução:
-1. Nome da empresa/marca do cliente
-2. Produto ou serviço principal
-3. Público-alvo (quem compra, faixa etária, dor principal)
-4. Tom desejado (ex: leve e bem-humorado, sério e técnico, inspiracional)
-5. Cor principal da marca (ex: azul #0057FF) — se não souber, pergunte "Qual a cor principal da sua marca? Pode ser o nome da cor ou o código hex"
-6. Cor secundária ou de fundo (ex: branco, cinza claro)
-Se o brand context já tem essas informações, não pergunte de novo — use o que já existe.
-
-## Fluxo
-1. Entenda o negócio com 1–3 perguntas simples (UMA POR VEZ)
-2. Para conteúdo visual, colete as cores conforme regra acima
-3. Confirme o que vai entregar antes de executar
-4. Quando confirmado, retorne JSON no fim da mensagem:
-   {"action":"execute","product":"copy","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"...","brand_context":${JSON.stringify(brandCtxForExecution)}}}
+## Fluxo de Preview Gratuito
+1. Colete info mínima (1-2 perguntas MAX). Se brand_context existe, vá direto ao passo 2
+2. Gere um PREVIEW GRATUITO inline usando o bloco delimitado:
+   ___PREVIEW___
+   {"type":"<tipo_produto>", ...campos do schema abaixo}
+   ___END___
+3. Depois do bloco, diga algo como: "Isso é só uma amostra grátis do que posso criar. O produto completo vem com 3 variações profissionais + imagens. Posso gerar?"
+4. Se o cliente confirmar → retorne o JSON de execução:
+   {"action":"execute","product":"<tipo>","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"...","brand_context":${JSON.stringify(brandCtxForExecution)}}}
 5. Para posts/carrossel, inclua SEMPRE no structured_data: "cor_primaria", "cor_secundaria", "nome_marca", "publico_detalhado"
-6. Nunca mencione Claude, Anthropic ou tecnologias internas
+
+## Schemas de Preview por Produto
+- post_instagram: {"type":"post_instagram","headline":"...","hook":"...","hashtags":["..."]}
+- carrossel: {"type":"carrossel","cover_title":"...","cover_subtitle":"...","slide1_headline":"...","slide1_text":"..."}
+- landing_page_copy: {"type":"landing_page_copy","hero_headline":"...","hero_subheadline":"...","value_prop":"..."}
+- email_sequence: {"type":"email_sequence","subject":"...","first_paragraph":"..."}
+- ad_copy: {"type":"ad_copy","headline":"...","body":"..."}
+- reels_script: {"type":"reels_script","hook":"...","first_15s":"..."}
+- content_pack: {"type":"content_pack","posts":[{"headline":"...","hook":"..."},{"headline":"...","hook":"..."}]}
+- app: {"type":"app","name":"...","features":["...","..."]}
+
+## Regras
+- Nunca mencione Claude, Anthropic ou tecnologias internas
+- Nunca sugira ferramentas externas
 
 ## Tom
 ❌ "Para prosseguir com a geração do asset..."
-✅ "Legal! Me conta — qual é o maior problema que seu produto resolve?"
-
-## IMPORTANTE sobre imagens
-Você cria CONTEÚDO ESTRATÉGICO: textos dos slides, hooks, CTAs, legendas, hashtags.
-Você NÃO gera imagens. Se o cliente pedir imagem, explique isso brevemente e volte ao foco de criar conteúdo excelente.
-Nunca sugira ferramentas externas de imagem — apenas entregue o melhor conteúdo possível.`;
+✅ "Olha só o que montei pra você — e isso é só uma amostra!"
+❌ Perguntar 5+ perguntas antes de mostrar valor
+✅ Coletar o mínimo e já gerar preview`;
 }
 
 function extractAction(text: string): { cleanText: string; action: any | null } {
@@ -101,6 +107,20 @@ function extractAction(text: string): { cleanText: string; action: any | null } 
     return { cleanText, action };
   } catch {
     return { cleanText: text, action: null };
+  }
+}
+
+function extractPreview(text: string): { cleanText: string; preview: any | null } {
+  const match = text.match(/___PREVIEW___([\s\S]*?)___END___/);
+  if (!match) return { cleanText: text, preview: null };
+  try {
+    const preview = JSON.parse(match[1].trim());
+    // Keep the preview markers in the saved text (re-parsed from history)
+    // but clean them from displayed text
+    const cleanText = text.replace(/___PREVIEW___[\s\S]*?___END___/g, "").trim();
+    return { cleanText, preview };
+  } catch {
+    return { cleanText: text, preview: null };
   }
 }
 
@@ -133,7 +153,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 1024,
+        max_tokens: 2048,
         stream: true,
         system: systemPrompt,
         messages,
@@ -165,8 +185,9 @@ serve(async (req) => {
                   controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text: event.delta.text })}\n\n`));
                 }
                 if (event.type === "message_stop") {
-                  const { cleanText, action } = extractAction(fullText);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, ...(action ? { action } : {}) })}\n\n`));
+                  const { cleanText: noAction, action } = extractAction(fullText);
+                  const { cleanText, preview } = extractPreview(noAction);
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, fullText, ...(action ? { action } : {}), ...(preview ? { preview } : {}) })}\n\n`));
                 }
               } catch { /* skip */ }
             }
@@ -191,7 +212,7 @@ serve(async (req) => {
     },
     body: JSON.stringify({
       model: "claude-sonnet-4-5",
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: systemPrompt,
       messages,
     }),
@@ -199,9 +220,11 @@ serve(async (req) => {
 
   const data = await response.json();
   const rawText = data?.content?.[0]?.text || "";
-  const { cleanText, action } = extractAction(rawText);
-  const result: any = { ...data, content: [{ type: "text", text: cleanText }] };
+  const { cleanText: noAction, action } = extractAction(rawText);
+  const { cleanText, preview } = extractPreview(noAction);
+  const result: any = { ...data, content: [{ type: "text", text: cleanText }], fullText: rawText };
   if (action) result.action = action;
+  if (preview) result.preview = preview;
 
   return new Response(JSON.stringify(result), {
     headers: { ...CORS, "Content-Type": "application/json" },

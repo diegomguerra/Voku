@@ -30,6 +30,7 @@ const STATUS: Record<string,{label:string;color:string;bg:string;dot:string}> = 
   briefing:{label:"Briefing",color:T.amber,bg:T.amberBg,dot:"#F59E0B"},
   in_production:{label:"Em Produção",color:T.teal,bg:T.tealBg,dot:"#0D9488"},
   delivered:{label:"Entregue",color:T.green,bg:T.greenBg,dot:"#16A34A"},
+  failed:{label:"Erro",color:"#DC2626",bg:"#FEE2E2",dot:"#EF4444"},
 };
 
 const QUICK_STARTS = [
@@ -42,6 +43,131 @@ const QUICK_STARTS = [
 interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  preview?: any;
+}
+
+// ─── Preview extraction helpers ───
+function parsePreviewFromContent(text: string): { cleanText: string; preview: any | null } {
+  const match = text.match(/___PREVIEW___([\s\S]*?)___END___/);
+  if (!match) return { cleanText: text, preview: null };
+  try {
+    const preview = JSON.parse(match[1].trim());
+    const cleanText = text.replace(/___PREVIEW___[\s\S]*?___END___/g, "").trim();
+    return { cleanText, preview };
+  } catch {
+    return { cleanText: text, preview: null };
+  }
+}
+
+// ─── Preview Card Component ───
+const PREVIEW_LABELS: Record<string, string> = {
+  post_instagram: "Post Instagram",
+  carrossel: "Carrossel",
+  landing_page_copy: "Landing Page",
+  email_sequence: "E-mail",
+  ad_copy: "Anúncio",
+  reels_script: "Roteiro Reels",
+  content_pack: "Pacote de Conteúdo",
+  app: "App",
+};
+
+function PreviewCard({ preview }: { preview: any }) {
+  if (!preview || typeof preview !== "object") return null;
+  const type = preview.type || "unknown";
+  const label = PREVIEW_LABELS[type] || type;
+
+  const renderFields = () => {
+    switch (type) {
+      case "post_instagram":
+        return (
+          <>
+            {preview.headline && <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 6 }}>{preview.headline}</div>}
+            {preview.hook && <div style={{ fontSize: 13, color: T.inkSub, lineHeight: 1.6, marginBottom: 8 }}>{preview.hook}</div>}
+            {preview.hashtags?.length > 0 && <div style={{ fontSize: 11, color: T.inkMid, wordBreak: "break-word" }}>{preview.hashtags.map((h: string) => (h.startsWith("#") ? h : `#${h}`)).join(" ")}</div>}
+          </>
+        );
+      case "carrossel":
+        return (
+          <>
+            {preview.cover_title && <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 2 }}>{preview.cover_title}</div>}
+            {preview.cover_subtitle && <div style={{ fontSize: 12, color: T.inkMid, marginBottom: 10 }}>{preview.cover_subtitle}</div>}
+            {preview.slide1_headline && (
+              <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 12px", marginTop: 6 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>{preview.slide1_headline}</div>
+                {preview.slide1_text && <div style={{ fontSize: 11, color: T.inkSub, marginTop: 2 }}>{preview.slide1_text}</div>}
+              </div>
+            )}
+          </>
+        );
+      case "landing_page_copy":
+        return (
+          <>
+            {preview.hero_headline && <div style={{ fontSize: 16, fontWeight: 800, color: T.ink, marginBottom: 4 }}>{preview.hero_headline}</div>}
+            {preview.hero_subheadline && <div style={{ fontSize: 13, color: T.inkSub, marginBottom: 8 }}>{preview.hero_subheadline}</div>}
+            {preview.value_prop && <div style={{ fontSize: 12, color: T.inkMid, fontStyle: "italic" }}>{preview.value_prop}</div>}
+          </>
+        );
+      case "email_sequence":
+        return (
+          <>
+            {preview.subject && <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 4 }}>Assunto: {preview.subject}</div>}
+            {preview.first_paragraph && <div style={{ fontSize: 12, color: T.inkSub, lineHeight: 1.6 }}>{preview.first_paragraph}</div>}
+          </>
+        );
+      case "ad_copy":
+        return (
+          <>
+            {preview.headline && <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 4 }}>{preview.headline}</div>}
+            {preview.body && <div style={{ fontSize: 12, color: T.inkSub, lineHeight: 1.6 }}>{preview.body}</div>}
+          </>
+        );
+      case "reels_script":
+        return (
+          <>
+            {preview.hook && <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 4 }}>Hook: {preview.hook}</div>}
+            {preview.first_15s && <div style={{ fontSize: 12, color: T.inkSub, lineHeight: 1.6 }}>{preview.first_15s}</div>}
+          </>
+        );
+      case "content_pack":
+        return (
+          <>
+            {preview.posts?.map((p: any, i: number) => (
+              <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: i < (preview.posts.length - 1) ? `1px solid ${T.border}` : "none" }}>
+                {p.headline && <div style={{ fontSize: 13, fontWeight: 700, color: T.ink }}>{p.headline}</div>}
+                {p.hook && <div style={{ fontSize: 12, color: T.inkSub }}>{p.hook}</div>}
+              </div>
+            ))}
+          </>
+        );
+      case "app":
+        return (
+          <>
+            {preview.name && <div style={{ fontSize: 15, fontWeight: 700, color: T.ink, marginBottom: 6 }}>{preview.name}</div>}
+            {preview.features?.map((f: string, i: number) => (
+              <div key={i} style={{ fontSize: 12, color: T.inkSub, marginBottom: 2 }}>• {f}</div>
+            ))}
+          </>
+        );
+      default:
+        return <pre style={{ fontSize: 11, color: T.inkSub, whiteSpace: "pre-wrap", margin: 0 }}>{JSON.stringify(preview, null, 2)}</pre>;
+    }
+  };
+
+  return (
+    <div style={{
+      background: T.sand, border: `1.5px solid ${T.lime}`, borderRadius: 14,
+      padding: "16px 20px", marginTop: 8, marginBottom: 4,
+    }}>
+      <div style={{
+        fontSize: 10, fontWeight: 800, color: T.lime, textTransform: "uppercase" as const,
+        letterSpacing: "0.08em", marginBottom: 10, background: T.ink, display: "inline-block",
+        padding: "3px 10px", borderRadius: 6,
+      }}>
+        Preview gratuito — {label}
+      </div>
+      {renderFields()}
+    </div>
+  );
 }
 
 function detectDeliverableType(content: string, product?: string): string {
@@ -80,7 +206,6 @@ export default function PedidosPage() {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const userIdRef = useRef<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Voice input
   const voice = useVoiceInput({
@@ -145,37 +270,6 @@ export default function PedidosPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, chatLoading]);
 
-  // Polling para choices
-  const pollForChoices = useCallback((orderId: string) => {
-    let attempts = 0;
-    if (pollRef.current) clearInterval(pollRef.current);
-    pollRef.current = setInterval(async () => {
-      attempts++;
-      if (attempts > 30) { clearInterval(pollRef.current!); pollRef.current = null; return; }
-      const sb = supabase();
-      const { data: choices } = await sb.from("choices").select("*").eq("order_id", orderId);
-      if (choices && choices.length > 0) {
-        clearInterval(pollRef.current!);
-        pollRef.current = null;
-        // Busca iteration_id
-        const { data: iterations } = await sb.from("iterations").select("id").eq("order_id", orderId).order("created_at", { ascending: false }).limit(1);
-        // Busca order data
-        const { data: orderData } = await sb.from("orders").select("*").eq("id", orderId).single();
-        setPendingOrder({
-          orderId,
-          choices,
-          iterationId: iterations?.[0]?.id || null,
-          orderData: orderData || { id: orderId, order_number: 0, product: "", status: "in_production", delivered_at: null },
-        });
-      }
-    }, 3000);
-  }, []);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, []);
-
   // Persiste mensagem no banco
   const persistMessage = useCallback(async (role: "user" | "assistant", content: string) => {
     if (!userIdRef.current) return;
@@ -183,26 +277,130 @@ export default function PedidosPage() {
     await sb.from("chat_messages").insert({ user_id: userIdRef.current, role, content });
   }, []);
 
-  // Watch for order approval (OrderChoices sets status to "delivered")
+  // Realtime subscription ref for cleanup
+  const realtimeSubRef = useRef<any>(null);
+
+  // Subscribe to choices via Supabase Realtime (replaces polling)
+  const subscribeToChoices = useCallback((orderId: string) => {
+    const sb = supabase();
+
+    // Cleanup previous subscription
+    if (realtimeSubRef.current) {
+      sb.removeChannel(realtimeSubRef.current);
+    }
+
+    const channel = sb.channel(`choices-${orderId}`)
+      // Listen for new choices
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "choices", filter: `order_id=eq.${orderId}` },
+        async () => {
+          const { data: choices } = await sb.from("choices").select("*").eq("order_id", orderId);
+          if (choices && choices.length > 0) {
+            const { data: iterations } = await sb.from("iterations").select("id").eq("order_id", orderId).order("created_at", { ascending: false }).limit(1);
+            const { data: orderData } = await sb.from("orders").select("*").eq("id", orderId).single();
+            setPendingOrder({
+              orderId,
+              choices,
+              iterationId: iterations?.[0]?.id || null,
+              orderData: orderData || { id: orderId, order_number: 0, product: "", status: "in_production", delivered_at: null },
+            });
+            // Cleanup after receiving choices
+            sb.removeChannel(channel);
+            realtimeSubRef.current = null;
+          }
+        }
+      )
+      // Listen for order status changes (failed)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` },
+        async (payload: any) => {
+          const newStatus = payload.new?.status;
+          if (newStatus === "failed") {
+            sb.removeChannel(channel);
+            realtimeSubRef.current = null;
+            const errMsg = "Ops, houve um erro na geração do seu material. Tente novamente pelo chat.";
+            setMessages(prev => [...prev, { role: "assistant", content: errMsg }]);
+            await persistMessage("assistant", errMsg);
+            const { data: updatedOrders } = await sb.from("orders").select("*,deliverables(*)").eq("user_id", userIdRef.current!).order("created_at", { ascending: false });
+            if (updatedOrders) setOrders(updatedOrders);
+          }
+        }
+      )
+      .subscribe();
+
+    realtimeSubRef.current = channel;
+  }, [persistMessage]);
+
+  // Cleanup Realtime subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (realtimeSubRef.current) {
+        const sb = supabase();
+        sb.removeChannel(realtimeSubRef.current);
+      }
+    };
+  }, []);
+
+  // Watch for order approval via Realtime (OrderChoices sets status to "delivered")
   useEffect(() => {
     if (!pendingOrder || choicesApproved) return;
-    const interval = setInterval(async () => {
-      const sb = supabase();
-      const { data: order } = await sb.from("orders").select("status").eq("id", pendingOrder.orderId).single();
-      if (order?.status === "delivered") {
-        clearInterval(interval);
-        setChoicesApproved(true);
-        await persistMessage("assistant", "Material aprovado e pronto para download ✓");
-        // Refresh orders list
+    const sb = supabase();
+    const channel = sb.channel(`order-approval-${pendingOrder.orderId}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${pendingOrder.orderId}` },
+        async (payload: any) => {
+          if (payload.new?.status === "delivered") {
+            setChoicesApproved(true);
+            await persistMessage("assistant", "Material aprovado e pronto para download ✓");
+            const { data: updatedOrders } = await sb.from("orders")
+              .select("*,deliverables(*)")
+              .eq("user_id", userIdRef.current!)
+              .order("created_at", { ascending: false });
+            if (updatedOrders) setOrders(updatedOrders);
+            sb.removeChannel(channel);
+          }
+        }
+      )
+      .subscribe();
+    return () => { sb.removeChannel(channel); };
+  }, [pendingOrder, choicesApproved, persistMessage]);
+
+  // Execute action handler (must be before sendMessage)
+  const handleExecuteAction = useCallback(async (action: any, withReply: ChatMessage[], newMessages: ChatMessage[]) => {
+    const statusMsg: ChatMessage = { role: "assistant", content: "✦ Criando seu pedido..." };
+    setMessages([...withReply, statusMsg]);
+
+    try {
+      const briefingRes = await fetch("/api/submit-briefing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(action.structured_data),
+      });
+      const briefingData = await briefingRes.json();
+
+      if (briefingData?.order_id) {
+        setCreatedOrderId(briefingData.order_id);
+        const successMsg = `Pedido criado! Suas opções estão sendo preparadas ✓`;
+        const finalMessages: ChatMessage[] = [...withReply, { role: "assistant", content: successMsg }];
+        setMessages(finalMessages);
+        await persistMessage("assistant", successMsg);
+
+        const sb = supabase();
         const { data: updatedOrders } = await sb.from("orders")
           .select("*,deliverables(*)")
           .eq("user_id", userIdRef.current!)
           .order("created_at", { ascending: false });
         if (updatedOrders) setOrders(updatedOrders);
+
+        subscribeToChoices(briefingData.order_id);
+      } else {
+        const errMsg = "Ops, houve um problema ao criar o pedido. Tente novamente.";
+        setMessages([...withReply, { role: "assistant", content: errMsg }]);
+        await persistMessage("assistant", errMsg);
       }
-    }, 2000);
-    return () => clearInterval(interval);
-  }, [pendingOrder, choicesApproved, persistMessage]);
+    } catch {
+      const errMsg = "Erro ao criar pedido. Tenta de novo!";
+      setMessages([...withReply, { role: "assistant", content: errMsg }]);
+      await persistMessage("assistant", errMsg);
+    }
+  }, [persistMessage, subscribeToChoices]);
 
   const sendMessage = useCallback(async (text?: string) => {
     const userText = text || input.trim();
@@ -226,6 +424,7 @@ export default function PedidosPage() {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${supabaseKey}`,
+          "Accept": "text/event-stream",
         },
         body: JSON.stringify({
           messages: newMessages,
@@ -239,99 +438,101 @@ export default function PedidosPage() {
         }),
       });
 
-      const data = await res.json();
-      const reply = data?.content?.[0]?.text || "Ops, tive um problema. Pode repetir?";
+      const contentType = res.headers.get("content-type") || "";
 
-      // Parse ___DELIVERABLE___ block from response
-      const parseDeliverable = (text: string) => {
-        const match = text.match(/___DELIVERABLE___([\s\S]*?)___END___/);
-        if (!match) return null;
-        try { return JSON.parse(match[1].trim()); } catch { return null; }
-      };
-      const cleanText = (text: string) =>
-        text.replace(/___DELIVERABLE___[\s\S]*?___END___/g, "").replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+      if (contentType.includes("text/event-stream") && res.body) {
+        // ─── SSE Streaming path ───
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let accumulated = "";
+        // Add placeholder assistant message
+        const streamIdx = newMessages.length;
+        setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-      const cleanReply = cleanText(reply);
-      // Check both: parsed from raw text OR extracted by edge function
-      const parsedDeliverable = parseDeliverable(reply) || data?.deliverable || null;
+        let finalAction: any = null;
+        let finalPreview: any = null;
+        let finalCleanText = "";
+        let fullTextRaw = "";
 
-      const withReply: ChatMessage[] = [...newMessages, { role: "assistant", content: cleanReply }];
-      setMessages(withReply);
-      await persistMessage("assistant", cleanReply);
-
-      // SAVE DELIVERABLE if agent generated one
-      if (parsedDeliverable && parsedDeliverable.title && parsedDeliverable.content) {
         try {
-          const activeOrderId = createdOrderId || orders.find((o: any) => o.status === "in_production")?.id;
-          await fetch("/api/deliverables", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              user_id: userIdRef.current,
-              order_id: activeOrderId || null,
-              title: parsedDeliverable.title,
-              content: parsedDeliverable.content,
-              type: parsedDeliverable.type || "copy",
-              status: "pending",
-            }),
-          });
-          // Advance active step if order exists
-          if (activeOrderId) {
-            const sb = supabase();
-            const { data: activeStep } = await sb.from("project_steps").select("id").eq("order_id", activeOrderId).eq("status", "active").order("step_number").limit(1).single();
-            if (activeStep) {
-              await sb.from("project_steps").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", activeStep.id);
-              const { data: nextStep } = await sb.from("project_steps").select("id").eq("order_id", activeOrderId).eq("status", "pending").order("step_number").limit(1).single();
-              if (nextStep) await sb.from("project_steps").update({ status: "active" }).eq("id", nextStep.id);
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.startsWith("data: ")) continue;
+              const payload = line.slice(6).trim();
+              try {
+                const evt = JSON.parse(payload);
+                if (evt.type === "delta" && evt.text) {
+                  accumulated += evt.text;
+                  // Hide partial ___PREVIEW___ blocks from display
+                  const displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
+                  setMessages(prev => {
+                    const copy = [...prev];
+                    copy[streamIdx] = { role: "assistant", content: displayText };
+                    return copy;
+                  });
+                }
+                if (evt.type === "done") {
+                  finalCleanText = evt.text || accumulated;
+                  finalAction = evt.action || null;
+                  finalPreview = evt.preview || null;
+                  fullTextRaw = evt.fullText || accumulated;
+                }
+              } catch { /* skip malformed */ }
             }
           }
-          const delMsg: ChatMessage = { role: "assistant", content: "✦ Entrega criada. Acesse Meus Projetos para revisar e aprovar." };
-          setMessages([...withReply, delMsg]);
-          await persistMessage("assistant", "✦ Entrega criada. Acesse Meus Projetos para revisar e aprovar.");
-        } catch (e) {
-          console.error("Deliverable save error:", e);
+        } finally {
+          reader.releaseLock();
         }
-      }
 
-      // ACTION=EXECUTE — submete briefing e cria pedido
-      if (data?.action?.action === "execute") {
-        const statusMsg: ChatMessage = { role: "assistant", content: "✦ Criando seu pedido..." };
-        setMessages([...withReply, statusMsg]);
+        // Fallback if "done" event never arrived (connection drop)
+        if (!finalCleanText && accumulated) {
+          const { cleanText: fallbackClean, preview: fallbackPreview } = parsePreviewFromContent(accumulated);
+          finalCleanText = fallbackClean.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+          finalPreview = finalPreview || fallbackPreview;
+          fullTextRaw = fullTextRaw || accumulated;
+        }
 
-        try {
-          const briefingRes = await fetch("/api/submit-briefing", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data.action.structured_data),
-          });
-          const briefingData = await briefingRes.json();
+        // Finalize message with preview
+        const withReply: ChatMessage[] = [
+          ...newMessages,
+          { role: "assistant", content: finalCleanText || "Ops, a conexão caiu. Tenta de novo!", preview: finalPreview || undefined },
+        ];
+        setMessages(withReply);
+        // Persist full text (with preview markers) so it can be re-parsed from history
+        await persistMessage("assistant", fullTextRaw || finalCleanText);
 
-          if (briefingData?.order_id) {
-            setCreatedOrderId(briefingData.order_id);
-            const successMsg = `Pedido criado! Suas opções estão sendo preparadas ✓`;
-            const finalMessages: ChatMessage[] = [...withReply, { role: "assistant", content: successMsg }];
-            setMessages(finalMessages);
-            await persistMessage("assistant", successMsg);
+        // Handle action
+        if (finalAction?.action === "execute") {
+          await handleExecuteAction(finalAction, withReply, newMessages);
+        }
+      } else {
+        // ─── Non-streaming fallback path ───
+        const data = await res.json();
+        const reply = data?.content?.[0]?.text || "Ops, tive um problema. Pode repetir?";
+        const fullTextRaw = data?.fullText || reply;
 
-            // Recarrega pedidos
-            const sb = supabase();
-            const { data: updatedOrders } = await sb.from("orders")
-              .select("*,deliverables(*)")
-              .eq("user_id", userIdRef.current!)
-              .order("created_at", { ascending: false });
-            if (updatedOrders) setOrders(updatedOrders);
+        // Parse preview
+        const { cleanText: noPreview, preview: parsedPreview } = parsePreviewFromContent(reply);
+        const cleanReply = noPreview.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+        const preview = parsedPreview || data?.preview || null;
 
-            // Inicia polling para choices
-            pollForChoices(briefingData.order_id);
-          } else {
-            const errMsg = "Ops, houve um problema ao criar o pedido. Tente novamente.";
-            setMessages([...withReply, { role: "assistant", content: errMsg }]);
-            await persistMessage("assistant", errMsg);
-          }
-        } catch {
-          const errMsg = "Erro ao criar pedido. Tenta de novo!";
-          setMessages([...withReply, { role: "assistant", content: errMsg }]);
-          await persistMessage("assistant", errMsg);
+        const withReply: ChatMessage[] = [
+          ...newMessages,
+          { role: "assistant", content: cleanReply, preview: preview || undefined },
+        ];
+        setMessages(withReply);
+        await persistMessage("assistant", fullTextRaw);
+
+        // ACTION=EXECUTE
+        if (data?.action?.action === "execute") {
+          await handleExecuteAction(data.action, withReply, newMessages);
         }
       }
     } catch {
@@ -341,7 +542,8 @@ export default function PedidosPage() {
     }
 
     setChatLoading(false);
-  }, [input, messages, chatLoading, ctx, persistMessage, isMobile, pollForChoices]);
+  }, [input, messages, chatLoading, ctx, persistMessage, isMobile, subscribeToChoices, orders, createdOrderId, handleExecuteAction]);
+
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -438,6 +640,7 @@ export default function PedidosPage() {
             <option value="briefing">Briefing</option>
             <option value="in_production">Em Produção</option>
             <option value="delivered">Entregue</option>
+            <option value="failed">Erro</option>
           </select>
           {(filterType !== "all" || filterStatus !== "all") && (
             <button onClick={() => { setFilterType("all"); setFilterStatus("all"); }} style={{ background: "transparent", border: "none", color: T.teal, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Limpar filtros</button>
@@ -491,7 +694,29 @@ export default function PedidosPage() {
                 <div style={{ padding: isMobile ? "12px 16px" : "16px 28px" }}>
                   {order.status === "delivered" && (
                     <>
-                      <a href={`/cliente/pedidos/${order.id}`} style={{ background: T.lime, color: T.ink, border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textDecoration: "none", display: "inline-block" }}>↓ Ver pedido / Download</a>
+                      {/* Preview do conteúdo */}
+                      {order.preview_text && (
+                        <div style={{
+                          background: T.sand, border: `1.5px solid ${T.lime}`, borderRadius: 12,
+                          padding: "14px 18px", marginBottom: 14,
+                        }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: T.green, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                            Preview do conteúdo
+                          </div>
+                          <p style={{ fontSize: 13, color: T.inkSub, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap", overflow: "hidden", maxHeight: 72 }}>
+                            {order.preview_text}
+                          </p>
+                        </div>
+                      )}
+                      {order.delivered_at && (
+                        <div style={{ fontSize: 11, color: T.inkFaint, marginBottom: 10 }}>
+                          Entregue em {new Date(order.delivered_at).toLocaleDateString("pt-BR")} às {new Date(order.delivered_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                        </div>
+                      )}
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                        <a href={`/cliente/pedidos/${order.id}`} style={{ background: T.lime, color: T.ink, border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textDecoration: "none", display: "inline-block" }}>⬇ Download</a>
+                        <a href={`/cliente/pedidos/${order.id}`} style={{ background: T.white, color: T.ink, border: `1.5px solid ${T.border}`, borderRadius: 10, padding: "10px 24px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textDecoration: "none", display: "inline-block" }}>Ver detalhes →</a>
+                      </div>
                       {landingPageSlugs[order.id] && (
                         <iframe
                           src={`/lp/${landingPageSlugs[order.id]}`}
@@ -506,6 +731,9 @@ export default function PedidosPage() {
                   )}
                   {order.status === "briefing" && (
                     <div style={{ color: T.amber, fontSize: 13, fontWeight: 600 }}>📋 Aguardando confirmação do briefing</div>
+                  )}
+                  {order.status === "failed" && (
+                    <div style={{ color: "#DC2626", fontSize: 13, fontWeight: 600 }}>⚠ Erro na geração. Tente novamente pelo chat.</div>
                   )}
                 </div>
                 {/* Project Tracker */}
@@ -557,25 +785,43 @@ export default function PedidosPage() {
           </div>
         )}
 
-        {messages.map((msg, i) => (
-          <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", marginBottom: 12 }}>
-            {msg.role === "assistant" && (
-              <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.ink, color: T.lime, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0, marginRight: 8, marginTop: 2 }}>V</div>
-            )}
-            <div style={{
-              maxWidth: "78%",
-              background: msg.role === "user" ? T.ink : T.sand,
-              color: msg.role === "user" ? T.white : T.inkSub,
-              padding: "10px 14px",
-              borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "4px 16px 16px 16px",
-              fontSize: 13,
-              lineHeight: 1.65,
-              whiteSpace: "pre-wrap",
-            }}>
-              {msg.content}
+        {messages.map((msg, i) => {
+          // Re-parse preview from history content (persisted with markers)
+          const { cleanText: displayText, preview: historyPreview } = msg.role === "assistant"
+            ? parsePreviewFromContent(msg.content)
+            : { cleanText: msg.content, preview: null };
+          const preview = msg.preview || historyPreview;
+          // Also clean any leftover action JSON from display
+          const finalDisplay = msg.role === "assistant"
+            ? displayText.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim()
+            : displayText;
+
+          return (
+            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: msg.role === "user" ? "flex-end" : "flex-start", marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start", width: "100%" }}>
+                {msg.role === "assistant" && (
+                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: T.ink, color: T.lime, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, flexShrink: 0, marginRight: 8, marginTop: 2 }}>V</div>
+                )}
+                <div style={{ maxWidth: "78%" }}>
+                  {finalDisplay && (
+                    <div style={{
+                      background: msg.role === "user" ? T.ink : T.sand,
+                      color: msg.role === "user" ? T.white : T.inkSub,
+                      padding: "10px 14px",
+                      borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "4px 16px 16px 16px",
+                      fontSize: 13,
+                      lineHeight: 1.65,
+                      whiteSpace: "pre-wrap",
+                    }}>
+                      {finalDisplay}
+                    </div>
+                  )}
+                  {preview && <PreviewCard preview={preview} />}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* OrderChoices inline */}
         {pendingOrder && !choicesApproved && (

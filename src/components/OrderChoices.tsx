@@ -86,29 +86,28 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
   const [optInDone, setOptInDone] = useState(false);
   const [optInLoading, setOptInLoading] = useState(false);
 
-  // Poll for image_url updates (images generate async after text)
+  // Realtime subscription for image_url updates (replaces 5s polling)
   useEffect(() => {
-    const hasImages = choices.some((c) => c.image_url);
     const allHaveImages = choices.every((c) => c.image_url);
     if (allHaveImages || done) return;
-    // Only poll if at least one choice might get an image
-    const interval = setInterval(async () => {
-      const sb = supabase();
-      const { data } = await sb
-        .from("choices")
-        .select("id, image_url")
-        .eq("order_id", order.id);
-      if (data?.some((d: any) => d.image_url)) {
-        setChoices((prev) =>
-          prev.map((c) => {
-            const updated = data.find((d: any) => d.id === c.id);
-            return updated?.image_url ? { ...c, image_url: updated.image_url } : c;
-          })
-        );
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [choices, order.id, done]);
+
+    const sb = supabase();
+    const channel = sb.channel(`choice-images-${order.id}`)
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "choices", filter: `order_id=eq.${order.id}` },
+        (payload: any) => {
+          const updated = payload.new;
+          if (updated?.image_url) {
+            setChoices((prev) =>
+              prev.map((c) => c.id === updated.id ? { ...c, image_url: updated.image_url } : c)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { sb.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order.id, done]);
 
   const isPending = order.status === "in_production" && choices.length > 0 && !choices.some((c) => c.is_selected);
   const isWaiting = (order.status === "briefing" || order.status === "in_production") && choices.length === 0;
