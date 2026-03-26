@@ -211,7 +211,7 @@ export default function ProjetoPage() {
     });
   }, [orderId]);
 
-  /* ── Handle execute action (create order) ── */
+  /* ── Handle execute action (create order + generate images) ── */
   const handleExecuteAction = useCallback(async (action: any) => {
     setPhase("approved");
     setStepStates(["done", "done", "done", "done"]);
@@ -222,21 +222,45 @@ export default function ProjetoPage() {
       const sb = supabase();
       const { data: sessionData } = await sb.auth.getSession();
       const token = sessionData?.session?.access_token;
-      if (!token) return;
+      const userId = userIdRef.current;
+      if (!token || !userId) return;
 
-      await fetch("/api/execute-product", {
+      // Ensure order exists in DB (may not exist yet for project-first flow)
+      let realOrderId = orderId;
+      const { data: existingOrder } = await sb.from("orders").select("id").eq("id", orderId).single();
+      if (!existingOrder) {
+        // Create the order
+        const { data: newOrder } = await sb.from("orders").insert({
+          id: orderId,
+          user_id: userId,
+          product: action.product,
+          status: "in_production",
+          structured_data: action.structured_data,
+        }).select("id").single();
+        if (newOrder) realOrderId = newOrder.id;
+      }
+
+      const res = await fetch("/api/execute-product", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           product: action.product,
           structured_data: action.structured_data,
-          order_id: orderId,
+          order_id: realOrderId,
+          user_id: userId,
+          name: ctx?.name || "",
+          email: ctx?.email || "",
         }),
       });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error("Execute-product error:", res.status, err);
+      }
     } catch (err) {
       console.error("Execute error:", err);
     }
-  }, [orderId]);
+  }, [orderId, ctx]);
 
   /* ── Send message via voku-chat with SSE streaming ── */
   const sendMessage = useCallback(async (text?: string) => {
