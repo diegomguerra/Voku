@@ -5,7 +5,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 120
 
 const SYSTEM_PROMPTS: Record<ProductId, string> = {
   landing_page_copy: `Você é RORDENS, o motor de execução da Voku. Escreva uma landing page copy completa e de alta conversão.
@@ -412,7 +412,8 @@ Each variation must be complete and production-ready. Only output the JSON array
 
       if (insertedChoices?.length) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://voku.one'
-        for (const choice of insertedChoices) {
+        // Await all image generations in parallel (within maxDuration=60s)
+        await Promise.all(insertedChoices.map(choice =>
           fetch(`${appUrl}/api/generate-image`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -427,8 +428,8 @@ Each variation must be complete and production-ready. Only output the JSON array
               briefing_text: briefingText,
               product,
             }),
-          }).catch(e => console.error('Image gen fire-and-forget error:', e))
-        }
+          }).catch(e => console.error('Image gen error for choice:', choice.id, e))
+        ))
       }
     }
 
