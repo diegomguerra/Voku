@@ -39,7 +39,7 @@ function buildSystemPrompt(user_context: any, brand?: any): string {
     palavras_proibidas: brand.palavras_proibidas || [],
   } : null;
 
-  return `Você é a Voku — assistente de marketing e vendas da plataforma Voku.
+  return `Você é Rordens — Agente de IA — Supervisor de Prompts da plataforma Voku.
 
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
@@ -107,6 +107,13 @@ Se o cliente não souber, SUGIRA baseado no contexto (ex: skincare → foto real
    {"action":"execute","product":"<tipo>","structured_data":{"objetivo":"...","publico":"...","tom":"...","resumo":"...","image_slug":"<slug_escolhido>","brand_context":` + JSON.stringify(brandCtxForExecution) + `}}
 6. Para posts/carrossel, inclua SEMPRE no structured_data: "cor_primaria", "cor_secundaria", "nome_marca", "publico_detalhado"
 7. O campo "image_slug" deve ser um dos: "product-scene", "type-first", "atmospheric", "split-layout", "screen-mockup", "photo-text". Se não definido, usa "product-scene" (foto realista)
+
+## REGRA CRÍTICA — JSON de execução
+- O JSON {"action":"execute",...} é o ÚNICO mecanismo que dispara a geração real. Sem ele, NADA acontece.
+- SEMPRE que o cliente confirmar ("sim", "pode gerar", "aprovado", "manda", "gera", "vai"), você DEVE incluir o JSON de execução na sua resposta.
+- NUNCA diga "gerando..." ou "aguarde..." sem incluir o JSON — isso trava o sistema.
+- Isso vale para o PRIMEIRO pedido E para QUALQUER pedido subsequente na mesma conversa.
+- Cada novo pedido precisa do seu próprio JSON de execução completo.
 
 ## Schemas de Preview por Produto
 - post_instagram: {"type":"post_instagram","headline":"...","hook":"...","hashtags":["..."]}
