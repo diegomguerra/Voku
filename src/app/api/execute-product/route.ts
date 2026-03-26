@@ -292,13 +292,21 @@ Each variation must be complete and production-ready. Only output the JSON array
 
     const rawOutput = message.content[0].type === 'text' ? message.content[0].text : '[]'
 
+    console.log(`[execute-product] Raw output length=${rawOutput.length} for order=${order_id}`)
+
     // Parse the 3 variations
     let variations: { label: string; text: string }[]
     try {
-      // Extract JSON from potential markdown code blocks
-      const jsonMatch = rawOutput.match(/\[[\s\S]*\]/)
-      variations = JSON.parse(jsonMatch ? jsonMatch[0] : rawOutput)
-    } catch {
+      // Strip markdown code fences (```json ... ```) before parsing
+      const cleaned = rawOutput.replace(/```(?:json|JSON)?\s*\n?/g, '').trim()
+      const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
+      if (!jsonMatch) throw new Error('No JSON array found')
+      variations = JSON.parse(jsonMatch[0])
+      if (!Array.isArray(variations) || variations.length === 0) {
+        throw new Error('Parsed result is not a non-empty array')
+      }
+    } catch (parseErr) {
+      console.error(`[execute-product] JSON parse failed for order=${order_id}:`, (parseErr as Error).message, 'Raw start:', rawOutput.slice(0, 200))
       // Fallback: if JSON parsing fails, create 1 choice with the raw output
       variations = [{ label: 'Option A', text: rawOutput }]
     }
