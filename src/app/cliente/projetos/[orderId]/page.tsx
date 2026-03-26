@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
 
@@ -16,163 +16,193 @@ const C = {
   muted: "#888884",
 };
 const FF = "'Plus Jakarta Sans', sans-serif";
-const FFH = "'DM Serif Display', serif";
 
 /* ── Types ── */
-type Phase = "briefing" | "generating" | "preview" | "approved";
-type StepState = "done" | "active" | "pending";
 interface Message {
   role: "user" | "assistant";
   content: string;
-  preview?: any;
+  preview?: Record<string, any> | null;
 }
-interface Post {
-  type?: string;
-  hook?: string;
-  headline?: string;
-  caption?: string;
-  body?: string;
-  hashtags?: string[] | string;
-  cover_title?: string;
-  cover_subtitle?: string;
-  hero_headline?: string;
-  hero_subheadline?: string;
-  value_prop?: string;
-  subject?: string;
-  first_paragraph?: string;
-  first_15s?: string;
-  name?: string;
-  features?: string[];
-  imageUrl?: string;
-  image_slug?: string;
+interface Choice {
+  id: string;
+  label: string;
+  content: { text: string };
+  image_url: string | null;
+  position: number;
+  is_selected: boolean;
 }
 
 /* ── Preview extraction ── */
-function parsePreviewFromContent(text: string): { cleanText: string; preview: any | null } {
-  const match = text.match(/___PREVIEW___([\s\S]*?)___END___/);
-  if (!match) return { cleanText: text, preview: null };
+function parsePreview(text: string): { clean: string; preview: Record<string, any> | null } {
+  const m = text.match(/___PREVIEW___([\s\S]*?)___END___/);
+  if (!m) return { clean: text, preview: null };
   try {
-    const preview = JSON.parse(match[1].trim());
-    const cleanText = text.replace(/___PREVIEW___[\s\S]*?___END___/g, "").trim();
-    return { cleanText, preview };
+    const preview = JSON.parse(m[1].trim());
+    return { clean: text.replace(/___PREVIEW___[\s\S]*?___END___/g, "").trim(), preview };
   } catch {
-    return { cleanText: text, preview: null };
+    return { clean: text, preview: null };
   }
 }
 
-/* ── Inline SVG icons ── */
-function PlusIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
-}
-function MicIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-      <path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4Z" stroke="currentColor" strokeWidth="2" />
-      <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function ArrowRightIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-      <path d="M5 12h14M13 6l6 6-6 6" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-function GridIcon() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-      <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="#ccc" strokeWidth="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="#ccc" strokeWidth="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" stroke="#ccc" strokeWidth="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" stroke="#ccc" strokeWidth="1.5" />
-    </svg>
-  );
-}
+/* ── Product labels ── */
+const PRODUCT_LABELS: Record<string, string> = {
+  post_instagram: "Post Instagram",
+  carrossel: "Carrossel",
+  landing_page_copy: "Landing Page",
+  email_sequence: "E-mail",
+  ad_copy: "Anúncio",
+  reels_script: "Reels",
+  content_pack: "Pack de Conteúdo",
+  app: "App",
+};
 
 /* ── Simple markdown bold ── */
 function renderBold(text: string) {
-  const parts = text.split(/(\*\*.*?\*\*)/g);
-  return parts.map((p, i) =>
-    p.startsWith("**") && p.endsWith("**") ? (
-      <strong key={i} style={{ fontWeight: 800 }}>{p.slice(2, -2)}</strong>
-    ) : (
-      <span key={i}>{p}</span>
-    )
+  return text.split(/(\*\*.*?\*\*)/g).map((p, i) =>
+    p.startsWith("**") && p.endsWith("**")
+      ? <strong key={i} style={{ fontWeight: 800 }}>{p.slice(2, -2)}</strong>
+      : <span key={i}>{p}</span>
   );
 }
 
 /* ── CSS keyframes ── */
 const KEYFRAMES = `
-@keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
-@keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-5px)} }
-@keyframes spin   { to{transform:rotate(360deg)} }
-@keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 `;
 
-/* ── Product label for preview ── */
-function previewLabel(type?: string): string {
-  const map: Record<string, string> = {
-    post_instagram: "POST INSTAGRAM",
-    carrossel: "CARROSSEL",
-    landing_page_copy: "LANDING PAGE",
-    email_sequence: "E-MAIL",
-    ad_copy: "ANÚNCIO",
-    reels_script: "REELS",
-    content_pack: "PACK DE CONTEÚDO",
-    app: "APP",
-  };
-  return map[type || ""] || "CONTEÚDO";
+/* ── Inline preview card (rendered inside chat) ── */
+function PreviewCard({ data, onGenerate, onAdjust, loading }: {
+  data: Record<string, any>;
+  onGenerate: () => void;
+  onAdjust: () => void;
+  loading: boolean;
+}) {
+  const type = PRODUCT_LABELS[data.type] || "Conteúdo";
+  const hook = data.hook || data.headline || data.cover_title || data.hero_headline || data.subject || data.name || "";
+  const caption = data.caption || data.body || data.value_prop || data.first_paragraph || data.first_15s || data.cover_subtitle || data.hero_subheadline || "";
+  const hashtags = Array.isArray(data.hashtags) ? data.hashtags.join(" ") : (data.hashtags || "");
+  const features = data.features || [];
+
+  return (
+    <div style={{ maxWidth: 320, animation: "fadeUp 0.3s ease", marginTop: 6 }}>
+      <div style={{ background: C.bg, border: `1.5px solid ${C.lime}50`, borderRadius: 12, overflow: "hidden" }}>
+        {/* Header */}
+        <div style={{ background: `${C.lime}15`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${C.lime}25` }}>
+          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", background: C.lime, color: C.ink, padding: "2px 7px", borderRadius: 4 }}>{type}</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: C.muted }}>Amostra gratuita</span>
+        </div>
+        {/* Body */}
+        <div style={{ padding: "14px 14px" }}>
+          {hook && <div style={{ fontSize: 15, fontWeight: 700, color: C.ink, marginBottom: 8, lineHeight: 1.35 }}>{hook}</div>}
+          {caption && <div style={{ fontSize: 12, color: C.ink2, lineHeight: 1.7, borderLeft: `3px solid ${C.lime}`, paddingLeft: 10, marginBottom: 10, whiteSpace: "pre-wrap" }}>{caption}</div>}
+          {hashtags && <div style={{ fontSize: 10.5, color: "#3a8a3a", lineHeight: 1.8, marginBottom: 8 }}>{hashtags}</div>}
+          {features.length > 0 && (
+            <ul style={{ fontSize: 11, color: C.ink2, lineHeight: 1.7, paddingLeft: 16, margin: "0 0 8px 0" }}>
+              {features.map((f: string, fi: number) => <li key={fi}>{f}</li>)}
+            </ul>
+          )}
+        </div>
+        {/* Footer */}
+        <div style={{ padding: "10px 14px", background: C.surface, borderTop: `1px solid ${C.border}`, fontSize: 10.5, color: C.muted, lineHeight: 1.5 }}>
+          Ao gerar, criamos <strong style={{ color: C.ink }}>3 variações</strong> com <strong style={{ color: C.ink }}>fotos reais por IA</strong>.
+        </div>
+      </div>
+      {/* Action buttons */}
+      <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+        <button
+          onClick={onAdjust}
+          disabled={loading}
+          style={{ fontSize: 11, fontWeight: 700, padding: "7px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `1.5px solid ${C.mid}`, background: C.bg, color: C.ink }}
+        >
+          Ajustar
+        </button>
+        <button
+          onClick={onGenerate}
+          disabled={loading}
+          style={{ fontSize: 11.5, fontWeight: 800, padding: "7px 18px", borderRadius: 8, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", border: `2px solid ${C.lime}`, background: C.lime, color: C.ink, boxShadow: "0 2px 8px rgba(170,255,0,0.25)", opacity: loading ? 0.6 : 1 }}
+        >
+          {loading ? "Gerando..." : "Gerar produto completo →"}
+        </button>
+      </div>
+    </div>
+  );
 }
 
-/* ══════════════════════════════════════════════════════════════════
+/* ── Choice card for results panel ── */
+function ChoiceCard({ choice, onSelect }: { choice: Choice; onSelect: () => void }) {
+  return (
+    <div
+      onClick={onSelect}
+      style={{
+        background: C.bg,
+        border: choice.is_selected ? `2px solid ${C.lime}` : `1px solid ${C.border}`,
+        borderRadius: 12,
+        overflow: "hidden",
+        cursor: "pointer",
+        transition: "border 0.2s, box-shadow 0.2s",
+        boxShadow: choice.is_selected ? `0 0 12px ${C.lime}30` : "none",
+      }}
+    >
+      {/* Image */}
+      <div style={{ height: 160, background: "#e8e8e4", position: "relative" }}>
+        {choice.image_url ? (
+          <img src={choice.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.lime, animation: "spin 0.75s linear infinite" }} />
+          </div>
+        )}
+        {choice.is_selected && (
+          <div style={{ position: "absolute", top: 8, right: 8, width: 22, height: 22, borderRadius: "50%", background: C.lime, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: C.ink }}>✓</div>
+        )}
+      </div>
+      {/* Label */}
+      <div style={{ padding: "10px 12px" }}>
+        <div style={{ fontSize: 11.5, fontWeight: 700, color: C.ink, marginBottom: 4 }}>{choice.label}</div>
+        <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.5, maxHeight: 48, overflow: "hidden" }}>
+          {choice.content?.text?.slice(0, 120)}...
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
    PAGE COMPONENT
-   ══════════════════════════════════════════════════════════════════ */
+   ══════════════════════════════════════════════════════════════ */
 export default function ProjetoPage() {
   const { orderId } = useParams<{ orderId: string }>();
   const { ctx } = useUserContext();
+  const router = useRouter();
 
   /* ── State ── */
-  const [phase, setPhase] = useState<Phase>("briefing");
-  const [stepStates, setStepStates] = useState<StepState[]>(["done", "active", "pending", "pending"]);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [post, setPost] = useState<Post | null>(null);
   const [inputValue, setInputValue] = useState("");
-  const [micActive, setMicActive] = useState(false);
   const [chatLoading, setChatLoading] = useState(false);
-  const [previewTitle, setPreviewTitle] = useState("Área de Prévia");
-  const [previewSub, setPreviewSub] = useState("O post gerado aparece aqui ao confirmar o briefing");
-  const [progress, setProgress] = useState(0);
+  const [executing, setExecuting] = useState(false);
+  const [choices, setChoices] = useState<Choice[]>([]);
+  const [lastPreview, setLastPreview] = useState<Record<string, any> | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const userIdRef = useRef<string | null>(null);
-
-  /* ── Nav steps config ── */
-  const NAV_STEPS = [
-    { number: 1, label: "Cadastro" },
-    { number: 2, label: "Briefing" },
-    { number: 3, label: "Geração" },
-    { number: 4, label: "Aprovação" },
-  ];
+  const choicesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   /* ── Auto-scroll ── */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, chatLoading]);
 
-  /* ── Load user + chat history on mount ── */
+  /* ── Load user + chat history + choices on mount ── */
   useEffect(() => {
     const sb = supabase();
     sb.auth.getUser().then(async ({ data: authData }) => {
       if (!authData.user) return;
       userIdRef.current = authData.user.id;
 
-      // Load existing chat messages
+      // Load chat messages
       const { data: msgs } = await sb
         .from("chat_messages")
         .select("*")
@@ -182,23 +212,48 @@ export default function ProjetoPage() {
 
       if (msgs && msgs.length > 0) {
         const loaded: Message[] = msgs.map((m: any) => {
-          const { cleanText, preview } = parsePreviewFromContent(m.content || "");
-          return { role: m.role, content: cleanText, preview: preview || undefined };
+          const { clean, preview } = parsePreview(m.content || "");
+          return { role: m.role, content: clean, preview: preview || undefined };
         });
         setMessages(loaded);
-        // Check if there's already a preview in history
-        const lastPreview = [...loaded].reverse().find(m => m.preview);
-        if (lastPreview?.preview) {
-          setPost(lastPreview.preview);
-          setPhase("preview");
-          setStepStates(["done", "done", "done", "active"]);
-          setPreviewTitle("Amostra — " + previewLabel(lastPreview.preview.type));
-          setPreviewSub("Legenda e hashtags completas abaixo");
-          setProgress(100);
-        }
+        const lp = [...loaded].reverse().find(m => m.preview);
+        if (lp?.preview) setLastPreview(lp.preview);
       }
+
+      // Load choices
+      loadChoices();
     });
+
+    return () => {
+      if (choicesPollRef.current) clearInterval(choicesPollRef.current);
+    };
   }, [orderId]);
+
+  /* ── Load choices from DB ── */
+  const loadChoices = useCallback(async () => {
+    const sb = supabase();
+    const { data } = await sb
+      .from("choices")
+      .select("id, label, content, image_url, position, is_selected")
+      .eq("order_id", orderId)
+      .order("position");
+    if (data) setChoices(data as Choice[]);
+  }, [orderId]);
+
+  /* ── Start polling choices when executing ── */
+  useEffect(() => {
+    if (executing && !choicesPollRef.current) {
+      choicesPollRef.current = setInterval(loadChoices, 4000);
+    }
+    // Stop polling when all choices have images
+    if (choices.length >= 3 && choices.every(c => c.image_url)) {
+      if (choicesPollRef.current) {
+        clearInterval(choicesPollRef.current);
+        choicesPollRef.current = null;
+      }
+      setExecuting(false);
+    }
+  }, [executing, choices, loadChoices]);
 
   /* ── Persist message to DB ── */
   const persistMessage = useCallback(async (role: string, content: string) => {
@@ -212,12 +267,20 @@ export default function ProjetoPage() {
     });
   }, [orderId]);
 
-  /* ── Handle execute action (create order + generate images) ── */
-  const handleExecuteAction = useCallback(async (action: any) => {
-    setPhase("approved");
-    setStepStates(["done", "done", "done", "done"]);
-    setPreviewTitle("Pedido aprovado!");
-    setPreviewSub("Seus posts estão sendo finalizados com imagens reais");
+  /* ── Handle execute (create order + call execute-product) ── */
+  const handleGenerate = useCallback(async (previewData: Record<string, any>) => {
+    setExecuting(true);
+
+    // Add messages
+    const userMsg = "Aprovado! Pode gerar o produto completo.";
+    const botMsg = "Gerando 3 variações com imagens reais. Aguarde alguns segundos...";
+    setMessages(prev => [
+      ...prev,
+      { role: "user", content: userMsg },
+      { role: "assistant", content: botMsg },
+    ]);
+    await persistMessage("user", userMsg);
+    await persistMessage("assistant", botMsg);
 
     try {
       const sb = supabase();
@@ -226,31 +289,26 @@ export default function ProjetoPage() {
       const userId = userIdRef.current;
       if (!token || !userId) return;
 
-      // Ensure order exists in DB (may not exist yet for project-first flow)
-      let realOrderId = orderId;
-      const { data: existingOrder } = await sb.from("orders").select("id, product").eq("id", orderId).single();
-      if (!existingOrder) {
-        // Create the order
-        const { data: newOrder, error: orderErr } = await sb.from("orders").insert({
-          id: orderId,
-          user_id: userId,
-          product: action.product,
-          status: "in_production",
-        }).select("id").single();
-        if (orderErr) console.error("Order insert error:", orderErr);
-        if (newOrder) realOrderId = newOrder.id;
-      } else if (existingOrder.product !== action.product) {
-        // Update product to match what we're executing
-        await sb.from("orders").update({ product: action.product, status: "in_production" }).eq("id", orderId);
+      const product = previewData.type || "post_instagram";
+
+      // Ensure order exists
+      const { data: existing } = await sb.from("orders").select("id").eq("id", orderId).single();
+      if (!existing) {
+        await sb.from("orders").insert({ id: orderId, user_id: userId, product, status: "in_production" });
+      } else {
+        await sb.from("orders").update({ product, status: "in_production" }).eq("id", orderId);
       }
+
+      // Build structured_data from chat context
+      const chatContext = messages.filter(m => m.role === "user").map(m => m.content).join("\n");
 
       const res = await fetch("/api/execute-product", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          product: action.product,
-          structured_data: action.structured_data,
-          order_id: realOrderId,
+          product,
+          structured_data: { ...previewData, resumo: chatContext, image_slug: previewData.image_slug || "product-scene" },
+          order_id: orderId,
           user_id: userId,
           name: ctx?.name || "",
           email: ctx?.email || "",
@@ -260,43 +318,28 @@ export default function ProjetoPage() {
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         console.error("Execute-product error:", res.status, err);
+        setMessages(prev => [...prev, { role: "assistant", content: "Erro ao gerar. Tente novamente." }]);
+        setExecuting(false);
+      } else {
+        // Start polling for choices
+        loadChoices();
       }
     } catch (err) {
       console.error("Execute error:", err);
+      setMessages(prev => [...prev, { role: "assistant", content: "Erro ao gerar. Tente novamente." }]);
+      setExecuting(false);
     }
-  }, [orderId, ctx]);
+  }, [orderId, ctx, messages, persistMessage, loadChoices]);
 
-  /* ── Send message via voku-chat with SSE streaming ── */
+  /* ── Send message via voku-chat ── */
   const sendMessage = useCallback(async (text?: string) => {
     const userText = text || inputValue.trim();
     if (!userText || chatLoading) return;
     setInputValue("");
 
-    // Auto-execute if user confirms and preview already exists
-    const affirmWords = /^(sim|ok|pode|gera|aprova|manda|vai|bora|confirma|quero|yes|go)/i;
-    if (phase === "preview" && post && affirmWords.test(userText.trim())) {
-      const chatContext = messages
-        .filter(m => m.role === "user")
-        .map(m => m.content)
-        .join("\n");
-      const action = {
-        action: "execute",
-        product: post.type || "post_instagram",
-        structured_data: {
-          ...post,
-          resumo: chatContext,
-          image_slug: post.image_slug || "product-scene",
-        },
-      };
-      const confirmMsg = "Aprovado! Gerando o produto completo com imagens reais...";
-      setMessages(prev => [
-        ...prev,
-        { role: "user", content: userText },
-        { role: "assistant", content: confirmMsg },
-      ]);
-      await persistMessage("user", userText);
-      await persistMessage("assistant", confirmMsg);
-      await handleExecuteAction(action);
+    // If user confirms and we have a preview, execute directly
+    if (lastPreview && /^(sim|ok|pode|gera|aprova|manda|vai|bora|confirma|quero|yes|go|gerar)/i.test(userText.trim())) {
+      await handleGenerate(lastPreview);
       return;
     }
 
@@ -328,10 +371,10 @@ export default function ProjetoPage() {
         }),
       });
 
-      const contentType = res.headers.get("content-type") || "";
+      const ct = res.headers.get("content-type") || "";
 
-      if (contentType.includes("text/event-stream") && res.body) {
-        // ─── SSE Streaming ───
+      if (ct.includes("text/event-stream") && res.body) {
+        /* ── SSE Stream ── */
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = "";
@@ -339,9 +382,9 @@ export default function ProjetoPage() {
         const streamIdx = newMessages.length;
         setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-        let finalAction: any = null;
-        let finalPreview: any = null;
         let finalCleanText = "";
+        let finalPreview: Record<string, any> | null = null;
+        let finalAction: any = null;
         let fullTextRaw = "";
 
         try {
@@ -354,160 +397,99 @@ export default function ProjetoPage() {
 
             for (const line of lines) {
               if (!line.startsWith("data: ")) continue;
-              const payload = line.slice(6).trim();
               try {
-                const evt = JSON.parse(payload);
+                const evt = JSON.parse(line.slice(6).trim());
                 if (evt.type === "delta" && evt.text) {
                   accumulated += evt.text;
-                  // Detect preview starting
-                  if (accumulated.includes("___PREVIEW___") && phase !== "generating") {
-                    setPhase("generating");
-                    setStepStates(["done", "done", "active", "pending"]);
-                    setPreviewTitle("Gerando copy e imagem...");
-                    setPreviewSub("IA escrevendo + foto realista sendo criada");
-                    setProgress(0);
-                    // Animate progress
-                    const timer = setInterval(() => {
-                      setProgress(p => { if (p >= 90) { clearInterval(timer); return 90; } return p + Math.random() * 12; });
-                    }, 400);
-                  }
-                  // Hide partial ___PREVIEW___ and action JSON from display
-                  let displayText = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
-                  // Strip action JSON block (find last {"action" and remove from there)
-                  const actionIdx = displayText.lastIndexOf('{"action"');
-                  if (actionIdx !== -1) displayText = displayText.slice(0, actionIdx).trim();
+                  // Display text without preview/action markers
+                  let display = accumulated.replace(/___PREVIEW___[\s\S]*$/g, "");
+                  const aidx = display.lastIndexOf('{"action"');
+                  if (aidx !== -1) display = display.slice(0, aidx).trim();
                   setMessages(prev => {
                     const copy = [...prev];
-                    copy[streamIdx] = { role: "assistant", content: displayText };
+                    copy[streamIdx] = { role: "assistant", content: display };
                     return copy;
                   });
                 }
                 if (evt.type === "done") {
-                  finalCleanText = evt.text || accumulated;
-                  finalAction = evt.action || null;
+                  finalCleanText = evt.text || "";
                   finalPreview = evt.preview || null;
+                  finalAction = evt.action || null;
                   fullTextRaw = evt.fullText || accumulated;
                 }
-              } catch { /* skip */ }
+              } catch { /* skip malformed */ }
             }
           }
         } finally {
           reader.releaseLock();
         }
 
-        // Fallback if "done" never arrived
+        // Fallback: parse from accumulated if done event didn't arrive
         if (!finalCleanText && accumulated) {
-          const { cleanText: fbClean, preview: fbPreview } = parsePreviewFromContent(accumulated);
-          finalCleanText = fbClean.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
-          finalPreview = finalPreview || fbPreview;
+          const { clean, preview } = parsePreview(accumulated);
+          finalCleanText = clean.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+          finalPreview = finalPreview || preview;
           fullTextRaw = fullTextRaw || accumulated;
         }
 
-        // Finalize
-        const withReply: Message[] = [
-          ...newMessages,
-          { role: "assistant", content: finalCleanText || "Ops, a conexão caiu. Tenta de novo!", preview: finalPreview || undefined },
-        ];
-        setMessages(withReply);
+        // Also try to parse preview from accumulated even if done event had no preview
+        if (!finalPreview && accumulated.includes("___PREVIEW___")) {
+          const { preview } = parsePreview(accumulated);
+          finalPreview = preview;
+        }
+
+        // Update messages
+        const finalMsg: Message = {
+          role: "assistant",
+          content: finalCleanText || "Ops, a conexão caiu. Tenta de novo!",
+          preview: finalPreview || undefined,
+        };
+        setMessages([...newMessages, finalMsg]);
         await persistMessage("assistant", fullTextRaw || finalCleanText);
 
-        // Show preview
-        if (finalPreview) {
-          setPost(finalPreview);
-          setPhase("preview");
-          setStepStates(["done", "done", "done", "active"]);
-          setPreviewTitle("Amostra — " + previewLabel(finalPreview.type));
-          setPreviewSub("Legenda e hashtags completas abaixo");
-          setProgress(100);
-        }
-
-        // Execute action
-        if (finalAction?.action === "execute") {
-          await handleExecuteAction(finalAction);
-        }
+        if (finalPreview) setLastPreview(finalPreview);
+        if (finalAction?.action === "execute") await handleGenerate(finalAction.structured_data || finalPreview || {});
       } else {
-        // ─── Non-streaming fallback ───
+        /* ── Non-streaming fallback ── */
         const data = await res.json();
-        const reply = data?.content?.[0]?.text || "Ops, tive um problema. Pode repetir?";
-        const fullTextRaw = data?.fullText || reply;
-        const { cleanText: noPreview, preview: parsedPreview } = parsePreviewFromContent(reply);
-        const cleanReply = noPreview.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
+        const rawReply = data?.content?.[0]?.text || "";
+        const fullTextRaw = data?.fullText || rawReply;
+        const { clean, preview: parsedPreview } = parsePreview(rawReply);
+        const cleanReply = clean.replace(/\{[\s\S]*"action"[\s\S]*\}/g, "").trim();
         const preview = parsedPreview || data?.preview || null;
 
-        const withReply: Message[] = [
-          ...newMessages,
-          { role: "assistant", content: cleanReply, preview: preview || undefined },
-        ];
-        setMessages(withReply);
+        const finalMsg: Message = {
+          role: "assistant",
+          content: cleanReply || "Ops, tive um problema. Pode repetir?",
+          preview: preview || undefined,
+        };
+        setMessages([...newMessages, finalMsg]);
         await persistMessage("assistant", fullTextRaw);
 
-        if (preview) {
-          setPost(preview);
-          setPhase("preview");
-          setStepStates(["done", "done", "done", "active"]);
-          setPreviewTitle("Amostra — " + previewLabel(preview.type));
-          setPreviewSub("Legenda e hashtags completas abaixo");
-          setProgress(100);
-        }
-
-        if (data?.action?.action === "execute") {
-          await handleExecuteAction(data.action);
-        }
+        if (preview) setLastPreview(preview);
+        if (data?.action?.action === "execute") await handleGenerate(data.action.structured_data || preview || {});
       }
-    } catch {
-      const errMsg = "Ops, algo deu errado. Tenta de novo!";
-      setMessages([...newMessages, { role: "assistant", content: errMsg }]);
-      await persistMessage("assistant", errMsg);
+    } catch (err) {
+      console.error("Chat error:", err);
+      setMessages(prev => [...prev, { role: "assistant", content: "Ops, algo deu errado. Tenta de novo!" }]);
     }
 
     setChatLoading(false);
-  }, [inputValue, chatLoading, messages, ctx, persistMessage, phase, post, handleExecuteAction]);
+  }, [inputValue, chatLoading, messages, ctx, persistMessage, lastPreview, handleGenerate]);
 
-  /* ── Approve from preview bar ── */
-  const approveAll = useCallback(async () => {
-    if (!post) return;
+  /* ── Select a choice ── */
+  const selectChoice = useCallback(async (choiceId: string) => {
+    const sb = supabase();
+    // Deselect all, then select this one
+    await sb.from("choices").update({ is_selected: false }).eq("order_id", orderId);
+    await sb.from("choices").update({ is_selected: true }).eq("id", choiceId);
+    loadChoices();
+  }, [orderId, loadChoices]);
 
-    // Build execute action directly from preview data — no need for AI round-trip
-    const chatContext = messages
-      .filter(m => m.role === "user")
-      .map(m => m.content)
-      .join("\n");
-
-    const action = {
-      action: "execute",
-      product: post.type || "post_instagram",
-      structured_data: {
-        ...post,
-        resumo: chatContext,
-        image_slug: post.image_slug || "product-scene",
-      },
-    };
-
-    // Add approval message to chat for history
-    const approvalMsg = "Aprovado! Gerando o produto completo com imagens reais...";
-    setMessages(prev => [
-      ...prev,
-      { role: "user", content: "Sim, aprovado! Pode gerar tudo." },
-      { role: "assistant", content: approvalMsg },
-    ]);
-    await persistMessage("user", "Sim, aprovado! Pode gerar tudo.");
-    await persistMessage("assistant", approvalMsg);
-
-    // Execute directly
-    await handleExecuteAction(action);
-  }, [post, messages, persistMessage, handleExecuteAction]);
-
-  /* ── Request revision from preview bar ── */
-  const requestRevision = useCallback(() => {
-    sendMessage("Quero ajustar o tom. Pode refazer?");
-  }, [sendMessage]);
-
-  /* ── Get display values from preview ── */
-  const postHook = post?.hook || post?.headline || post?.cover_title || post?.hero_headline || post?.subject || post?.name || "";
-  const postCaption = post?.caption || post?.body || post?.value_prop || post?.first_paragraph || post?.first_15s || post?.cover_subtitle || post?.hero_subheadline || "";
-  const postHashtags = Array.isArray(post?.hashtags) ? post.hashtags.join(" ") : (post?.hashtags || "");
-  const postType = previewLabel(post?.type);
-  const postFeatures = post?.features || [];
+  /* ── Derived state ── */
+  const hasChoices = choices.length > 0;
+  const allImagesReady = hasChoices && choices.every(c => c.image_url);
+  const selectedChoice = choices.find(c => c.is_selected);
 
   /* ══════════════════════════════════════════════════════════════
      RENDER
@@ -515,133 +497,90 @@ export default function ProjetoPage() {
   return (
     <>
       <style>{KEYFRAMES}</style>
-      <div
-        style={{
-          height: "100vh",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          fontFamily: FF,
-          background: C.bg,
-        }}
-      >
-        {/* ── NAV DARK ── */}
-        <nav
-          style={{
-            height: 52,
-            background: C.ink,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 18px",
-            flexShrink: 0,
-          }}
-        >
-          <span style={{ fontWeight: 900, color: C.lime, fontSize: 13, letterSpacing: "0.05em", marginRight: 24 }}>
+      <div style={{ height: "100vh", overflow: "hidden", display: "flex", flexDirection: "column", fontFamily: FF, background: C.bg }}>
+        {/* ── NAV ── */}
+        <nav style={{ height: 50, background: C.ink, display: "flex", alignItems: "center", padding: "0 18px", flexShrink: 0 }}>
+          <span style={{ fontWeight: 900, color: C.lime, fontSize: 13, letterSpacing: "0.05em", marginRight: 20, cursor: "pointer" }} onClick={() => router.push("/cliente/projetos")}>
             VOKU
           </span>
-          {NAV_STEPS.map((s, i) => {
-            const state = stepStates[i];
-            return (
-              <div key={s.number} style={{ display: "flex", alignItems: "center" }}>
-                {i > 0 && <div style={{ width: 24, height: 1, background: "#222" }} />}
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    padding: "0 12px",
-                    height: 52,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    color: state === "active" ? C.lime : "#3a3a3a",
-                    borderBottom: state === "active" ? `2px solid ${C.lime}` : "2px solid transparent",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 19, height: 19, borderRadius: "50%",
-                      background: state === "done" ? "#252525" : state === "active" ? C.lime : "transparent",
-                      border: `1.5px solid ${state === "done" ? "#303030" : state === "active" ? C.lime : "#333"}`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 9, fontWeight: 800,
-                      color: state === "done" ? "#555" : state === "active" ? C.ink : "#333",
-                    }}
-                  >
-                    {state === "done" ? "✓" : s.number}
-                  </div>
-                  {s.label}
-                </div>
-              </div>
-            );
-          })}
+          <div style={{ height: 1, flex: 1, background: "#222" }} />
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#444", marginLeft: 12 }}>
+            Projeto #{orderId?.toString().slice(0, 8)}
+          </span>
         </nav>
 
-        {/* ── BODY: CHAT + PREVIEW ── */}
+        {/* ── BODY ── */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+
           {/* ── CHAT COLUMN ── */}
-          <div
-            style={{
-              width: 380, flexShrink: 0,
-              borderRight: `1px solid ${C.border}`,
-              display: "flex", flexDirection: "column", background: C.bg,
-            }}
-          >
+          <div style={{ width: hasChoices ? 400 : "100%", maxWidth: 600, flexShrink: 0, borderRight: hasChoices ? `1px solid ${C.border}` : "none", display: "flex", flexDirection: "column", background: C.bg, margin: hasChoices ? 0 : "0 auto" }}>
+
             {/* Chat header */}
-            <div
-              style={{
-                padding: "13px 16px", borderBottom: `1px solid ${C.border}`,
-                display: "flex", alignItems: "center", gap: 11, flexShrink: 0,
-              }}
-            >
-              <div style={{ width: 34, height: 34, borderRadius: "50%", background: C.ink, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, color: C.lime }}>V</div>
+            <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.ink, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: C.lime }}>V</div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>RORDENS</div>
-                <div style={{ fontSize: 11, color: C.muted, display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: C.lime, animation: "pulse 2s ease-in-out infinite" }} />
-                  online agora
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.ink }}>Voku AI</div>
+                <div style={{ fontSize: 10.5, color: C.muted, display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 5, height: 5, borderRadius: "50%", background: C.lime, animation: "pulse 2s ease-in-out infinite" }} />
+                  online
                 </div>
-              </div>
-              <div style={{ fontSize: 10, fontWeight: 700, padding: "3px 9px", background: "#F0F0EA", color: C.ink2, borderRadius: 20 }}>
-                #{orderId?.toString().slice(0, 6) || "---"}
               </div>
             </div>
 
-            {/* Messages area */}
-            <div
-              style={{
-                flex: 1, overflowY: "auto", padding: "16px 14px",
-                display: "flex", flexDirection: "column", gap: 12,
-              }}
-            >
-              {messages.map((msg, i) =>
-                msg.role === "assistant" ? (
-                  <div key={i} style={{ animation: "fadeUp 0.3s ease" }}>
-                    <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "14px 14px", display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* Welcome message if no messages */}
+              {messages.length === 0 && !chatLoading && (
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                  <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.ink, color: C.lime, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>V</div>
+                  <div style={{ maxWidth: "85%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.surface, color: C.ink, borderRadius: "4px 16px 16px 16px" }}>
+                    Oi{ctx?.name ? `, ${ctx.name.split(" ")[0]}` : ""}! Sou a Voku AI. Me conta o que você quer criar — post, carrossel, landing page, reels ou outro conteúdo — e eu monto uma amostra em segundos.
+                  </div>
+                </div>
+              )}
+
+              {messages.map((msg, i) => (
+                <div key={i}>
+                  {msg.role === "assistant" ? (
+                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", animation: "fadeUp 0.3s ease" }}>
                       <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.ink, color: C.lime, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>V</div>
-                      <div style={{ maxWidth: "82%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.surface, color: C.ink, borderRadius: "4px 16px 16px 16px", whiteSpace: "pre-wrap" }}>
-                        {renderBold(msg.content)}
+                      <div style={{ maxWidth: "85%" }}>
+                        {msg.content && (
+                          <div style={{ padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.surface, color: C.ink, borderRadius: "4px 16px 16px 16px", whiteSpace: "pre-wrap" }}>
+                            {renderBold(msg.content)}
+                          </div>
+                        )}
+                        {/* Inline preview card */}
+                        {msg.preview && (
+                          <PreviewCard
+                            data={msg.preview}
+                            onGenerate={() => handleGenerate(msg.preview!)}
+                            onAdjust={() => sendMessage("Quero ajustar. Pode refazer?")}
+                            loading={executing}
+                          />
+                        )}
                       </div>
                     </div>
-                  </div>
-                ) : (
-                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-end", flexDirection: "row-reverse", animation: "fadeUp 0.2s ease" }}>
-                    <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.lime, color: C.ink, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      {(ctx?.name || "V")[0].toUpperCase()}
+                  ) : (
+                    <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexDirection: "row-reverse", animation: "fadeUp 0.2s ease" }}>
+                      <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.lime, color: C.ink, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        {(ctx?.name || "V")[0].toUpperCase()}
+                      </div>
+                      <div style={{ maxWidth: "85%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.ink, color: "#F8F8F4", borderRadius: "16px 16px 4px 16px" }}>
+                        {msg.content}
+                      </div>
                     </div>
-                    <div style={{ maxWidth: "82%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.ink, color: "#F8F8F4", borderRadius: "16px 16px 4px 16px" }}>
-                      {msg.content}
-                    </div>
-                  </div>
-                )
-              )}
+                  )}
+                </div>
+              ))}
 
               {/* Typing indicator */}
               {chatLoading && (
-                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.ink, color: C.lime, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>V</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "11px 14px", background: C.surface, borderRadius: "4px 16px 16px 16px", width: "fit-content" }}>
-                    {[0, 0.18, 0.36].map((delay, di) => (
-                      <div key={di} style={{ width: 5, height: 5, borderRadius: "50%", background: "#bbb", animation: `bounce 1.2s ease-in-out ${delay}s infinite` }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "11px 14px", background: C.surface, borderRadius: "4px 16px 16px 16px" }}>
+                    {[0, 0.18, 0.36].map((d, di) => (
+                      <div key={di} style={{ width: 5, height: 5, borderRadius: "50%", background: "#bbb", animation: `bounce 1.2s ease-in-out ${d}s infinite` }} />
                     ))}
                   </div>
                 </div>
@@ -650,163 +589,86 @@ export default function ProjetoPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input row */}
-            <div style={{ padding: "11px 13px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.muted, flexShrink: 0 }}
-              >
-                <PlusIcon />
-              </button>
-              <button
-                onClick={() => setMicActive(v => !v)}
-                style={{ width: 32, height: 32, borderRadius: "50%", background: micActive ? C.lime : C.surface, border: `1px solid ${micActive ? C.lime : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: micActive ? C.ink : C.muted, flexShrink: 0 }}
-              >
-                <MicIcon />
-              </button>
+            {/* Input */}
+            <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
               <input
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
                 placeholder="Digite aqui..."
-                disabled={chatLoading}
+                disabled={chatLoading || executing}
                 style={{ flex: 1, height: 38, border: `1.5px solid ${C.mid}`, borderRadius: 20, padding: "0 14px", fontSize: 12.5, fontFamily: "inherit", color: C.ink, background: C.bg, outline: "none" }}
               />
               <button
                 onClick={() => sendMessage()}
-                disabled={chatLoading || !inputValue.trim()}
-                style={{ width: 34, height: 34, borderRadius: "50%", background: C.lime, border: "none", cursor: chatLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: chatLoading ? 0.5 : 1 }}
+                disabled={chatLoading || executing || !inputValue.trim()}
+                style={{ width: 34, height: 34, borderRadius: "50%", background: C.lime, border: "none", cursor: chatLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: chatLoading || executing ? 0.5 : 1 }}
               >
-                <ArrowRightIcon />
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
             </div>
-            <input type="file" ref={fileInputRef} style={{ display: "none" }} accept="image/*,.pdf,.doc,.docx" onChange={() => {}} />
           </div>
 
-          {/* ── PREVIEW COLUMN ── */}
-          <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            {/* Preview header */}
-            <div style={{ padding: "13px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>{previewTitle}</div>
-              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{previewSub}</div>
-              {(phase === "generating" || phase === "preview" || phase === "approved") && (
-                <div style={{ height: 3, background: C.border, borderRadius: 2, marginTop: 5, overflow: "hidden" }}>
-                  <div style={{ height: "100%", background: C.lime, borderRadius: 2, width: `${Math.min(progress, 100)}%`, transition: "width 0.6s ease" }} />
+          {/* ── RESULTS COLUMN (only when choices exist) ── */}
+          {hasChoices && (
+            <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+              {/* Results header */}
+              <div style={{ padding: "12px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>
+                  {allImagesReady ? "Escolha sua variação favorita" : "Gerando variações..."}
                 </div>
-              )}
+                <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+                  {allImagesReady
+                    ? `${choices.length} variações prontas — clique para selecionar`
+                    : `${choices.filter(c => c.image_url).length}/${choices.length} imagens prontas`
+                  }
+                </div>
+                {!allImagesReady && (
+                  <div style={{ height: 3, background: C.border, borderRadius: 2, marginTop: 6, overflow: "hidden" }}>
+                    <div style={{ height: "100%", background: C.lime, borderRadius: 2, width: `${Math.round((choices.filter(c => c.image_url).length / Math.max(choices.length, 1)) * 100)}%`, transition: "width 0.6s ease" }} />
+                  </div>
+                )}
+              </div>
+
+              {/* Choices grid */}
+              <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
+                  {choices.map(c => (
+                    <ChoiceCard key={c.id} choice={c} onSelect={() => selectChoice(c.id)} />
+                  ))}
+                </div>
+
+                {/* Confirm selection */}
+                {selectedChoice && allImagesReady && (
+                  <div style={{ marginTop: 20, padding: "14px 18px", background: C.bg, border: `2px solid ${C.lime}`, borderRadius: 12, display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: C.ink }}>Selecionado: {selectedChoice.label}</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>Clique para confirmar e finalizar o projeto</div>
+                    </div>
+                    <button
+                      style={{ fontSize: 12, fontWeight: 800, padding: "10px 20px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: "none", background: C.lime, color: C.ink }}
+                      onClick={async () => {
+                        const sb = supabase();
+                        await sb.from("orders").update({ status: "delivered" }).eq("id", orderId);
+                        router.push("/cliente/projetos");
+                      }}
+                    >
+                      Aprovar →
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+          )}
 
-            {/* Preview body — State 1: Empty */}
-            {phase === "briefing" && (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: 40, textAlign: "center" }}>
-                <div style={{ width: 52, height: 52, borderRadius: 13, background: C.border, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <GridIcon />
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink2 }}>Nenhuma prévia ainda</div>
-                <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.65, maxWidth: 240 }}>
-                  Converse com o RORDENS no chat. O preview aparece aqui automaticamente.
-                </div>
-              </div>
-            )}
-
-            {/* Preview body — State 2: Generating */}
-            {phase === "generating" && (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
-                <div style={{ width: 42, height: 42, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.lime, animation: "spin 0.75s linear infinite" }} />
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Gerando copy e imagem...</div>
-                <div style={{ fontSize: 12, color: C.muted }}>IA escrevendo + foto realista sendo criada</div>
-              </div>
-            )}
-
-            {/* Preview body — State 3: Post card */}
-            {(phase === "preview" || phase === "approved") && post && (
-              <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-                <div style={{ flex: 1, overflowY: "auto", padding: "18px 20px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: C.muted, marginBottom: 12 }}>
-                    AMOSTRA — {postType}
-                  </div>
-
-                  {/* Preview card */}
-                  <div style={{ background: C.bg, border: `1.5px solid ${C.lime}40`, borderRadius: 12, overflow: "hidden", maxWidth: 480, animation: "fadeUp 0.4s ease" }}>
-                    {/* Header strip */}
-                    <div style={{ background: `${C.lime}18`, padding: "10px 16px", display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${C.lime}30` }}>
-                      <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", background: C.lime, color: C.ink, padding: "2px 8px", borderRadius: 4 }}>
-                        {postType}
-                      </div>
-                      <div style={{ fontSize: 11, fontWeight: 600, color: C.muted }}>Amostra gratuita</div>
-                    </div>
-
-                    {/* Card body */}
-                    <div style={{ padding: "18px 18px" }}>
-                      {postHook && (
-                        <div style={{ fontFamily: FFH, fontStyle: "italic", fontSize: 19, fontWeight: 400, color: C.ink, marginBottom: 14, lineHeight: 1.35 }}>
-                          {postHook}
-                        </div>
-                      )}
-                      {postCaption && (
-                        <div style={{ fontSize: 13, color: C.ink2, lineHeight: 1.75, whiteSpace: "pre-wrap", borderLeft: `3px solid ${C.lime}`, paddingLeft: 12, marginBottom: 14 }}>
-                          {postCaption}
-                        </div>
-                      )}
-                      {postHashtags && (
-                        <>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Hashtags</div>
-                          <div style={{ fontSize: 11.5, color: "#3a8a3a", lineHeight: 1.9, marginBottom: 14 }}>{postHashtags}</div>
-                        </>
-                      )}
-                      {postFeatures.length > 0 && (
-                        <>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: C.ink, marginBottom: 5, textTransform: "uppercase", letterSpacing: "0.04em" }}>Features</div>
-                          <ul style={{ fontSize: 12, color: C.ink2, lineHeight: 1.8, paddingLeft: 18, margin: 0 }}>
-                            {postFeatures.map((f, fi) => <li key={fi}>{f}</li>)}
-                          </ul>
-                        </>
-                      )}
-                    </div>
-
-                    {/* What happens next */}
-                    <div style={{ padding: "12px 16px", background: C.surface, borderTop: `1px solid ${C.border}`, fontSize: 11.5, color: C.muted, lineHeight: 1.6 }}>
-                      Ao aprovar, geramos <strong style={{ color: C.ink }}>3 variações completas</strong> com <strong style={{ color: C.ink }}>fotos reais por IA</strong>. Depois, você escolhe a favorita.
-                    </div>
-                  </div>
-                </div>
-
-                {/* Approve bar */}
-                {phase === "preview" && (
-                  <div style={{ background: C.bg, borderTop: `1px solid ${C.border}`, padding: "14px 20px", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
-                    <div style={{ fontSize: 12, color: C.muted, flex: 1, lineHeight: 1.5 }}>
-                      Gostou? Clique para gerar <strong style={{ color: C.ink }}>3 variações + fotos reais</strong>.
-                    </div>
-                    <div style={{ display: "flex", gap: 7, flexShrink: 0 }}>
-                      <button
-                        onClick={requestRevision}
-                        disabled={chatLoading}
-                        style={{ fontSize: 11.5, fontWeight: 700, padding: "8px 16px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `1.5px solid ${C.mid}`, background: C.bg, color: C.ink }}
-                      >
-                        Ajustar
-                      </button>
-                      <button
-                        onClick={approveAll}
-                        disabled={chatLoading}
-                        style={{ fontSize: 12, fontWeight: 800, padding: "10px 22px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", border: `2px solid ${C.lime}`, background: C.lime, color: C.ink, boxShadow: "0 2px 8px rgba(170,255,0,0.3)" }}
-                      >
-                        Gerar produto completo →
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {phase === "approved" && (
-                  <div style={{ background: C.ink, padding: "14px 20px", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: C.lime, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: C.ink }}>✓</div>
-                    <div style={{ fontSize: 12.5, fontWeight: 700, color: C.lime }}>
-                      Pedido aprovado — gerando com imagens reais
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          {/* ── EMPTY RESULTS PLACEHOLDER (when executing but no choices yet) ── */}
+          {executing && !hasChoices && (
+            <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+              <div style={{ width: 42, height: 42, borderRadius: "50%", border: `3px solid ${C.border}`, borderTopColor: C.lime, animation: "spin 0.75s linear infinite" }} />
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.ink }}>Gerando produto completo...</div>
+              <div style={{ fontSize: 12, color: C.muted }}>3 variações de texto + fotos reais por IA</div>
+            </div>
+          )}
         </div>
       </div>
     </>
