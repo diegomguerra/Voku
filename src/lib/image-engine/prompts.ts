@@ -16,10 +16,16 @@ function brandTag(b: BrandContext): string {
 }
 
 function cleanText(text: string): string {
-  // Extract the most meaningful content — first 2 lines or 200 chars
-  const lines = text.split('\n').filter(l => l.trim())
-  const meaningful = lines.slice(0, 2).join('. ').replace(/^[#*\-]+\s*/g, '')
-  return meaningful.slice(0, 200)
+  // Skip variation headers, labels, and formatting — extract real content
+  const skipPatterns = /^(\*{1,2}VARIA|LEGENDA:|HASTAGS:|HASHTAGS:|CALL TO ACTION:|#\w|→|✓|🧠|⚡|🎯|✦)/i
+  const lines = text.split('\n')
+    .map(l => l.trim())
+    .filter(l => l && !skipPatterns.test(l))
+    // Strip remaining markdown bold/italic
+    .map(l => l.replace(/\*{1,2}([^*]+)\*{1,2}/g, '$1').replace(/^[#\-]+\s*/, ''))
+    .filter(l => l.length > 15) // skip short labels
+  const meaningful = lines.slice(0, 3).join(' ')
+  return meaningful.slice(0, 250)
 }
 
 // Product format hints (keep minimal)

@@ -222,6 +222,14 @@ export async function POST(req: NextRequest) {
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
 
+    // ── Guard: prevent duplicate execution ──
+    const { data: existingChoices } = await supabase
+      .from('choices').select('id').eq('order_id', order_id).limit(1)
+    if (existingChoices && existingChoices.length > 0) {
+      console.log(`[execute-product] SKIPPED — choices already exist for order=${order_id}`)
+      return NextResponse.json({ success: true, order_id, skipped: true })
+    }
+
     // ── 1. Credit check FIRST (before any expensive operations) ──
     const cost = CREDIT_COST[product] || 0
     if (cost > 0) {
@@ -397,10 +405,7 @@ Each variation must be complete and production-ready. Only output the JSON array
       app: 'screen-mockup',
     }
     let imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
-    // If user provided a screenshot, use screen-mockup to compose it into the image
-    if (reference_image_url && imageSlug === 'product-scene') {
-      imageSlug = 'screen-mockup'
-    }
+    // Reference images are handled by Ideogram remix in the router — keep user's chosen slug
     if (imageSlug) {
       // Fetch inserted choices to get their IDs
       const { data: insertedChoices } = await supabase
