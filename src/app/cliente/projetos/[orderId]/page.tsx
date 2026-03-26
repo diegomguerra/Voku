@@ -21,6 +21,7 @@ const FF = "'Plus Jakarta Sans', sans-serif";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  images?: string[]; // base64 data URLs
   preview?: Record<string, any> | null;
 }
 interface Choice {
@@ -63,6 +64,22 @@ function renderBold(text: string) {
       ? <strong key={i} style={{ fontWeight: 800 }}>{p.slice(2, -2)}</strong>
       : <span key={i}>{p}</span>
   );
+}
+
+/* ── Image helpers ── */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function base64ToAnthropicBlock(dataUrl: string) {
+  const [header, data] = dataUrl.split(",");
+  const mediaType = header.match(/data:(.*?);/)?.[1] || "image/png";
+  return { type: "image" as const, source: { type: "base64" as const, media_type: mediaType, data } };
 }
 
 /* ── CSS keyframes ── */
@@ -185,8 +202,11 @@ export default function ProjetoPage() {
   const [executing, setExecuting] = useState(false);
   const [choices, setChoices] = useState<Choice[]>([]);
   const [lastPreview, setLastPreview] = useState<Record<string, any> | null>(null);
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [micActive, setMicActive] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const userIdRef = useRef<string | null>(null);
   const choicesPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -331,22 +351,54 @@ export default function ProjetoPage() {
     }
   }, [orderId, ctx, messages, persistMessage, loadChoices]);
 
+  /* ── Handle file/image upload ── */
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
+    const imgs: string[] = [];
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      if (file.size > 5 * 1024 * 1024) { alert("Imagem muito grande (máx 5MB)"); continue; }
+      const b64 = await fileToBase64(file);
+      imgs.push(b64);
+    }
+    if (imgs.length > 0) setPendingImages(prev => [...prev, ...imgs]);
+  }, []);
+
+  /* ── Paste handler for screenshots ── */
+  const handlePaste = useCallback((e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const imageFiles: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) imageFiles.push(file);
+      }
+    }
+    if (imageFiles.length > 0) {
+      e.preventDefault();
+      handleFiles(imageFiles);
+    }
+  }, [handleFiles]);
+
   /* ── Send message via voku-chat ── */
   const sendMessage = useCallback(async (text?: string) => {
     const userText = text || inputValue.trim();
-    if (!userText || chatLoading) return;
+    const images = [...pendingImages];
+    if ((!userText && images.length === 0) || chatLoading) return;
     setInputValue("");
+    setPendingImages([]);
 
     // If user confirms and we have a preview, execute directly
-    if (lastPreview && /^(sim|ok|pode|gera|aprova|manda|vai|bora|confirma|quero|yes|go|gerar)/i.test(userText.trim())) {
+    if (lastPreview && !images.length && /^(sim|ok|pode|gera|aprova|manda|vai|bora|confirma|quero|yes|go|gerar)/i.test(userText.trim())) {
       await handleGenerate(lastPreview);
       return;
     }
 
-    const newMessages: Message[] = [...messages, { role: "user", content: userText }];
+    const userMsg: Message = { role: "user", content: userText || (images.length ? "[Screenshot enviado]" : ""), images: images.length ? images : undefined };
+    const newMessages: Message[] = [...messages, userMsg];
     setMessages(newMessages);
     setChatLoading(true);
-    await persistMessage("user", userText);
+    await persistMessage("user", userText || "[Screenshot enviado]");
 
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -360,7 +412,15 @@ export default function ProjetoPage() {
           Accept: "text/event-stream",
         },
         body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          messages: newMessages.map(m => {
+            if (m.images?.length) {
+              // Anthropic multi-modal format
+              const content: any[] = m.images.map(img => base64ToAnthropicBlock(img));
+              if (m.content) content.push({ type: "text", text: m.content });
+              return { role: m.role, content };
+            }
+            return { role: m.role, content: m.content };
+          }),
           user_context: {
             name: ctx?.name || "você",
             plan: ctx?.plan || "free",
@@ -475,7 +535,7 @@ export default function ProjetoPage() {
     }
 
     setChatLoading(false);
-  }, [inputValue, chatLoading, messages, ctx, persistMessage, lastPreview, handleGenerate]);
+  }, [inputValue, chatLoading, messages, ctx, persistMessage, lastPreview, pendingImages, handleGenerate]);
 
   /* ── Select a choice ── */
   const selectChoice = useCallback(async (choiceId: string) => {
@@ -566,8 +626,20 @@ export default function ProjetoPage() {
                       <div style={{ width: 26, height: 26, borderRadius: "50%", background: C.lime, color: C.ink, fontSize: 9, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                         {(ctx?.name || "V")[0].toUpperCase()}
                       </div>
-                      <div style={{ maxWidth: "85%", padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.ink, color: "#F8F8F4", borderRadius: "16px 16px 4px 16px" }}>
-                        {msg.content}
+                      <div style={{ maxWidth: "85%" }}>
+                        {/* User images */}
+                        {msg.images && msg.images.length > 0 && (
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", justifyContent: "flex-end", marginBottom: msg.content ? 4 : 0 }}>
+                            {msg.images.map((img, imgIdx) => (
+                              <img key={imgIdx} src={img} alt="" style={{ maxWidth: 180, maxHeight: 140, borderRadius: 10, border: `1px solid ${C.border}`, objectFit: "cover" }} />
+                            ))}
+                          </div>
+                        )}
+                        {msg.content && (
+                          <div style={{ padding: "10px 14px", fontSize: 12.5, lineHeight: 1.65, background: C.ink, color: "#F8F8F4", borderRadius: "16px 16px 4px 16px" }}>
+                            {msg.content}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -589,24 +661,66 @@ export default function ProjetoPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            <div style={{ padding: "10px 12px", borderTop: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+            {/* Pending images preview */}
+            {pendingImages.length > 0 && (
+              <div style={{ padding: "8px 12px 0", borderTop: `1px solid ${C.border}`, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {pendingImages.map((img, idx) => (
+                  <div key={idx} style={{ position: "relative", width: 52, height: 52, borderRadius: 8, overflow: "hidden", border: `1px solid ${C.border}` }}>
+                    <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <button
+                      onClick={() => setPendingImages(prev => prev.filter((_, i) => i !== idx))}
+                      style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", fontSize: 10, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Input row */}
+            <div style={{ padding: "10px 12px", borderTop: pendingImages.length ? "none" : `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              {/* Upload button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: C.surface, border: `1px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: C.muted, flexShrink: 0 }}
+                title="Enviar imagem ou arquivo"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </button>
+              {/* Mic button */}
+              <button
+                onClick={() => setMicActive(v => !v)}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: micActive ? C.lime : C.surface, border: `1px solid ${micActive ? C.lime : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: micActive ? C.ink : C.muted, flexShrink: 0 }}
+                title="Gravar áudio"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4Z" stroke="currentColor" strokeWidth="2" /><path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </button>
+              {/* Text input */}
               <input
                 value={inputValue}
                 onChange={e => setInputValue(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                placeholder="Digite aqui..."
+                onPaste={handlePaste}
+                placeholder={pendingImages.length ? "Adicione uma descrição..." : "Digite ou cole um screenshot..."}
                 disabled={chatLoading || executing}
                 style={{ flex: 1, height: 38, border: `1.5px solid ${C.mid}`, borderRadius: 20, padding: "0 14px", fontSize: 12.5, fontFamily: "inherit", color: C.ink, background: C.bg, outline: "none" }}
               />
+              {/* Send button */}
               <button
                 onClick={() => sendMessage()}
-                disabled={chatLoading || executing || !inputValue.trim()}
+                disabled={chatLoading || executing || (!inputValue.trim() && !pendingImages.length)}
                 style={{ width: 34, height: 34, borderRadius: "50%", background: C.lime, border: "none", cursor: chatLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, opacity: chatLoading || executing ? 0.5 : 1 }}
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
               </button>
             </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              accept="image/*,.pdf,.doc,.docx"
+              multiple
+              onChange={e => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
+            />
           </div>
 
           {/* ── RESULTS COLUMN (only when choices exist) ── */}
