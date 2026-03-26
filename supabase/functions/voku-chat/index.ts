@@ -41,6 +41,9 @@ function buildSystemPrompt(user_context: any, brand?: any): string {
 
   return `Você é Rordens — Agente de IA — Supervisor de Prompts da plataforma Voku.
 
+⚠️ REGRA #1 — OBRIGATÓRIA: Quando o cliente confirmar geração ("sim", "pode gerar", "aprovado", "manda", "gera", "vai", "bora"), sua resposta DEVE conter o JSON de execução abaixo. Sem este JSON, o sistema NÃO executa nada. NUNCA responda apenas com texto como "gerando..." sem incluir o JSON.
+Formato: {"action":"execute","product":"<tipo>","structured_data":{...}}
+
 ## Quem você está atendendo
 - Nome: ${user_context?.name || "cliente"}
 - Plano: ${user_context?.plan || "free"}
@@ -133,7 +136,9 @@ Se o cliente não souber, SUGIRA baseado no contexto (ex: skincare → foto real
 ❌ "Para prosseguir com a geração do asset..."
 ✅ "Olha só o que montei pra você — e isso é só uma amostra!"
 ❌ Perguntar 5+ perguntas antes de mostrar valor
-✅ Coletar o mínimo e já gerar preview`;
+✅ Coletar o mínimo e já gerar preview
+
+⚠️ LEMBRETE FINAL: Se o cliente disse "sim/gera/aprovado/pode gerar", sua resposta OBRIGATORIAMENTE deve conter {"action":"execute","product":"...","structured_data":{...}}. Texto sem JSON = sistema travado.`;
 }
 
 function extractAction(text: string): { cleanText: string; action: any | null } {
@@ -199,6 +204,17 @@ serve(async (req) => {
   }
 
   const systemPrompt = buildSystemPrompt(user_context, brand);
+
+  // Detect if last user message is a confirmation → prepend assistant prefill to force JSON
+  const confirmPattern = /^(sim|pode gerar|aprovado|manda|gera|vai|bora|pode|gerar|ok|vamos|fechou|manda ver|gera!|gerar!)/i;
+  const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
+  const isConfirmation = lastUserMsg && confirmPattern.test(lastUserMsg.content.trim());
+
+  // If confirmation detected, add assistant prefill that starts with the execute JSON opener
+  const apiMessages = isConfirmation
+    ? [...messages, { role: "assistant", content: "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," }]
+    : messages;
+
   const wantsStream = req.headers.get("accept") === "text/event-stream";
 
   if (wantsStream) {
@@ -214,11 +230,11 @@ serve(async (req) => {
         max_tokens: 2048,
         stream: true,
         system: systemPrompt,
-        messages,
+        messages: apiMessages,
       }),
     });
 
-    let fullText = "";
+    let fullText = isConfirmation ? "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," : "";
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
@@ -272,12 +288,13 @@ serve(async (req) => {
       model: "claude-sonnet-4-5",
       max_tokens: 2048,
       system: systemPrompt,
-      messages,
+      messages: apiMessages,
     }),
   });
 
   const data = await response.json();
-  const rawText = data?.content?.[0]?.text || "";
+  const prefill = isConfirmation ? "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," : "";
+  const rawText = prefill + (data?.content?.[0]?.text || "");
   const { cleanText: noAction, action } = extractAction(rawText);
   const { cleanText, preview } = extractPreview(noAction);
   const result: any = { ...data, content: [{ type: "text", text: cleanText }], fullText: rawText };
