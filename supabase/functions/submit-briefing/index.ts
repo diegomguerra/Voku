@@ -3,7 +3,6 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY")!;
 const RESEND_KEY = Deno.env.get("RESEND_API_KEY")!;
 
 const PRODUCTS: Record<string, { name: string; deadline_hours: number; usd: number; brl: number }> = {
@@ -40,22 +39,25 @@ Deno.serve(async (req: Request) => {
     const deadline = new Date();
     deadline.setHours(deadline.getHours() + productInfo.deadline_hours);
 
+    // 1. Cria a ordem
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert({
         user_id,
         product,
-        status: "in_production",
+        status: "briefing_received",
         currency,
         amount: currency === "USD" ? productInfo.usd : productInfo.brl,
         platform: "voku",
         delivery_deadline: deadline.toISOString(),
+        channel: "form",
       })
       .select()
       .single();
 
     if (orderError) throw orderError;
 
+    // 2. Salva o briefing
     await supabase.from("briefings").insert({
       order_id: order.id,
       user_id,
@@ -65,17 +67,63 @@ Deno.serve(async (req: Request) => {
       confirmed_at: new Date().toISOString(),
     });
 
+    // 3. Marca como em produção ANTES de chamar execute-product
+    await supabase.from("orders")
+      .update({ status: "in_production" })
+      .eq("id", order.id);
+
+    // 4. Chama execute-product com EdgeRuntime.waitUntil para não travar o response
+    //    mas garantir que a chamada seja completada mesmo após retornar ao cliente
     const executeUrl = `${SUPABASE_URL}/functions/v1/execute-product`;
-    fetch(executeUrl, {
+    const executePayload = JSON.stringify({
+      order_id: order.id,
+      user_id,
+      email,
+      name,
+      product,
+      structured_data,
+      currency,
+    });
+
+    // Usa EdgeRuntime.waitUntil para manter a promise viva após o response
+    const executePromise = fetch(executeUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
       },
-      body: JSON.stringify({ order_id: order.id, user_id, email, name, product, structured_data, currency }),
-    }).catch(console.error);
+      body: executePayload,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const errText = await res.text();
+        console.error(`[submit-briefing] execute-product falhou ${res.status}: ${errText}`);
+        // Marca a ordem com erro para não ficar presa em in_production
+        await supabase.from("orders")
+          .update({ status: "error", preview_text: `execute-product: ${res.status}` })
+          .eq("id", order.id);
+      } else {
+        console.log(`[submit-briefing] execute-product disparado com sucesso para order ${order.id}`);
+      }
+    }).catch(async (err: Error) => {
+      console.error(`[submit-briefing] execute-product exception: ${err.message}`);
+      await supabase.from("orders")
+        .update({ status: "error", preview_text: `exception: ${err.message}` })
+        .eq("id", order.id);
+    });
 
-    const deadlineFormatted = deadline.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" });
+    // Registra a promise no runtime para não ser garbage collected
+    // @ts-ignore EdgeRuntime global disponível no Supabase
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+      EdgeRuntime.waitUntil(executePromise);
+    }
+
+    // 5. E-mail de confirmação de recebimento (await — crítico para o cliente)
+    const deadlineFormatted = deadline.toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      dateStyle: "short",
+      timeStyle: "short",
+    });
+
     await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -105,11 +153,21 @@ Deno.serve(async (req: Request) => {
     });
 
     return new Response(
-      JSON.stringify({ success: true, order_id: order.id, order_number: order.order_number, deadline: deadline.toISOString() }),
-      { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
+      JSON.stringify({
+        success: true,
+        order_id: order.id,
+        order_number: order.order_number,
+        deadline: deadline.toISOString(),
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      }
     );
   } catch (err) {
-    console.error(err);
+    console.error("[submit-briefing] erro geral:", err);
     return new Response(JSON.stringify({ error: "Erro interno" }), { status: 500 });
   }
 });
