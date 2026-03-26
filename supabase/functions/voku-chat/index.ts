@@ -10,6 +10,45 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, accept",
 };
 
+// Timeout para chamadas ao Anthropic (ms)
+const ANTHROPIC_TIMEOUT = 55_000  // 55s — abaixo do limite de 60s da Edge Function
+
+// ── Fetch com timeout via AbortController ────────────────────────────────────
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
+// ── Merge seguro de mensagens consecutivas do mesmo role ─────────────────────
+// CORREÇÃO: o content pode ser string OU array (quando tem imagem).
+// Merge incorreto quebrava mensagens com imagem, causando erro 400 no Anthropic.
+function mergeMessages(rawMessages: any[]): any[] {
+  const messages: any[] = []
+
+  for (const m of rawMessages) {
+    const last = messages[messages.length - 1]
+
+    if (last && last.role === m.role) {
+      // Normaliza ambos para array antes de concatenar
+      const existingParts = normalizeContent(last.content)
+      const newParts = normalizeContent(m.content)
+      last.content = [...existingParts, ...newParts]
+    } else {
+      messages.push({ ...m })
+    }
+  }
+
+  return messages
+}
+
+// Normaliza content para sempre ser array de content blocks
+function normalizeContent(content: any): any[] {
+  if (Array.isArray(content)) return content
+  if (typeof content === "string") return [{ type: "text", text: content }]
+  return [{ type: "text", text: String(content) }]
+}
+
 function buildSystemPrompt(user_context: any, brand?: any): string {
   let brandSection = "";
   if (brand) {
@@ -146,11 +185,9 @@ function extractAction(text: string): { cleanText: string; action: any | null } 
   const idx = text.indexOf(marker);
   if (idx === -1) return { cleanText: text, action: null };
 
-  // Find the opening { before "action"
   let start = text.lastIndexOf("{", idx);
   if (start === -1) return { cleanText: text, action: null };
 
-  // Find balanced closing } (handles nested objects like structured_data)
   let depth = 0;
   let end = -1;
   for (let i = start; i < text.length; i++) {
@@ -178,8 +215,6 @@ function extractPreview(text: string): { cleanText: string; preview: any | null 
   if (!match) return { cleanText: text, preview: null };
   try {
     const preview = JSON.parse(match[1].trim());
-    // Keep the preview markers in the saved text (re-parsed from history)
-    // but clean them from displayed text
     const cleanText = text.replace(/___PREVIEW___[\s\S]*?___END___/g, "").trim();
     return { cleanText, preview };
   } catch {
@@ -192,116 +227,169 @@ serve(async (req) => {
     return new Response("ok", { headers: CORS });
   }
 
-  const { messages, user_context } = await req.json();
+  try {
+    const { messages: rawMessages, user_context } = await req.json();
 
-  let brand = null;
-  if (user_context?.user_id) {
-    try {
-      const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const { data } = await sb.from("brand_contexts").select("*").eq("user_id", user_context.user_id).single();
-      if (data) brand = data;
-    } catch { /* no brand context */ }
-  }
+    // ✅ CORRIGIDO: merge seguro que preserva content blocks de imagem
+    const messages = mergeMessages(rawMessages)
 
-  const systemPrompt = buildSystemPrompt(user_context, brand);
+    let brand = null;
+    if (user_context?.user_id) {
+      try {
+        const sb = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+        const { data } = await sb.from("brand_contexts").select("*").eq("user_id", user_context.user_id).single();
+        if (data) brand = data;
+      } catch { /* no brand context */ }
+    }
 
-  // Detect if last user message is a confirmation → prepend assistant prefill to force JSON
-  const confirmPattern = /^(sim|pode gerar|aprovado|manda|gera|vai|bora|pode|gerar|ok|vamos|fechou|manda ver|gera!|gerar!)/i;
-  const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
-  const isConfirmation = lastUserMsg && confirmPattern.test(lastUserMsg.content.trim());
+    const systemPrompt = buildSystemPrompt(user_context, brand);
 
-  // If confirmation detected, add assistant prefill that starts with the execute JSON opener
-  const apiMessages = isConfirmation
-    ? [...messages, { role: "assistant", content: "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," }]
-    : messages;
+    const confirmPattern = /^(sim|pode gerar|aprovado|manda|gera|vai|bora|pode|gerar|ok|vamos|fechou|manda ver|gera!|gerar!)/i;
+    const lastUserMsg = [...messages].reverse().find((m: any) => m.role === "user");
 
-  const wantsStream = req.headers.get("accept") === "text/event-stream";
+    // ✅ CORRIGIDO: extrai texto do content mesmo quando é array (mensagem com imagem)
+    const lastUserText = (() => {
+      if (!lastUserMsg) return ""
+      const c = lastUserMsg.content
+      if (typeof c === "string") return c.trim()
+      if (Array.isArray(c)) {
+        return c.filter((b: any) => b.type === "text").map((b: any) => b.text).join(" ").trim()
+      }
+      return ""
+    })()
 
-  if (wantsStream) {
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-5",
-        max_tokens: 2048,
-        stream: true,
-        system: systemPrompt,
-        messages: apiMessages,
-      }),
-    });
+    const isConfirmation = confirmPattern.test(lastUserText)
 
-    let fullText = isConfirmation ? "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," : "";
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = anthropicRes.body!.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-            for (const line of lines) {
-              if (!line.startsWith("data: ")) continue;
-              const payload = line.slice(6).trim();
-              if (payload === "[DONE]") continue;
-              try {
-                const event = JSON.parse(payload);
-                if (event.type === "content_block_delta" && event.delta?.text) {
-                  fullText += event.delta.text;
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text: event.delta.text })}\n\n`));
-                }
-                if (event.type === "message_stop") {
-                  const { cleanText: noAction, action } = extractAction(fullText);
-                  const { cleanText, preview } = extractPreview(noAction);
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, fullText, ...(action ? { action } : {}), ...(preview ? { preview } : {}) })}\n\n`));
-                }
-              } catch { /* skip */ }
+    const apiMessages = isConfirmation
+      ? [...messages, { role: "assistant", content: "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," }]
+      : messages;
+
+    const wantsStream = req.headers.get("accept") === "text/event-stream";
+
+    if (wantsStream) {
+      // ✅ CORRIGIDO: fetchWithTimeout evita pendurar a Edge Function
+      const anthropicRes = await fetchWithTimeout(
+        "https://api.anthropic.com/v1/messages",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({
+            model: "claude-sonnet-4-5",
+            max_tokens: 2048,
+            stream: true,
+            system: systemPrompt,
+            messages: apiMessages,
+          }),
+        },
+        ANTHROPIC_TIMEOUT
+      )
+
+      if (!anthropicRes.ok) {
+        const errText = await anthropicRes.text()
+        throw new Error(`Anthropic stream error (${anthropicRes.status}): ${errText}`)
+      }
+
+      let fullText = isConfirmation ? "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," : "";
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          const reader = anthropicRes.body!.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split("\n");
+              buffer = lines.pop() || "";
+              for (const line of lines) {
+                if (!line.startsWith("data: ")) continue;
+                const payload = line.slice(6).trim();
+                if (payload === "[DONE]") continue;
+                try {
+                  const event = JSON.parse(payload);
+                  if (event.type === "content_block_delta" && event.delta?.text) {
+                    fullText += event.delta.text;
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "delta", text: event.delta.text })}\n\n`));
+                  }
+                  if (event.type === "message_stop") {
+                    const { cleanText: noAction, action } = extractAction(fullText);
+                    const { cleanText, preview } = extractPreview(noAction);
+                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done", text: cleanText, fullText, ...(action ? { action } : {}), ...(preview ? { preview } : {}) })}\n\n`));
+                  }
+                } catch { /* skip malformed SSE */ }
+              }
             }
+          } finally {
+            controller.close();
           }
-        } finally {
-          controller.close();
-        }
+        },
+      });
+
+      return new Response(stream, {
+        headers: { ...CORS, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+      });
+    }
+
+    // ✅ CORRIGIDO: fetchWithTimeout no modo non-streaming também
+    const response = await fetchWithTimeout(
+      "https://api.anthropic.com/v1/messages",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-5",
+          max_tokens: 2048,
+          system: systemPrompt,
+          messages: apiMessages,
+        }),
       },
+      ANTHROPIC_TIMEOUT
+    )
+
+    if (!response.ok) {
+      const errText = await response.text()
+      throw new Error(`Anthropic error (${response.status}): ${errText}`)
+    }
+
+    const data = await response.json();
+    const prefill = isConfirmation ? "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," : "";
+    const rawText = prefill + (data?.content?.[0]?.text || "");
+    const { cleanText: noAction, action } = extractAction(rawText);
+    const { cleanText, preview } = extractPreview(noAction);
+    const result: any = { ...data, content: [{ type: "text", text: cleanText }], fullText: rawText };
+    if (action) result.action = action;
+    if (preview) result.preview = preview;
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...CORS, "Content-Type": "application/json" },
     });
 
-    return new Response(stream, {
-      headers: { ...CORS, "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Connection": "keep-alive" },
+  } catch (err) {
+    const errMsg = (err as Error).message || "Internal error";
+    console.error("voku-chat error:", errMsg);
+
+    // Mensagem mais específica dependendo do tipo de erro
+    const isTimeout = errMsg.includes("abort") || errMsg.includes("timeout")
+    const userMsg = isTimeout
+      ? "Demorou mais que o esperado. Tenta de novo!"
+      : "Ops, tive um problema técnico. Tenta de novo!"
+
+    return new Response(JSON.stringify({
+      content: [{ type: "text", text: userMsg }],
+      error: errMsg,
+    }), {
+      status: 200,
+      headers: { ...CORS, "Content-Type": "application/json" },
     });
   }
-
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-5",
-      max_tokens: 2048,
-      system: systemPrompt,
-      messages: apiMessages,
-    }),
-  });
-
-  const data = await response.json();
-  const prefill = isConfirmation ? "Perfeito! Gerando agora 🚀\n\n{\"action\":\"execute\"," : "";
-  const rawText = prefill + (data?.content?.[0]?.text || "");
-  const { cleanText: noAction, action } = extractAction(rawText);
-  const { cleanText, preview } = extractPreview(noAction);
-  const result: any = { ...data, content: [{ type: "text", text: cleanText }], fullText: rawText };
-  if (action) result.action = action;
-  if (preview) result.preview = preview;
-
-  return new Response(JSON.stringify(result), {
-    headers: { ...CORS, "Content-Type": "application/json" },
-  });
 });
