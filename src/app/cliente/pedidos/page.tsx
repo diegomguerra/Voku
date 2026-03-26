@@ -193,9 +193,12 @@ export default function PedidosPage() {
   const [input, setInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [chatStarted, setChatStarted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"pedidos" | "chat">("chat");
+  const [activeTab, setActiveTab] = useState<"pedidos" | "chat" | "preview">("chat");
   const [isMobile, setIsMobile] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<"idle" | "generating" | "preview">("idle");
+  const [activePreview, setActivePreview] = useState<any>(null);
+  const [activePreviewProduct, setActivePreviewProduct] = useState<string>("");
   const [pendingOrder, setPendingOrder] = useState<{ orderId: string; choices: any[]; iterationId: string | null; orderData: any } | null>(null);
   const [choicesApproved, setChoicesApproved] = useState(false);
   const [landingPageSlugs, setLandingPageSlugs] = useState<Record<string, string>>({});
@@ -415,6 +418,11 @@ export default function PedidosPage() {
     // Persiste mensagem do usuário
     await persistMessage("user", userText);
 
+    // Ativa preview "generating" quando chat inicia geração
+    if (previewState === "idle") {
+      setPreviewState("generating");
+    }
+
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -508,8 +516,20 @@ export default function PedidosPage() {
         // Persist full text (with preview markers) so it can be re-parsed from history
         await persistMessage("assistant", fullTextRaw || finalCleanText);
 
+        // Ativa preview area se preview foi gerado
+        if (finalPreview) {
+          setActivePreview(finalPreview);
+          setActivePreviewProduct(finalPreview.type || "");
+          setPreviewState("preview");
+          if (isMobile) setActiveTab("preview");
+        } else if (previewState === "generating") {
+          setPreviewState("idle");
+        }
+
         // Handle action
         if (finalAction?.action === "execute") {
+          setPreviewState("idle");
+          setActivePreview(null);
           await handleExecuteAction(finalAction, withReply, newMessages);
         }
       } else {
@@ -530,8 +550,20 @@ export default function PedidosPage() {
         setMessages(withReply);
         await persistMessage("assistant", fullTextRaw);
 
+        // Ativa preview area se preview foi gerado
+        if (preview) {
+          setActivePreview(preview);
+          setActivePreviewProduct(preview.type || "");
+          setPreviewState("preview");
+          if (isMobile) setActiveTab("preview");
+        } else if (previewState === "generating") {
+          setPreviewState("idle");
+        }
+
         // ACTION=EXECUTE
         if (data?.action?.action === "execute") {
+          setPreviewState("idle");
+          setActivePreview(null);
           await handleExecuteAction(data.action, withReply, newMessages);
         }
       }
@@ -542,7 +574,7 @@ export default function PedidosPage() {
     }
 
     setChatLoading(false);
-  }, [input, messages, chatLoading, ctx, persistMessage, isMobile, subscribeToChoices, orders, createdOrderId, handleExecuteAction]);
+  }, [input, messages, chatLoading, ctx, persistMessage, isMobile, subscribeToChoices, orders, createdOrderId, handleExecuteAction, previewState]);
 
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -596,6 +628,177 @@ export default function PedidosPage() {
   if (ctxLoading || ordersLoading) return (
     <div style={{ background: T.sand, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: T.inkMid, fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 15 }}>
       Carregando...
+    </div>
+  );
+
+  /* ─── Preview Area (right column when preview is active) ─── */
+  const previewAreaContent = (
+    <div style={{ display: "flex", flexDirection: "column", height: isMobile ? "calc(100vh - 64px - 48px)" : "calc(100vh - 64px)", background: T.sand }}>
+
+      {/* Preview header */}
+      <div style={{ padding: "14px 22px", background: T.white, borderBottom: `1px solid ${T.border}`, flexShrink: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: T.ink }}>
+              {previewState === "generating" ? "Gerando preview..." : previewState === "preview" ? "Amostra gratuita" : "Área de Preview"}
+            </div>
+            <div style={{ fontSize: 11, color: T.inkMid, marginTop: 2 }}>
+              {previewState === "generating" ? "IA criando seu conteúdo" : previewState === "preview" ? (PRODUCT_NAME[activePreviewProduct] || "Preview") : "O preview aparece aqui"}
+            </div>
+          </div>
+          {previewState !== "idle" && (
+            <button onClick={() => { setPreviewState("idle"); setActivePreview(null); }} style={{ background: "transparent", border: `1px solid ${T.border}`, borderRadius: 8, padding: "5px 12px", fontSize: 11, fontWeight: 600, color: T.inkMid, cursor: "pointer", fontFamily: "inherit" }}>
+              Ver pedidos
+            </button>
+          )}
+        </div>
+        {previewState === "generating" && (
+          <div style={{ height: 3, background: T.border, borderRadius: 2, marginTop: 8, overflow: "hidden" }}>
+            <div style={{ height: "100%", background: T.lime, borderRadius: 2, width: "60%", animation: "progressPulse 2s ease-in-out infinite" }} />
+          </div>
+        )}
+      </div>
+
+      {/* State: Empty/Idle */}
+      {previewState === "idle" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, padding: 48, textAlign: "center" }}>
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: T.border, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+              <rect x="3" y="3" width="20" height="20" rx="4" stroke={T.inkFaint} strokeWidth="1.4"/>
+              <path d="M8 13h10M13 8v10" stroke={T.inkFaint} strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.inkSub }}>Nenhuma prévia ainda</div>
+          <div style={{ fontSize: 13, color: T.inkMid, lineHeight: 1.65, maxWidth: 260 }}>
+            Responda o briefing no chat. O preview aparece aqui assim que a IA gerar.
+          </div>
+        </div>
+      )}
+
+      {/* State: Generating */}
+      {previewState === "generating" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 18 }}>
+          <div style={{ width: 44, height: 44, borderRadius: "50%", border: `3px solid ${T.border}`, borderTopColor: T.lime, animation: "spin 0.75s linear infinite" }} />
+          <div style={{ fontSize: 15, fontWeight: 700, color: T.ink }}>Gerando preview...</div>
+          <div style={{ fontSize: 12, color: T.inkMid }}>IA escrevendo copy ao vivo</div>
+        </div>
+      )}
+
+      {/* State: Preview Card */}
+      {previewState === "preview" && activePreview && (
+        <>
+          <div style={{ flex: 1, overflowY: "auto", padding: "20px 22px" }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.08em", color: T.inkMid, marginBottom: 14, textTransform: "uppercase" as const }}>
+              AMOSTRA — {PRODUCT_NAME[activePreviewProduct] || "PREVIEW"}
+            </div>
+
+            {/* Post Card Visual */}
+            <div style={{ background: T.white, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden", maxWidth: 480, transition: "border-color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = T.lime)}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = T.border)}
+            >
+              {/* Visual area — hook display */}
+              <div style={{ height: 200, background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", padding: 24, position: "relative" }}>
+                <div style={{ fontFamily: "'DM Serif Display', serif", fontStyle: "italic", fontSize: 22, color: "#F8F8F4", lineHeight: 1.3, textAlign: "center" }}>
+                  {activePreview.hook || activePreview.headline || activePreview.hero_headline || activePreview.cover_title || activePreview.subject || activePreview.name || "Preview"}
+                </div>
+                <div style={{ position: "absolute", top: 12, right: 12, fontSize: 9, fontWeight: 800, letterSpacing: "0.06em", background: T.lime, color: T.ink, padding: "3px 8px", borderRadius: 4 }}>
+                  {(activePreviewProduct || "preview").toUpperCase().replace(/_/g, " ")}
+                </div>
+                <div style={{ position: "absolute", top: 12, left: 12, fontSize: 9, fontWeight: 600, color: "#888", letterSpacing: "0.04em" }}>
+                  PREVIEW GRATUITO
+                </div>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: "18px 20px" }}>
+                {/* Title */}
+                <div style={{ fontFamily: "'DM Serif Display', serif", fontStyle: "italic", fontSize: 18, fontWeight: 400, color: T.ink, marginBottom: 12 }}>
+                  {activePreview.hook || activePreview.headline || activePreview.hero_headline || activePreview.cover_title || activePreview.subject || activePreview.name || ""}
+                </div>
+
+                {/* Caption / main content */}
+                {(activePreview.caption || activePreview.hook || activePreview.first_paragraph || activePreview.hero_subheadline || activePreview.body || activePreview.first_15s || activePreview.cover_subtitle || activePreview.slide1_text || activePreview.value_prop) && (
+                  <div style={{ fontSize: 13, color: T.inkSub, lineHeight: 1.75, whiteSpace: "pre-wrap", marginBottom: 14, borderLeft: `2px solid ${T.lime}`, paddingLeft: 12 }}>
+                    {activePreview.caption || activePreview.first_paragraph || activePreview.hero_subheadline || activePreview.body || activePreview.first_15s || activePreview.cover_subtitle || activePreview.slide1_text || activePreview.value_prop || activePreview.hook || ""}
+                  </div>
+                )}
+
+                {/* Hashtags */}
+                {activePreview.hashtags && activePreview.hashtags.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 6 }}>Hashtags</div>
+                    <div style={{ fontSize: 11.5, color: T.green, lineHeight: 1.9 }}>
+                      {Array.isArray(activePreview.hashtags) ? activePreview.hashtags.map((h: string) => h.startsWith("#") ? h : `#${h}`).join(" ") : activePreview.hashtags}
+                    </div>
+                  </>
+                )}
+
+                {/* Features (for app) */}
+                {activePreview.features && activePreview.features.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: T.ink, marginBottom: 6, marginTop: 10 }}>Funcionalidades</div>
+                    {activePreview.features.map((f: string, i: number) => (
+                      <div key={i} style={{ fontSize: 12, color: T.inkSub, marginBottom: 3 }}>• {f}</div>
+                    ))}
+                  </>
+                )}
+
+                {/* Slides (for carrossel) */}
+                {activePreview.slide1_headline && (
+                  <div style={{ background: T.sand, border: `1px solid ${T.border}`, borderRadius: 8, padding: "10px 14px", marginTop: 10 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>{activePreview.slide1_headline}</div>
+                    {activePreview.slide1_text && <div style={{ fontSize: 11, color: T.inkSub, marginTop: 2 }}>{activePreview.slide1_text}</div>}
+                  </div>
+                )}
+
+                {/* Content pack posts */}
+                {activePreview.posts && activePreview.posts.length > 0 && (
+                  <div style={{ marginTop: 10 }}>
+                    {activePreview.posts.map((p: any, i: number) => (
+                      <div key={i} style={{ marginBottom: 8, paddingBottom: 8, borderBottom: i < activePreview.posts.length - 1 ? `1px solid ${T.border}` : "none" }}>
+                        {p.headline && <div style={{ fontSize: 13, fontWeight: 700, color: T.ink }}>Post {i + 1}: {p.headline}</div>}
+                        {p.hook && <div style={{ fontSize: 12, color: T.inkSub, marginTop: 2 }}>{p.hook}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Meta tags */}
+                <div style={{ display: "flex", gap: 7, marginTop: 14, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: T.sand, color: T.inkSub, letterSpacing: "0.03em" }}>
+                    {PRODUCT_NAME[activePreviewProduct] || activePreviewProduct}
+                  </span>
+                  <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 4, background: T.sand, color: T.inkSub, letterSpacing: "0.03em" }}>
+                    AMOSTRA
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Approve bar */}
+          <div style={{ background: T.white, borderTop: `1px solid ${T.border}`, padding: "14px 22px", display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+            <div style={{ fontSize: 12.5, color: T.inkMid, flex: 1, lineHeight: 1.5 }}>
+              Gostou? Aprovando, você recebe <strong style={{ color: T.ink }}>3 variações completas + imagens</strong>.
+            </div>
+            <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={() => sendMessage("Quero ajustar o tom")}
+                style={{ fontSize: 12, fontWeight: 700, padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", background: T.white, border: `1.5px solid ${T.borderMd}`, color: T.ink, transition: "all 0.15s" }}
+              >
+                Ajustar
+              </button>
+              <button
+                onClick={() => sendMessage("Sim, pode gerar!")}
+                style={{ fontSize: 12, fontWeight: 700, padding: "9px 18px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit", background: T.lime, border: `1.5px solid ${T.lime}`, color: T.ink, transition: "all 0.15s" }}
+              >
+                Aprovar e gerar →
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 
@@ -963,7 +1166,7 @@ export default function PedidosPage() {
       {/* Mobile tabs */}
       {isMobile && (
         <div style={{ display: "flex", background: T.white, borderBottom: `1px solid ${T.border}`, position: "sticky", top: 64, zIndex: 9 }}>
-          {(["pedidos", "chat"] as const).map(tab => (
+          {(["chat", "preview", "pedidos"] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -978,9 +1181,13 @@ export default function PedidosPage() {
                 borderBottom: activeTab === tab ? `2.5px solid ${T.ink}` : "2.5px solid transparent",
                 color: activeTab === tab ? T.ink : T.inkFaint,
                 cursor: "pointer",
+                position: "relative",
               }}
             >
-              {tab === "pedidos" ? "Pedidos" : "Chat"}
+              {tab === "pedidos" ? "Pedidos" : tab === "chat" ? "Chat" : "Preview"}
+              {tab === "preview" && previewState === "preview" && (
+                <span style={{ position: "absolute", top: 8, right: "calc(50% - 30px)", width: 6, height: 6, borderRadius: "50%", background: T.lime }} />
+              )}
             </button>
           ))}
         </div>
@@ -989,17 +1196,19 @@ export default function PedidosPage() {
       {/* Layout */}
       {isMobile ? (
         // Mobile: mostra tab ativa
-        activeTab === "pedidos" ? pedidosContent : chatContent
+        activeTab === "pedidos" ? pedidosContent : activeTab === "preview" ? previewAreaContent : chatContent
       ) : (
-        // Desktop: split grid
+        // Desktop: split — preview area quando ativo, senão pedidos
         <div style={{ display: "grid", gridTemplateColumns: "3fr 2fr", gap: 0, minHeight: "calc(100vh - 64px)" }}>
           {chatContent}
-          {pedidosContent}
+          {previewState !== "idle" ? previewAreaContent : pedidosContent}
         </div>
       )}
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes progressPulse { 0%{width:20%;opacity:0.7} 50%{width:80%;opacity:1} 100%{width:20%;opacity:0.7} }
       `}</style>
     </div>
   );
