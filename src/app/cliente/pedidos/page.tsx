@@ -522,6 +522,7 @@ export default function PedidosPage() {
           setActivePreviewProduct(finalPreview.type || "");
           setPreviewState("preview");
           if (isMobile) setActiveTab("preview");
+        }
 
         // Handle action
         if (finalAction?.action === "execute") {
@@ -553,6 +554,7 @@ export default function PedidosPage() {
           setActivePreviewProduct(preview.type || "");
           setPreviewState("preview");
           if (isMobile) setActiveTab("preview");
+        }
 
         // ACTION=EXECUTE
         if (data?.action?.action === "execute") {
