@@ -227,17 +227,20 @@ export default function ProjetoPage() {
 
       // Ensure order exists in DB (may not exist yet for project-first flow)
       let realOrderId = orderId;
-      const { data: existingOrder } = await sb.from("orders").select("id").eq("id", orderId).single();
+      const { data: existingOrder } = await sb.from("orders").select("id, product").eq("id", orderId).single();
       if (!existingOrder) {
         // Create the order
-        const { data: newOrder } = await sb.from("orders").insert({
+        const { data: newOrder, error: orderErr } = await sb.from("orders").insert({
           id: orderId,
           user_id: userId,
           product: action.product,
           status: "in_production",
-          structured_data: action.structured_data,
         }).select("id").single();
+        if (orderErr) console.error("Order insert error:", orderErr);
         if (newOrder) realOrderId = newOrder.id;
+      } else if (existingOrder.product !== action.product) {
+        // Update product to match what we're executing
+        await sb.from("orders").update({ product: action.product, status: "in_production" }).eq("id", orderId);
       }
 
       const res = await fetch("/api/execute-product", {
