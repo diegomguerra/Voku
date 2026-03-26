@@ -45,7 +45,7 @@ export async function generateIdeogram(opts: IdeogramOptions): Promise<ImageResu
     },
     body: JSON.stringify({
       prompt: opts.prompt,
-      rendering_speed: 'DEFAULT',
+      rendering_speed: 'TURBO',
       magic_prompt: 'AUTO',
       aspect_ratio: aspect,
       style_type: opts.style_type || 'REALISTIC',
@@ -90,7 +90,7 @@ export async function remixIdeogram(opts: IdeogramRemixOptions): Promise<ImageRe
   formData.append('image', blob, `reference.${ext}`)
   formData.append('prompt', opts.prompt)
   formData.append('image_weight', String(opts.image_weight ?? 60))
-  formData.append('rendering_speed', 'DEFAULT')
+  formData.append('rendering_speed', 'TURBO')
   formData.append('magic_prompt', 'AUTO')
   formData.append('aspect_ratio', aspect)
   if (opts.style_type) {
