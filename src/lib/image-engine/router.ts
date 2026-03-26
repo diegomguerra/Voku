@@ -18,8 +18,21 @@ function toImagineAspect(aspect: string): string {
 }
 
 export async function generateImage(req: ImageRequest): Promise<ImageResult> {
-  const engine = SLUG_ENGINE_MAP[req.slug]
-  const prompt = buildPrompt(req.slug, req.choice_text, req.brand, req.product)
+  let engine = SLUG_ENGINE_MAP[req.slug]
+
+  // When a reference image (screenshot) is provided, force image-to-image mode
+  // so the screenshot is actually used as the base for generation
+  if (req.reference_image_url && engine !== 'sharp-flux' && engine !== 'sharp-compose') {
+    engine = 'flux-i2i'
+  }
+
+  let prompt = buildPrompt(req.slug, req.choice_text, req.brand, req.product)
+
+  // Enhance prompt for image-to-image with a reference screenshot
+  if (req.reference_image_url && engine === 'flux-i2i') {
+    prompt = `Professional marketing creative incorporating the provided screenshot/image. ${prompt}\n\nIMPORTANT: Use the provided reference image as the core visual element. Place it naturally within the composition — on a device screen, as a featured element, or as the main visual. Enhance it with professional lighting, subtle shadows, and brand-consistent styling. The final image should look like a polished marketing asset that prominently features the provided screenshot.`
+  }
+
   const supabase = supabaseAdmin()
   const dims = req.product ? PRODUCT_DIMENSIONS[req.product] : undefined
 

@@ -58,7 +58,7 @@ export async function generateFlux(opts: FluxOptions): Promise<ImageResult> {
 
   if (opts.mode === 'image-to-image' && opts.reference_image_url) {
     body.image_url = opts.reference_image_url
-    body.strength = 0.75
+    body.strength = 0.65
   }
 
   // Submit to queue

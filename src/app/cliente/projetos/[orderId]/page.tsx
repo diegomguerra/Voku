@@ -203,6 +203,7 @@ export default function ProjetoPage() {
   const [choices, setChoices] = useState<Choice[]>([]);
   const [lastPreview, setLastPreview] = useState<Record<string, any> | null>(null);
   const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [micActive, setMicActive] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -322,12 +323,16 @@ export default function ProjetoPage() {
       // Build structured_data from chat context
       const chatContext = messages.filter(m => m.role === "user").map(m => m.content).join("\n");
 
+      // Use uploaded screenshot as reference image if available
+      const refUrl = uploadedImageUrls.length > 0 ? uploadedImageUrls[0] : undefined;
+
       const res = await fetch("/api/execute-product", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           product,
           structured_data: { ...previewData, resumo: chatContext, image_slug: previewData.image_slug || "product-scene" },
+          reference_image_url: refUrl,
           order_id: orderId,
           user_id: userId,
           name: ctx?.name || "",
@@ -349,19 +354,29 @@ export default function ProjetoPage() {
       setMessages(prev => [...prev, { role: "assistant", content: "Erro ao gerar. Tente novamente." }]);
       setExecuting(false);
     }
-  }, [orderId, ctx, messages, persistMessage, loadChoices]);
+  }, [orderId, ctx, messages, persistMessage, loadChoices, uploadedImageUrls]);
 
   /* ── Handle file/image upload ── */
   const handleFiles = useCallback(async (files: FileList | File[]) => {
-    const imgs: string[] = [];
+    const sb = supabase();
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) continue;
       if (file.size > 5 * 1024 * 1024) { alert("Imagem muito grande (máx 5MB)"); continue; }
+
+      // Show preview immediately
       const b64 = await fileToBase64(file);
-      imgs.push(b64);
+      setPendingImages(prev => [...prev, b64]);
+
+      // Upload to Supabase Storage in background
+      const ext = file.name.split(".").pop() || "png";
+      const path = `screenshots/${orderId}/${Date.now()}.${ext}`;
+      const { error } = await sb.storage.from("generated-images").upload(path, file, { contentType: file.type, upsert: true });
+      if (!error) {
+        const { data: urlData } = sb.storage.from("generated-images").getPublicUrl(path);
+        setUploadedImageUrls(prev => [...prev, urlData.publicUrl]);
+      }
     }
-    if (imgs.length > 0) setPendingImages(prev => [...prev, ...imgs]);
-  }, []);
+  }, [orderId]);
 
   /* ── Paste handler for screenshots ── */
   const handlePaste = useCallback((e: React.ClipboardEvent) => {

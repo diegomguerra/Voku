@@ -217,7 +217,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     order_id = body.order_id
-    const { user_id, email, name, product, structured_data, currency } = body
+    const { user_id, email, name, product, structured_data, currency, reference_image_url } = body
     supabase = supabaseAdmin()
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
@@ -396,7 +396,11 @@ Each variation must be complete and production-ready. Only output the JSON array
       landing_page_copy: 'atmospheric',
       app: 'screen-mockup',
     }
-    const imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
+    let imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
+    // If user provided a screenshot, use screen-mockup to compose it into the image
+    if (reference_image_url && imageSlug === 'product-scene') {
+      imageSlug = 'screen-mockup'
+    }
     if (imageSlug) {
       // Fetch inserted choices to get their IDs
       const { data: insertedChoices } = await supabase
@@ -435,6 +439,7 @@ Each variation must be complete and production-ready. Only output the JSON array
               brand,
               briefing_text: briefingText,
               product,
+              reference_image_url: reference_image_url || undefined,
             }),
           }).catch(e => console.error('Image gen error for choice:', choice.id, e))
         ))
