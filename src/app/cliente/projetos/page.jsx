@@ -50,6 +50,17 @@ const PRODUCT_ICON_COLOR = {
   app: T.blue,
 };
 
+const PRODUCT_ICON = {
+  landing_page_copy: '🌐',
+  post_instagram: '📸',
+  carrossel: '🎠',
+  reels_script: '🎬',
+  email_sequence: '📧',
+  ad_copy: '📢',
+  content_pack: '📦',
+  app: '💻',
+};
+
 const ORDER_STATUS = {
   briefing: { label: "Briefing", color: T.amber, bg: T.amberBg },
   in_production: { label: "Em Produção", color: T.blue, bg: T.blueBg },
@@ -349,7 +360,7 @@ export default function ProjetosPage() {
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 13, fontWeight: 800, color: iconColor, flexShrink: 0,
               }}>
-                {(PRODUCT_NAME[order.product] || "?")[0]}
+                {PRODUCT_ICON[order.product] || (PRODUCT_NAME[order.product] || "?")[0]}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{

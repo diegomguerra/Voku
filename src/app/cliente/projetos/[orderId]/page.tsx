@@ -30,6 +30,7 @@ interface Choice {
   label: string;
   content: { text: string };
   image_url: string | null;
+  html_content?: string | null;
   position: number;
   is_selected: boolean;
 }
@@ -238,6 +239,7 @@ export default function ProjetoPage() {
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [micActive, setMicActive] = useState(false);
+  const [order, setOrder] = useState<any>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -255,6 +257,14 @@ export default function ProjetoPage() {
     sb.auth.getUser().then(async ({ data: authData }) => {
       if (!authData.user) return;
       userIdRef.current = authData.user.id;
+
+      // Load order
+      const { data: orderData } = await sb
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .single();
+      if (orderData) setOrder(orderData);
 
       // Load chat messages
       const { data: msgs } = await sb
@@ -288,7 +298,7 @@ export default function ProjetoPage() {
     const sb = supabase();
     const { data } = await sb
       .from("choices")
-      .select("id, label, content, image_url, position, is_selected")
+      .select("id, label, content, image_url, position, is_selected, html_content")
       .eq("order_id", orderId)
       .order("position");
     if (data) setChoices(data as Choice[]);
@@ -627,7 +637,51 @@ export default function ProjetoPage() {
   const selectedChoice = choices.find(c => c.is_selected);
 
   /* ══════════════════════════════════════════════════════════════
-     RENDER
+     LANDING PAGE — dedicated flow
+     ══════════════════════════════════════════════════════════════ */
+  if (order?.product === 'landing_page_copy') {
+    const choiceComHTML = choices?.find((c: any) => c.html_content);
+    const prefill = {
+      nome_marca: '',
+      produto: '',
+      resumo: order.preview_text && order.preview_text.length < 500
+        ? order.preview_text
+        : '',
+    };
+
+    return (
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px', fontFamily: FF }}>
+        <div style={{ marginBottom: 24 }}>
+          <span style={{
+            background: '#f0fdf4', color: '#16a34a', fontSize: 12, fontWeight: 600,
+            padding: '3px 10px', borderRadius: 100, border: '1px solid #bbf7d0',
+            display: 'inline-block'
+          }}>
+            🌐 LANDING PAGE
+          </span>
+          <h1 style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: '#0f172a' }}>
+            {order.preview_text?.slice(0, 80) || 'Landing Page'}
+          </h1>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+            {choiceComHTML
+              ? '✓ HTML gerado · visualize o preview ou baixe abaixo'
+              : 'Preencha o formulário para gerar sua landing page com IA'}
+          </p>
+        </div>
+
+        <LandingPageViewer
+          orderId={order.id}
+          choiceId={choiceComHTML?.id}
+          userId={userIdRef.current || ''}
+          initialHtml={choiceComHTML?.html_content || ''}
+          prefill={prefill}
+        />
+      </div>
+    );
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     RENDER — standard products
      ══════════════════════════════════════════════════════════════ */
   return (
     <>
@@ -799,21 +853,7 @@ export default function ProjetoPage() {
           </div>
 
           {/* ── RESULTS COLUMN ── */}
-          {/* Landing Page Viewer (when product is landing_page_copy) */}
-          {hasChoices && lastPreview?.type === "landing_page_copy" && (
-            <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "auto", padding: "16px 20px" }}>
-              <LandingPageViewer
-                orderId={orderId}
-                choiceId={choices[0]?.id}
-                userId={userIdRef.current || ""}
-                prefill={lastPreview ? { nome_marca: lastPreview.brand_context?.nome_marca, produto: lastPreview.produto, publico: lastPreview.publico, objetivos: Array.isArray(lastPreview.objetivos) ? lastPreview.objetivos : lastPreview.objetivo ? [lastPreview.objetivo] : [], tom: lastPreview.tom } : undefined}
-                initialHtml={(choices[0] as any)?.html_content || ""}
-              />
-            </div>
-          )}
-
-          {/* Standard choices grid (other products) */}
-          {hasChoices && lastPreview?.type !== "landing_page_copy" && (
+          {hasChoices && (
             <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "hidden" }}>
               {/* Results header */}
               <div style={{ padding: "12px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>

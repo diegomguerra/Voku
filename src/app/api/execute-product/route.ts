@@ -225,6 +225,19 @@ export async function POST(req: NextRequest) {
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
 
+    // ── Landing page: early return — handled by dedicated form + generate-landing ──
+    if (product === 'landing_page_copy') {
+      await supabase.from('orders').update({
+        status: 'briefing',
+      }).eq('id', order_id);
+
+      return NextResponse.json({
+        ok: true,
+        product: 'landing_page_copy',
+        message: 'Landing page — aguardando formulário visual',
+      });
+    }
+
     // ── Guard: prevent duplicate execution ──
     const { data: existingChoices } = await supabase
       .from('choices').select('id').eq('order_id', order_id).limit(1)

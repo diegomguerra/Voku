@@ -32,13 +32,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: data.error || 'Falha ao gerar' }, { status: 502 });
     }
 
-    // Se tem choice_id, atualiza o html_content no choice
-    if (choice_id && data.html) {
+    // Upsert: atualiza choice existente OU cria novo
+    if (order_id && user_id && data.html) {
       const sb = createClient(supabaseUrl, serviceKey);
-      await sb.from('choices').update({
+
+      const { data: existing } = await sb
+        .from('choices')
+        .select('id')
+        .eq('order_id', order_id)
+        .maybeSingle();
+
+      const choicePayload = {
         html_content: data.html,
-        content: { text: JSON.stringify(data.copy, null, 2), copy: data.copy },
-      }).eq('id', choice_id);
+        content: { text: 'Landing page gerada', copy: data.copy },
+        label: 'Landing Page',
+        type: 'landing_page_copy',
+        image_url: null,
+      };
+
+      if (existing?.id) {
+        await sb.from('choices').update(choicePayload).eq('id', existing.id);
+      } else {
+        await sb.from('choices').insert({ ...choicePayload, order_id });
+      }
+
+      // Marca order como entregue
+      await sb.from('orders').update({
+        status: 'delivered',
+        delivered_at: new Date().toISOString(),
+      }).eq('id', order_id);
     }
 
     return NextResponse.json({ ok: true, html: data.html, copy: data.copy });
