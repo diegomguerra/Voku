@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Voku — Marketing digital, automação e conteúdo",
   description: "Pacotes fixos, preço visível, entrega em 24h. Em português, inglês ou espanhol. Sem proposta. Sem reunião.",
-  icons: { icon: "/favicon.ico" },
+  icons: { icon: '/favicon.svg' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
