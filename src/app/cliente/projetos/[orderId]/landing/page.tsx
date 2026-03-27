@@ -95,7 +95,7 @@ export default function LandingPagePage({
         orderId={order.id}
         choiceId={choices[0]?.id}
         userId={user?.id || ''}
-        prefill={structuredData ? { nome_marca: structuredData.brand_context?.nome_marca || structuredData.nome_marca, produto: structuredData.produto, publico: structuredData.publico, objetivo: structuredData.objetivo, tom: structuredData.tom } : undefined}
+        prefill={structuredData ? { nome_marca: structuredData.brand_context?.nome_marca || structuredData.nome_marca, produto: structuredData.produto, publico: structuredData.publico, objetivos: Array.isArray(structuredData.objetivos) ? structuredData.objetivos : structuredData.objetivo ? [structuredData.objetivo] : [], tom: structuredData.tom } : undefined}
         initialHtml={choices[0]?.html_content || ''}
       />
 

@@ -66,7 +66,7 @@ export default function LandingPageViewer({
     const structured_data = {
       produto:        briefing.produto,
       publico:        briefing.publico,
-      objetivo:       briefing.objetivo,
+      objetivos:      briefing.objetivos,
       resumo:         briefing.resumo,
       tom:            briefing.tom,
       palavras_chave: briefing.palavras_chave,

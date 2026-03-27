@@ -10,7 +10,7 @@ export interface LandingBriefing {
   nome_marca:    string;
   produto:       string;
   publico:       string;
-  objetivo:      string;
+  objetivos:     string[];
   resumo:        string;
   // Visual
   cor_primaria:  string;
@@ -80,7 +80,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
     nome_marca:     prefill?.nome_marca ?? '',
     produto:        prefill?.produto ?? '',
     publico:        prefill?.publico ?? '',
-    objetivo:       prefill?.objetivo ?? '',
+    objetivos:      prefill?.objetivos ?? [],
     resumo:         prefill?.resumo ?? '',
     cor_primaria:   prefill?.cor_primaria ?? '#CCEE33',
     cor_secundaria: prefill?.cor_secundaria ?? '#0a0a0a',
@@ -117,7 +117,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
   }
 
   function canProceed() {
-    if (step === 1) return briefing.nome_marca && briefing.produto && briefing.publico && briefing.objetivo;
+    if (step === 1) return briefing.nome_marca && briefing.produto && briefing.publico && briefing.objetivos.length > 0;
     if (step === 2) return briefing.estilo && briefing.tom;
     return true;
   }
@@ -137,7 +137,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
     textarea: { width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 14, color: '#0f172a', fontFamily: 'inherit', outline: 'none', resize: 'vertical' as const, minHeight: 88, background: '#fff' },
     row2:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 } as React.CSSProperties,
     row1:     { marginBottom: 16 } as React.CSSProperties,
-    footer:   { padding: '20px 28px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' } as React.CSSProperties,
+    footer:   { padding: '20px 28px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky' as const, bottom: 0, zIndex: 10 } as React.CSSProperties,
     btnPrimary: { background: '#CCEE33', color: '#1a1a1a', border: 'none', padding: '12px 32px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s' } as React.CSSProperties,
     btnSecondary: { background: 'transparent', color: '#64748b', border: '1.5px solid #e2e8f0', padding: '12px 24px', borderRadius: 9, fontSize: 14, fontWeight: 500, cursor: 'pointer' } as React.CSSProperties,
   };
@@ -189,18 +189,23 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
           </div>
 
           <div style={s.row1}>
-            <label style={s.label}>Objetivo da landing page *</label>
+            <label style={s.label}>Objetivos da landing page *</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {['Capturar leads', 'Vender diretamente', 'Agendar reunião', 'Divulgar produto', 'Lançamento', 'Outro'].map(obj => (
-                <div
-                  key={obj}
-                  onClick={() => set('objetivo', obj)}
-                  style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: briefing.objetivo === obj ? '#CCEE33' : '#e2e8f0', background: briefing.objetivo === obj ? '#fafde7' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: briefing.objetivo === obj ? '#78350f' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: briefing.objetivo === obj ? '#CCEE33' : '#e2e8f0' }} />
-                  {obj}
-                </div>
-              ))}
+              {['Capturar leads', 'Vender diretamente', 'Agendar reunião', 'Divulgar produto', 'Lançamento', 'Outro'].map(obj => {
+                const selected = briefing.objetivos.includes(obj);
+                return (
+                  <div
+                    key={obj}
+                    onClick={() => setBriefing(b => ({ ...b, objetivos: selected ? b.objetivos.filter(o => o !== obj) : [...b.objetivos, obj] }))}
+                    style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: selected ? '#CCEE33' : '#e2e8f0', background: selected ? '#fafde7' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: selected ? '#78350f' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
+                  >
+                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#CCEE33' : '#cbd5e1', background: selected ? '#CCEE33' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {selected && <span style={{ color: '#1a1a1a', fontSize: 11, fontWeight: 800, lineHeight: 1 }}>✓</span>}
+                    </div>
+                    {obj}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -371,7 +376,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
                 { label: 'Marca', value: briefing.nome_marca },
-                { label: 'Objetivo', value: briefing.objetivo },
+                { label: 'Objetivos', value: briefing.objetivos.join(', ') },
                 { label: 'Público', value: briefing.publico },
                 { label: 'Tom', value: TONS.find(t => t.id === briefing.tom)?.label || '' },
                 { label: 'Estilo', value: ESTILOS.find(e => e.id === briefing.estilo)?.label || '' },
