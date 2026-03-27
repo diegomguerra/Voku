@@ -10,7 +10,7 @@ export interface LandingBriefing {
   nome_marca:    string;
   produto:       string;
   publico:       string;
-  objetivos:     string[];
+  objetivos:     string[];   // múltipla seleção
   resumo:        string;
   // Visual
   cor_primaria:  string;
@@ -117,7 +117,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
   }
 
   function canProceed() {
-    if (step === 1) return briefing.nome_marca && briefing.produto && briefing.publico && briefing.objetivos.length > 0;
+    if (step === 1) return !!(briefing.nome_marca && briefing.produto && briefing.publico && briefing.objetivos.length > 0);
     if (step === 2) return briefing.estilo && briefing.tom;
     return true;
   }
@@ -129,7 +129,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
 
   // ── Estilos base ──
   const s = {
-    wrap:     { fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' } as React.CSSProperties,
+    wrap:     { fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', background: '#ffffff', borderRadius: 16, border: '1px solid #e2e8f0' } as React.CSSProperties,
     header:   { padding: '24px 28px 0', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' } as React.CSSProperties,
     body:     { padding: '28px' } as React.CSSProperties,
     label:    { fontSize: 13, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 6 } as React.CSSProperties,
@@ -137,7 +137,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
     textarea: { width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 14, color: '#0f172a', fontFamily: 'inherit', outline: 'none', resize: 'vertical' as const, minHeight: 88, background: '#fff' },
     row2:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 } as React.CSSProperties,
     row1:     { marginBottom: 16 } as React.CSSProperties,
-    footer:   { padding: '24px 28px', background: '#f8fafc', borderTop: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, position: 'sticky' as const, bottom: 0, zIndex: 10, boxShadow: '0 -4px 12px rgba(0,0,0,0.04)' } as React.CSSProperties,
+    footer:   { padding: '20px 28px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '0 0 16px 16px' } as React.CSSProperties,
     btnPrimary: { background: '#CCEE33', color: '#1a1a1a', border: 'none', padding: '12px 32px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s' } as React.CSSProperties,
     btnSecondary: { background: 'transparent', color: '#64748b', border: '1.5px solid #e2e8f0', padding: '12px 24px', borderRadius: 9, fontSize: 14, fontWeight: 500, cursor: 'pointer' } as React.CSSProperties,
   };
@@ -150,7 +150,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-              {step === 1 ? 'Sobre o negócio' : step === 2 ? 'Visual e identidade' : 'Copy e finalização'}
+              {step === 1 ? '📋 Sobre o negócio' : step === 2 ? '🎨 Visual e identidade' : '✍️ Copy e finalização'}
             </h2>
             <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
               Passo {step} de {TOTAL_STEPS}
@@ -170,37 +170,42 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
           <div style={s.row2}>
             <div>
               <label style={s.label}>Nome da marca *</label>
-              <input style={s.input} placeholder="Ex: VYR System" value={briefing.nome_marca} onChange={e => set('nome_marca', e.target.value)} />
+              <input style={s.input} placeholder="Ex: Nike, Voku, Minha Empresa" value={briefing.nome_marca} onChange={e => set('nome_marca', e.target.value)} />
             </div>
             <div>
               <label style={s.label}>Site ou redes sociais</label>
-              <input style={s.input} placeholder="https://vyrsystem.com.br" value={briefing.site_url} onChange={e => set('site_url', e.target.value)} />
+              <input style={s.input} placeholder="https://suamarca.com.br" value={briefing.site_url} onChange={e => set('site_url', e.target.value)} />
             </div>
           </div>
 
           <div style={s.row1}>
             <label style={s.label}>Produto ou serviço *</label>
-            <input style={s.input} placeholder="Ex: VYR Boot — suplemento cognitivo em sachê para executivos" value={briefing.produto} onChange={e => set('produto', e.target.value)} />
+            <input style={s.input} placeholder="Ex: Software de gestão para pequenas empresas" value={briefing.produto} onChange={e => set('produto', e.target.value)} />
           </div>
 
           <div style={s.row1}>
             <label style={s.label}>Público-alvo *</label>
-            <input style={s.input} placeholder="Ex: Executivos e profissionais de alto desempenho, 28-50 anos" value={briefing.publico} onChange={e => set('publico', e.target.value)} />
+            <input style={s.input} placeholder="Ex: Empreendedores e gestores de PMEs, 30-50 anos" value={briefing.publico} onChange={e => set('publico', e.target.value)} />
           </div>
 
           <div style={s.row1}>
-            <label style={s.label}>Objetivos da landing page *</label>
+            <label style={s.label}>Objetivo da landing page * <span style={{ fontWeight: 400, color: '#94a3b8' }}>(pode escolher mais de um)</span></label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {['Capturar leads', 'Vender diretamente', 'Agendar reunião', 'Divulgar produto', 'Lançamento', 'Outro'].map(obj => {
                 const selected = briefing.objetivos.includes(obj);
                 return (
                   <div
                     key={obj}
-                    onClick={() => setBriefing(b => ({ ...b, objetivos: selected ? b.objetivos.filter(o => o !== obj) : [...b.objetivos, obj] }))}
+                    onClick={() => setBriefing(b => ({
+                      ...b,
+                      objetivos: selected
+                        ? b.objetivos.filter(o => o !== obj)
+                        : [...b.objetivos, obj]
+                    }))}
                     style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: selected ? '#CCEE33' : '#e2e8f0', background: selected ? '#fafde7' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: selected ? '#78350f' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
                   >
-                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#CCEE33' : '#cbd5e1', background: selected ? '#CCEE33' : '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                      {selected && <span style={{ color: '#1a1a1a', fontSize: 11, fontWeight: 800, lineHeight: 1 }}>✓</span>}
+                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#CCEE33' : '#cbd5e1', background: selected ? '#CCEE33' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+                      {selected && <span style={{ fontSize: 10, color: '#1a1a1a', fontWeight: 900 }}>✓</span>}
                     </div>
                     {obj}
                   </div>
@@ -211,12 +216,12 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
 
           <div style={s.row1}>
             <label style={s.label}>Resumo do negócio</label>
-            <textarea style={s.textarea} placeholder="Descreva seu produto/serviço, diferenciais, contexto. Quanto mais detalhes, melhor o resultado." value={briefing.resumo} onChange={e => set('resumo', e.target.value)} />
+            <textarea style={s.textarea} placeholder="Descreva seu produto ou serviço, principais diferenciais e contexto. Quanto mais detalhes, melhor o resultado." value={briefing.resumo} onChange={e => set('resumo', e.target.value)} />
           </div>
 
           <div style={s.row1}>
             <label style={s.label}>Palavras-chave (separadas por vírgula)</label>
-            <input style={s.input} placeholder="Ex: performance cognitiva, foco, executivos, sachê, colágeno" value={briefing.palavras_chave} onChange={e => set('palavras_chave', e.target.value)} />
+            <input style={s.input} placeholder="Ex: gestão, produtividade, pequenas empresas, automação" value={briefing.palavras_chave} onChange={e => set('palavras_chave', e.target.value)} />
           </div>
         </div>
       )}
@@ -235,14 +240,14 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
               >
                 {briefing.logo_base64
                   ? <img src={briefing.logo_base64} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 8 }} />
-                  : <span style={{ fontSize: 28, opacity: 0.4 }}>+</span>
+                  : <span style={{ fontSize: 28, opacity: 0.4 }}>📁</span>
                 }
               </div>
               <div>
                 <button onClick={() => fileRef.current?.click()} style={{ ...s.btnSecondary, padding: '8px 20px', fontSize: 13 }}>
                   {briefing.logo_base64 ? 'Trocar logo' : 'Fazer upload do logo'}
                 </button>
-                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>PNG, SVG ou JPG</p>
+                <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>PNG, SVG ou JPG · Fundo transparente ideal</p>
                 {briefing.logo_base64 && (
                   <button onClick={() => setBriefing(b => ({ ...b, logo_base64: '', logo_url: '' }))} style={{ fontSize: 12, color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', marginTop: 4 }}>
                     Remover
@@ -391,7 +396,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
           </div>
 
           <div style={{ background: '#fafde7', border: '1px solid #d9f99d', borderRadius: 10, padding: '14px 18px', marginTop: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 20 }}>AI</span>
+            <span style={{ fontSize: 20 }}>🤖</span>
             <div>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#3f6212', marginBottom: 4 }}>O que será gerado</p>
               <p style={{ fontSize: 13, color: '#4d7c0f', margin: 0, lineHeight: 1.6 }}>
@@ -402,37 +407,42 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
         </div>
       )}
 
-      {/* FOOTER */}
+      {/* FOOTER — sempre visível */}
       <div style={s.footer}>
-        {step > 1 && (
-          <button onClick={() => setStep(s => s - 1)} style={s.btnSecondary}>
-            ← Voltar
-          </button>
-        )}
-        {step === 1 && <div />}
+        <div style={{ display: 'flex', gap: 8 }}>
+          {step > 1 && (
+            <button onClick={() => setStep(s => s - 1)} style={s.btnSecondary}>
+              ← Voltar
+            </button>
+          )}
+        </div>
 
-        {step < TOTAL_STEPS ? (
-          <button
-            onClick={() => canProceed() && setStep(s => s + 1)}
-            disabled={!canProceed()}
-            style={{ ...s.btnPrimary, padding: '14px 40px', fontSize: 15, opacity: canProceed() ? 1 : 0.4, cursor: canProceed() ? 'pointer' : 'not-allowed', flex: step === 1 ? '1 1 auto' : undefined, maxWidth: step === 1 ? 400 : undefined }}
-          >
-            Continuar →
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            style={{ ...s.btnPrimary, padding: '16px 44px', fontSize: 16, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flex: '1 1 auto', maxWidth: 440 }}
-          >
-            {loading ? (
-              <>
-                <span style={{ width: 18, height: 18, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#1a1a1a', borderRadius: '50%', display: 'inline-block', animation: 'lpspin 0.8s linear infinite' }} />
-                Gerando...
-              </>
-            ) : '⚡ Gerar landing page com IA'}
-          </button>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: '#94a3b8' }}>
+            {step === 1 && !canProceed() ? 'Preencha os campos obrigatórios *' : ''}
+          </span>
+          {step < TOTAL_STEPS ? (
+            <button
+              onClick={() => canProceed() && setStep(s => s + 1)}
+              style={{ ...s.btnPrimary, opacity: canProceed() ? 1 : 0.45, cursor: canProceed() ? 'pointer' : 'not-allowed' }}
+            >
+              Continuar →
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{ ...s.btnPrimary, padding: '12px 36px', fontSize: 15, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
+            >
+              {loading ? (
+                <>
+                  <span style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#1a1a1a', borderRadius: '50%', display: 'inline-block', animation: 'lpspin 0.8s linear infinite' }} />
+                  Gerando...
+                </>
+              ) : '🚀 Gerar landing page com IA'}
+            </button>
+          )}
+        </div>
       </div>
       <style>{`@keyframes lpspin{to{transform:rotate(360deg)}}`}</style>
     </div>

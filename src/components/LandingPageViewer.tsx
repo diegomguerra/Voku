@@ -127,7 +127,7 @@ export default function LandingPageViewer({
   const isReady = state === 'ready';
 
   return (
-    <div style={{ fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
+    <div style={{ fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', borderRadius: 16, border: '1px solid #e2e8f0', background: '#fff' }}>
 
       {/* ── TOOLBAR (sempre visível) ───────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 8 }}>
@@ -147,7 +147,7 @@ export default function LandingPageViewer({
           <div style={{ display: 'flex', gap: 4 }}>
             {(['preview','code'] as Tab[]).map(t => (
               <button key={t} onClick={() => setTab(t)} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid', fontSize: 13, cursor: 'pointer', fontWeight: tab===t ? 600 : 400, background: tab===t ? '#fff' : 'transparent', borderColor: tab===t ? '#cbd5e1' : '#e2e8f0', color: tab===t ? '#0f172a' : '#64748b' }}>
-                {t === 'preview' ? 'Preview' : 'Código'}
+                {t === 'preview' ? '👁 Preview' : '< > Código'}
               </button>
             ))}
           </div>
@@ -157,10 +157,10 @@ export default function LandingPageViewer({
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           {isReady && (
             <>
-              <Btn onClick={() => setState('form')}>Editar</Btn>
-              <Btn onClick={openNewTab}>Abrir</Btn>
-              <Btn onClick={copyHTML}>{copied ? 'Copiado!' : 'Copiar HTML'}</Btn>
-              <Btn onClick={downloadHTML}>Baixar</Btn>
+              <Btn onClick={() => setState('form')}>✎ Editar</Btn>
+              <Btn onClick={openNewTab}>↗ Abrir</Btn>
+              <Btn onClick={copyHTML}>{copied ? '✓ Copiado' : '⧉ Copiar HTML'}</Btn>
+              <Btn onClick={downloadHTML}>↓ Baixar</Btn>
             </>
           )}
         </div>
@@ -171,7 +171,7 @@ export default function LandingPageViewer({
         <div style={{ padding: 24 }}>
           {state === 'error' && (
             <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <span style={{ fontSize: 18 }}>!</span>
+              <span style={{ fontSize: 18 }}>⚠️</span>
               <div>
                 <p style={{ fontWeight: 700, fontSize: 13, color: '#991b1b', marginBottom: 2 }}>Erro ao gerar</p>
                 <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{error}</p>
@@ -188,7 +188,7 @@ export default function LandingPageViewer({
 
       {/* ── LOADING ─────────────────────────────────── */}
       {state === 'loading' && (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 520, gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', gap: 20 }}>
           <div style={{ position: 'relative', width: 64, height: 64 }}>
             <div style={{ position: 'absolute', inset: 0, border: '3px solid #e2e8f0', borderTopColor: '#CCEE33', borderRadius: '50%', animation: 'lpspin 0.8s linear infinite' }} />
             <div style={{ position: 'absolute', inset: 8, border: '2px solid #e2e8f0', borderBottomColor: '#22c55e', borderRadius: '50%', animation: 'lpspin 1.2s linear infinite reverse' }} />
@@ -206,24 +206,33 @@ export default function LandingPageViewer({
         </div>
       )}
 
-      {/* ── READY: iframe + code ── */}
+      {/* ── READY: iframe + code (sempre montados, display troca) ── */}
       {isReady && (
         <>
-          <div style={{ display: tab === 'preview' ? 'block' : 'none' }}>
+          <div style={{ display: tab === 'preview' ? 'block' : 'none', borderRadius: '0 0 16px 16px', overflow: 'hidden' }}>
             <iframe
               ref={iframeRef}
               title="Preview"
               sandbox="allow-scripts allow-same-origin allow-forms"
-              style={{ width: '100%', height: 620, border: 'none', display: 'block' }}
+              onLoad={() => {
+                try {
+                  const doc = iframeRef.current?.contentDocument;
+                  if (doc?.body) {
+                    const h = doc.body.scrollHeight;
+                    if (iframeRef.current) iframeRef.current.style.height = Math.max(h, 400) + 'px';
+                  }
+                } catch {}
+              }}
+              style={{ width: '100%', height: 600, border: 'none', display: 'block', transition: 'height 0.3s' }}
             />
           </div>
-          <div style={{ display: tab === 'code' ? 'block' : 'none', height: 620, overflow: 'auto', background: '#0f172a' }}>
+          <div style={{ display: tab === 'code' ? 'block' : 'none', maxHeight: '80vh', overflow: 'auto', background: '#0f172a', borderRadius: '0 0 16px 16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, background: '#0f172a', zIndex: 1 }}>
               <span style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>
                 landing-page.html · {(html.length / 1024).toFixed(1)}kb
               </span>
               <button onClick={copyHTML} style={{ fontSize: 12, color: '#CCEE33', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-                {copied ? 'Copiado!' : 'Copiar código'}
+                {copied ? 'Copiado ✓' : 'Copiar código'}
               </button>
             </div>
             <pre style={{ padding: 20, fontFamily: "'Fira Code','Courier New',monospace", fontSize: 12, lineHeight: 1.65, color: '#cbd5e1', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
