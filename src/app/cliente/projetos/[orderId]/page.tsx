@@ -806,7 +806,7 @@ export default function ProjetoPage() {
                 orderId={orderId}
                 choiceId={choices[0]?.id}
                 userId={userIdRef.current || ""}
-                structuredData={lastPreview || {}}
+                prefill={lastPreview ? { nome_marca: lastPreview.brand_context?.nome_marca, produto: lastPreview.produto, publico: lastPreview.publico, objetivo: lastPreview.objetivo, tom: lastPreview.tom } : undefined}
                 initialHtml={(choices[0] as any)?.html_content || ""}
               />
             </div>

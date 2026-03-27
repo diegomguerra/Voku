@@ -1,80 +1,102 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import LandingBriefingForm, { LandingBriefing } from './LandingBriefingForm';
 
 interface LandingViewerProps {
-  orderId: string;
-  choiceId?: string;
-  structuredData: any;
-  userId: string;
-  initialHtml?: string;
+  orderId:        string;
+  choiceId?:      string;
+  userId:         string;
+  initialHtml?:   string;
+  // structured_data pré-preenchido (vindo do briefing do chat)
+  prefill?: Partial<LandingBriefing>;
 }
 
-type Tab = 'preview' | 'code';
-type State = 'idle' | 'loading' | 'ready' | 'error';
+type Tab   = 'preview' | 'code';
+type State = 'form' | 'loading' | 'ready' | 'error';
+
+const LOADING_MSGS = [
+  'Gerando copy e estrutura...',
+  'Montando hero, benefícios e depoimentos...',
+  'Aplicando identidade visual e cores...',
+  'Finalizando HTML responsivo...',
+];
 
 export default function LandingPageViewer({
   orderId,
   choiceId,
-  structuredData,
   userId,
   initialHtml,
+  prefill,
 }: LandingViewerProps) {
   const [tab, setTab]     = useState<Tab>('preview');
-  const [state, setState] = useState<State>(initialHtml ? 'ready' : 'idle');
+  const [state, setState] = useState<State>(initialHtml ? 'ready' : 'form');
   const [html, setHtml]   = useState(initialHtml || '');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
-  const [loadingMsg, setLoadingMsg] = useState('Gerando copy e estrutura...');
+  const [loadingMsg, setLoadingMsg] = useState(LOADING_MSGS[0]);
+  const [marcaNome, setMarcaNome] = useState(prefill?.nome_marca || '');
+
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const htmlRef   = useRef(initialHtml || '');
 
-  const msgs = [
-    'Gerando copy e estrutura...',
-    'Montando seções da landing page...',
-    'Aplicando estilo e cores da marca...',
-    'Finalizando o HTML...',
-  ];
-
+  // Spinner de loading
   useEffect(() => {
     if (state !== 'loading') return;
     let i = 0;
-    const interval = setInterval(() => {
-      i = (i + 1) % msgs.length;
-      setLoadingMsg(msgs[i]);
-    }, 3500);
-    return () => clearInterval(interval);
+    const id = setInterval(() => { i = (i + 1) % LOADING_MSGS.length; setLoadingMsg(LOADING_MSGS[i]); }, 3200);
+    return () => clearInterval(id);
   }, [state]);
 
+  // Escreve no iframe quando fica ready
   useEffect(() => {
-    if (state === 'ready' && html && iframeRef.current) {
+    if (state === 'ready' && iframeRef.current && htmlRef.current) {
       const doc = iframeRef.current.contentDocument;
-      if (doc) { doc.open(); doc.write(html); doc.close(); }
+      if (doc) { doc.open(); doc.write(htmlRef.current); doc.close(); }
     }
-  }, [state, html]);
+  }, [state]);
 
-  async function gerar() {
+  async function gerar(briefing: LandingBriefing) {
     setState('loading');
-    setLoadingMsg(msgs[0]);
+    setLoadingMsg(LOADING_MSGS[0]);
     setError('');
+    setMarcaNome(briefing.nome_marca);
+
+    // Monta structured_data enriquecido para a Edge Function
+    const structured_data = {
+      produto:        briefing.produto,
+      publico:        briefing.publico,
+      objetivo:       briefing.objetivo,
+      resumo:         briefing.resumo,
+      tom:            briefing.tom,
+      palavras_chave: briefing.palavras_chave,
+      site_url:       briefing.site_url,
+      estilo:         briefing.estilo,
+      brand_context: {
+        nome_marca:     briefing.nome_marca,
+        cor_primaria:   briefing.cor_primaria,
+        cor_secundaria: briefing.cor_secundaria,
+        cor_texto:      briefing.cor_texto,
+        logo_base64:    briefing.logo_base64,
+        logo_url:       briefing.logo_url,
+      },
+      cta_texto: briefing.cta_texto,
+    };
 
     try {
       const res = await fetch('/api/generate-landing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order_id: orderId,
-          choice_id: choiceId,
-          user_id: userId,
-          structured_data: structuredData,
-        }),
+        body: JSON.stringify({ order_id: orderId, choice_id: choiceId, user_id: userId, structured_data }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.html) throw new Error(data.error || 'Falha ao gerar');
 
+      htmlRef.current = data.html;
       setHtml(data.html);
       setState('ready');
+      setTab('preview');
     } catch (e: any) {
       setError(e.message);
       setState('error');
@@ -82,153 +104,141 @@ export default function LandingPageViewer({
   }
 
   function copyHTML() {
-    if (!html) return;
-    navigator.clipboard.writeText(html).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    const h = htmlRef.current || html;
+    if (!h) return;
+    navigator.clipboard.writeText(h).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   }
 
   function downloadHTML() {
-    if (!html) return;
-    const blob = new Blob([html], { type: 'text/html' });
-    const a    = document.createElement('a');
-    a.href     = URL.createObjectURL(blob);
-    a.download = 'landing-page.html';
+    const h = htmlRef.current || html;
+    if (!h) return;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([h], { type: 'text/html' }));
+    a.download = `landing-page-${(marcaNome || 'voku').toLowerCase().replace(/\s+/g,'-')}.html`;
     a.click();
   }
 
   function openNewTab() {
-    if (!html) return;
-    const blob = new Blob([html], { type: 'text/html' });
-    window.open(URL.createObjectURL(blob), '_blank');
+    const h = htmlRef.current || html;
+    if (!h) return;
+    window.open(URL.createObjectURL(new Blob([h], { type: 'text/html' })), '_blank');
   }
 
-  const nome = structuredData?.brand_context?.nome_marca
-    || structuredData?.nome_marca
-    || 'Landing Page';
+  const isReady = state === 'ready';
 
   return (
-    <div style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
+    <div style={{ fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif', borderRadius: 16, overflow: 'hidden', border: '1px solid #e2e8f0', background: '#fff' }}>
 
-      {/* TOOLBAR */}
+      {/* ── TOOLBAR (sempre visível) ───────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', flexWrap: 'wrap', gap: 8 }}>
 
         {/* dots + url */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ display: 'flex', gap: 6 }}>
-            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#ef4444' }} />
-            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#f59e0b' }} />
-            <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#22c55e' }} />
+            {['#ef4444','#f59e0b','#22c55e'].map(c => <div key={c} style={{ width: 12, height: 12, borderRadius: '50%', background: c }} />)}
           </div>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 6, padding: '4px 16px', fontSize: 12, color: '#64748b', minWidth: 200, textAlign: 'center' }}>
-            {state === 'ready' ? `${nome.toLowerCase().replace(/\s+/g, '')} · voku.one/preview` : 'voku.one · landing page builder'}
+            {isReady ? `${(marcaNome||'voku').toLowerCase().replace(/\s+/g,'')} · voku.one/preview` : 'voku.one · landing page builder'}
           </div>
         </div>
 
-        {/* tabs */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {(['preview', 'code'] as Tab[]).map(t => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid', fontSize: 13, cursor: 'pointer', fontWeight: tab === t ? 600 : 400, background: tab === t ? '#fff' : 'transparent', borderColor: tab === t ? '#cbd5e1' : '#e2e8f0', color: tab === t ? '#0f172a' : '#64748b', transition: 'all 0.15s' }}
-            >
-              {t === 'preview' ? 'Preview' : 'Código'}
-            </button>
-          ))}
-        </div>
+        {/* tabs — só quando ready */}
+        {isReady && (
+          <div style={{ display: 'flex', gap: 4 }}>
+            {(['preview','code'] as Tab[]).map(t => (
+              <button key={t} onClick={() => setTab(t)} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid', fontSize: 13, cursor: 'pointer', fontWeight: tab===t ? 600 : 400, background: tab===t ? '#fff' : 'transparent', borderColor: tab===t ? '#cbd5e1' : '#e2e8f0', color: tab===t ? '#0f172a' : '#64748b' }}>
+                {t === 'preview' ? 'Preview' : 'Código'}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* actions */}
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <ActionBtn onClick={openNewTab} disabled={!html} icon="↗">Abrir</ActionBtn>
-          <ActionBtn onClick={copyHTML} disabled={!html} icon="⧉">{copied ? 'Copiado!' : 'Copiar HTML'}</ActionBtn>
-          <ActionBtn onClick={downloadHTML} disabled={!html} icon="↓">Baixar</ActionBtn>
+          {isReady && (
+            <>
+              <Btn onClick={() => setState('form')}>Editar</Btn>
+              <Btn onClick={openNewTab}>Abrir</Btn>
+              <Btn onClick={copyHTML}>{copied ? 'Copiado!' : 'Copiar HTML'}</Btn>
+              <Btn onClick={downloadHTML}>Baixar</Btn>
+            </>
+          )}
         </div>
       </div>
 
-      {/* CONTENT */}
-      <div style={{ minHeight: 520 }}>
-
-        {/* IDLE */}
-        {state === 'idle' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 520, gap: 16, padding: 32 }}>
-            <div style={{ fontSize: 48 }}>🚀</div>
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ fontWeight: 700, fontSize: 18, color: '#0f172a', marginBottom: 8 }}>
-                Gerar landing page com IA
-              </p>
-              <p style={{ fontSize: 14, color: '#64748b', marginBottom: 24 }}>
-                Claude Sonnet vai criar o copy + HTML completo baseado no seu briefing
-              </p>
+      {/* ── FORM ─────────────────────────────────────── */}
+      {(state === 'form' || state === 'error') && (
+        <div style={{ padding: 24 }}>
+          {state === 'error' && (
+            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <span style={{ fontSize: 18 }}>!</span>
+              <div>
+                <p style={{ fontWeight: 700, fontSize: 13, color: '#991b1b', marginBottom: 2 }}>Erro ao gerar</p>
+                <p style={{ fontSize: 13, color: '#dc2626', margin: 0 }}>{error}</p>
+              </div>
             </div>
-            <button
-              onClick={gerar}
-              style={{ background: '#CCEE33', color: '#1a1a1a', border: 'none', padding: '14px 36px', borderRadius: 10, fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 16px rgba(204,238,51,0.3)', transition: 'transform 0.15s' }}
-            >
-              Gerar landing page →
-            </button>
-            <p style={{ fontSize: 12, color: '#94a3b8' }}>Claude Sonnet · ~20 segundos</p>
-          </div>
-        )}
-
-        {/* LOADING */}
-        {state === 'loading' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 520, gap: 20 }}>
-            <div style={{ width: 40, height: 40, border: '3px solid #e2e8f0', borderTopColor: '#CCEE33', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            <p style={{ fontSize: 14, color: '#64748b' }}>{loadingMsg}</p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-          </div>
-        )}
-
-        {/* ERROR */}
-        {state === 'error' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 520, gap: 16 }}>
-            <div style={{ fontSize: 40 }}>⚠️</div>
-            <p style={{ color: '#ef4444', fontSize: 14, textAlign: 'center', maxWidth: 360 }}>{error}</p>
-            <button onClick={gerar} style={{ padding: '10px 24px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', fontSize: 14, cursor: 'pointer', color: '#0f172a' }}>
-              Tentar novamente
-            </button>
-          </div>
-        )}
-
-        {/* READY — PREVIEW */}
-        {state === 'ready' && tab === 'preview' && (
-          <iframe
-            ref={iframeRef}
-            title="Preview da Landing Page"
-            sandbox="allow-scripts allow-same-origin allow-forms"
-            style={{ width: '100%', height: 560, border: 'none', display: 'block' }}
+          )}
+          <LandingBriefingForm
+            onSubmit={gerar}
+            loading={false}
+            prefill={prefill}
           />
-        )}
+        </div>
+      )}
 
-        {/* READY — CODE */}
-        {state === 'ready' && tab === 'code' && (
-          <div style={{ height: 560, overflow: 'auto', background: '#0f172a', borderRadius: '0 0 12px 12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-              <span style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>landing-page.html</span>
-              <button onClick={copyHTML} style={{ fontSize: 12, color: '#CCEE33', background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                {copied ? 'Copiado ✓' : 'Copiar'}
+      {/* ── LOADING ─────────────────────────────────── */}
+      {state === 'loading' && (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 520, gap: 20 }}>
+          <div style={{ position: 'relative', width: 64, height: 64 }}>
+            <div style={{ position: 'absolute', inset: 0, border: '3px solid #e2e8f0', borderTopColor: '#CCEE33', borderRadius: '50%', animation: 'lpspin 0.8s linear infinite' }} />
+            <div style={{ position: 'absolute', inset: 8, border: '2px solid #e2e8f0', borderBottomColor: '#22c55e', borderRadius: '50%', animation: 'lpspin 1.2s linear infinite reverse' }} />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Gerando sua landing page</p>
+            <p style={{ fontSize: 13, color: '#64748b' }}>{loadingMsg}</p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            {LOADING_MSGS.map((m, i) => (
+              <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: loadingMsg === m ? '#CCEE33' : '#e2e8f0', transition: 'background 0.3s' }} />
+            ))}
+          </div>
+          <style>{`@keyframes lpspin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {/* ── READY: iframe + code ── */}
+      {isReady && (
+        <>
+          <div style={{ display: tab === 'preview' ? 'block' : 'none' }}>
+            <iframe
+              ref={iframeRef}
+              title="Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+              style={{ width: '100%', height: 620, border: 'none', display: 'block' }}
+            />
+          </div>
+          <div style={{ display: tab === 'code' ? 'block' : 'none', height: 620, overflow: 'auto', background: '#0f172a' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, background: '#0f172a', zIndex: 1 }}>
+              <span style={{ fontSize: 12, color: '#94a3b8', fontFamily: 'monospace' }}>
+                landing-page.html · {(html.length / 1024).toFixed(1)}kb
+              </span>
+              <button onClick={copyHTML} style={{ fontSize: 12, color: '#CCEE33', background: 'transparent', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+                {copied ? 'Copiado!' : 'Copiar código'}
               </button>
             </div>
-            <pre style={{ padding: '20px', fontFamily: "'Fira Code', 'Courier New', monospace", fontSize: 12, lineHeight: 1.65, color: '#cbd5e1', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
+            <pre style={{ padding: 20, fontFamily: "'Fira Code','Courier New',monospace", fontSize: 12, lineHeight: 1.65, color: '#cbd5e1', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
               {html}
             </pre>
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }
 
-function ActionBtn({ onClick, disabled, icon, children }: { onClick: () => void; disabled?: boolean; icon: string; children: React.ReactNode }) {
+function Btn({ onClick, disabled, children }: { onClick: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: 'transparent', fontSize: 12, cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? '#cbd5e1' : '#64748b', transition: 'all 0.15s' }}
-    >
-      <span>{icon}</span>
+    <button onClick={onClick} disabled={disabled} style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #e2e8f0', background: 'transparent', fontSize: 12, cursor: disabled ? 'not-allowed' : 'pointer', color: disabled ? '#cbd5e1' : '#64748b', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}>
       {children}
     </button>
   );
