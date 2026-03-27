@@ -137,7 +137,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
     textarea: { width: '100%', padding: '10px 14px', border: '1.5px solid #e2e8f0', borderRadius: 8, fontSize: 14, color: '#0f172a', fontFamily: 'inherit', outline: 'none', resize: 'vertical' as const, minHeight: 88, background: '#fff' },
     row2:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 } as React.CSSProperties,
     row1:     { marginBottom: 16 } as React.CSSProperties,
-    footer:   { padding: '20px 28px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky' as const, bottom: 0, zIndex: 10 } as React.CSSProperties,
+    footer:   { padding: '24px 28px', background: '#f8fafc', borderTop: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, position: 'sticky' as const, bottom: 0, zIndex: 10, boxShadow: '0 -4px 12px rgba(0,0,0,0.04)' } as React.CSSProperties,
     btnPrimary: { background: '#CCEE33', color: '#1a1a1a', border: 'none', padding: '12px 32px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s' } as React.CSSProperties,
     btnSecondary: { background: 'transparent', color: '#64748b', border: '1.5px solid #e2e8f0', padding: '12px 24px', borderRadius: 9, fontSize: 14, fontWeight: 500, cursor: 'pointer' } as React.CSSProperties,
   };
@@ -404,38 +404,35 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
 
       {/* FOOTER */}
       <div style={s.footer}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {step > 1 && (
-            <button onClick={() => setStep(s => s - 1)} style={s.btnSecondary}>
-              Voltar
-            </button>
-          )}
-        </div>
+        {step > 1 && (
+          <button onClick={() => setStep(s => s - 1)} style={s.btnSecondary}>
+            ← Voltar
+          </button>
+        )}
+        {step === 1 && <div />}
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {step < TOTAL_STEPS ? (
-            <button
-              onClick={() => canProceed() && setStep(s => s + 1)}
-              disabled={!canProceed()}
-              style={{ ...s.btnPrimary, opacity: canProceed() ? 1 : 0.4, cursor: canProceed() ? 'pointer' : 'not-allowed' }}
-            >
-              Continuar
-            </button>
-          ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              style={{ ...s.btnPrimary, padding: '12px 36px', fontSize: 15, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}
-            >
-              {loading ? (
-                <>
-                  <span style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#1a1a1a', borderRadius: '50%', display: 'inline-block', animation: 'lpspin 0.8s linear infinite' }} />
-                  Gerando...
-                </>
-              ) : 'Gerar landing page com IA'}
-            </button>
-          )}
-        </div>
+        {step < TOTAL_STEPS ? (
+          <button
+            onClick={() => canProceed() && setStep(s => s + 1)}
+            disabled={!canProceed()}
+            style={{ ...s.btnPrimary, padding: '14px 40px', fontSize: 15, opacity: canProceed() ? 1 : 0.4, cursor: canProceed() ? 'pointer' : 'not-allowed', flex: step === 1 ? '1 1 auto' : undefined, maxWidth: step === 1 ? 400 : undefined }}
+          >
+            Continuar →
+          </button>
+        ) : (
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            style={{ ...s.btnPrimary, padding: '16px 44px', fontSize: 16, opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, flex: '1 1 auto', maxWidth: 440 }}
+          >
+            {loading ? (
+              <>
+                <span style={{ width: 18, height: 18, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#1a1a1a', borderRadius: '50%', display: 'inline-block', animation: 'lpspin 0.8s linear infinite' }} />
+                Gerando...
+              </>
+            ) : '⚡ Gerar landing page com IA'}
+          </button>
+        )}
       </div>
       <style>{`@keyframes lpspin{to{transform:rotate(360deg)}}`}</style>
     </div>
