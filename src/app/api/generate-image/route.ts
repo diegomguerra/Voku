@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
+import { buildPrompt } from '@/lib/image-engine/prompts'
+import { PRODUCT_DIMENSIONS, ImageSlug } from '@/lib/image-engine/types'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+const IMAGE_SLUGS: Record<string, ImageSlug> = {
+  post_instagram: 'product-scene',
+  carrossel: 'product-scene',
+  content_pack: 'product-scene',
+  email_sequence: 'product-scene',
+  ad_copy: 'product-scene',
+  reels_script: 'product-scene',
+  landing_page_copy: 'atmospheric',
+  app: 'screen-mockup',
+}
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
@@ -15,8 +28,13 @@ export async function POST(req: NextRequest) {
       order_id,
       choice_id,
       choice_position,
-      semana_key,
-      post_id,
+      choice_label,
+      choice_text,
+      slug: slugOverride,
+      brand,
+      briefing_text,
+      product,
+      reference_image_url,
     } = await req.json()
 
     if (!order_id || !choice_id) {
@@ -26,7 +44,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Chama a Edge Function gerar-imagem do Supabase (fal.ai)
+    // Build prompt locally
+    const slug: ImageSlug = slugOverride || IMAGE_SLUGS[product] || 'product-scene'
+    const textForPrompt = choice_text || briefing_text || ''
+    const brandCtx = brand || {}
+    const prompt = buildPrompt(slug, textForPrompt, brandCtx, product)
+
+    // Get dimensions
+    const dims = PRODUCT_DIMENSIONS[product] || { width: 1080, height: 1080 }
+    const storageKey = `generated/${order_id}/choice-${choice_position ?? 0}.png`
+
+    // Call edge function with direct prompt mode
     const edgeRes = await fetch(
       `${SUPABASE_URL}/functions/v1/gerar-imagem`,
       {
@@ -36,10 +64,12 @@ export async function POST(req: NextRequest) {
           'Authorization': `Bearer ${SERVICE_KEY}`,
         },
         body: JSON.stringify({
-          semana_key: semana_key || 'default',
-          post_id: post_id || order_id,
+          prompt,
+          storage_key: storageKey,
           upload: true,
           engine: 'fal',
+          width: dims.width,
+          height: dims.height,
         }),
       }
     )
@@ -56,13 +86,13 @@ export async function POST(req: NextRequest) {
 
     const imageUrl = edgeData.url
 
-    // Atualiza a choice com a image_url
+    // Update choice with image_url
     await supabase
       .from('choices')
       .update({ image_url: imageUrl })
       .eq('id', choice_id)
 
-    // Verificar se TODAS as imagens do pedido já foram geradas
+    // Check if ALL images for this order are done
     const { data: allChoices } = await supabase
       .from('choices').select('id, image_url').eq('order_id', order_id)
 
@@ -90,6 +120,7 @@ export async function POST(req: NextRequest) {
       url: imageUrl,
       engine: edgeData.engine,
       storage_path: edgeData.path,
+      prompt,
     })
 
   } catch (err) {
