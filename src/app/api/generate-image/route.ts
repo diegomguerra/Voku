@@ -1,24 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase'
-import { buildPrompt } from '@/lib/image-engine/prompts'
-import { PRODUCT_DIMENSIONS, ImageSlug } from '@/lib/image-engine/types'
+import { PRODUCT_DIMENSIONS } from '@/lib/image-engine/types'
+import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
-
-const IMAGE_SLUGS: Record<string, ImageSlug> = {
-  post_instagram: 'product-scene',
-  carrossel: 'product-scene',
-  content_pack: 'product-scene',
-  email_sequence: 'product-scene',
-  ad_copy: 'product-scene',
-  reels_script: 'product-scene',
-  landing_page_copy: 'atmospheric',
-  app: 'screen-mockup',
-}
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
@@ -30,11 +19,9 @@ export async function POST(req: NextRequest) {
       choice_position,
       choice_label,
       choice_text,
-      slug: slugOverride,
       brand,
       briefing_text,
       product,
-      reference_image_url,
     } = await req.json()
 
     if (!order_id || !choice_id) {
@@ -44,11 +31,33 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Build prompt locally
-    const slug: ImageSlug = slugOverride || IMAGE_SLUGS[product] || 'product-scene'
-    const textForPrompt = choice_text || briefing_text || ''
-    const brandCtx = brand || {}
-    const prompt = buildPrompt(slug, textForPrompt, brandCtx, product)
+    // Build image prompt with Claude Haiku from the original briefing
+    const brandName = brand?.nome_marca || ''
+    const brandTom = brand?.tom || ''
+    const context = briefing_text || choice_text || ''
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Create an English image generation prompt for this project.
+Product type: ${product || 'social media post'}
+Brand: ${brandName}${brandTom ? `, tone: ${brandTom}` : ''}
+Choice label: ${choice_label || ''}
+Briefing/context: ${context}
+
+Describe the exact scenario, lighting, colors, composition, and mood.
+Cinematic photography style. NO text/words/letters in the image.
+End with: high quality, professional, sharp focus, 4k.
+100-180 words. Return ONLY the prompt, nothing else.`,
+      }],
+    })
+
+    const prompt = msg.content[0].type === 'text'
+      ? msg.content[0].text.trim()
+      : `Professional photo related to ${context.slice(0, 100)}, high quality, 4k`
 
     // Get dimensions
     const dims = PRODUCT_DIMENSIONS[product] || { width: 1080, height: 1080 }
