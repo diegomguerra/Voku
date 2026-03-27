@@ -479,12 +479,22 @@ export default function ProjetosPage() {
               );
             })}
           </div>
-          <a href={`/cliente/pedidos/${selected.id}`} style={{
-            display: "inline-block", background: T.lime, color: T.ink, border: "none", borderRadius: 10,
-            padding: "12px 28px", fontSize: 14, fontWeight: 700, textDecoration: "none",
-          }}>
-            Escolher variação favorita →
-          </a>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <a href={`/cliente/pedidos/${selected.id}`} style={{
+              display: "inline-block", background: T.lime, color: T.ink, border: "none", borderRadius: 10,
+              padding: "12px 28px", fontSize: 14, fontWeight: 700, textDecoration: "none",
+            }}>
+              Escolher variação favorita →
+            </a>
+            {selected.product === "landing_page_copy" && (
+              <a href={`/cliente/projetos/${selected.id}/landing`} style={{
+                display: "inline-block", background: T.teal, color: "#fff", border: "none", borderRadius: 10,
+                padding: "12px 28px", fontSize: 14, fontWeight: 700, textDecoration: "none",
+              }}>
+                Ver Landing Page →
+              </a>
+            )}
+          </div>
         </div>
       )}
 

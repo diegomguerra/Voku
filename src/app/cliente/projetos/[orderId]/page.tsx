@@ -3,6 +3,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
+import LandingPageViewer from "@/components/LandingPageViewer";
 
 /* ── Design tokens ── */
 const C = {
@@ -797,8 +798,22 @@ export default function ProjetoPage() {
             />
           </div>
 
-          {/* ── RESULTS COLUMN (only when choices exist) ── */}
-          {hasChoices && (
+          {/* ── RESULTS COLUMN ── */}
+          {/* Landing Page Viewer (when product is landing_page_copy) */}
+          {hasChoices && lastPreview?.type === "landing_page_copy" && (
+            <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "auto", padding: "16px 20px" }}>
+              <LandingPageViewer
+                orderId={orderId}
+                choiceId={choices[0]?.id}
+                userId={userIdRef.current || ""}
+                structuredData={lastPreview || {}}
+                initialHtml={(choices[0] as any)?.html_content || ""}
+              />
+            </div>
+          )}
+
+          {/* Standard choices grid (other products) */}
+          {hasChoices && lastPreview?.type !== "landing_page_copy" && (
             <div style={{ flex: 1, background: C.surface, display: "flex", flexDirection: "column", overflow: "hidden" }}>
               {/* Results header */}
               <div style={{ padding: "12px 20px", background: C.bg, borderBottom: `1px solid ${C.border}`, flexShrink: 0 }}>
