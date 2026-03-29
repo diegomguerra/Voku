@@ -42,9 +42,22 @@ interface Choice {
 /* ── Status mapping ── */
 function deriveStatus(order: any, choices: Choice[], executing: boolean): "briefing" | "producao" | "aguardando_aprovacao" | "concluido" {
   if (!order) return "briefing";
-  if (order.status === "delivered") return "concluido";
+
+  // DB may store "delivered", "concluido", or "concluded"
+  const raw = (order.status || "").toLowerCase();
+  if (raw === "delivered" || raw === "concluido" || raw === "concluded") return "concluido";
+
+  // Choices with a selected one = concluído (even if status is stale)
+  if (choices.length > 0 && choices.some(c => c.is_selected)) return "concluido";
+
+  // Choices generated but not yet approved
   if (choices.length > 0 && !executing) return "aguardando_aprovacao";
-  if (order.status === "in_production" || executing) return "producao";
+
+  if (raw === "in_production" || executing) return "producao";
+
+  // Choices exist but status still "briefing" → show deliverable anyway
+  if (choices.length > 0) return "aguardando_aprovacao";
+
   return "briefing";
 }
 
@@ -244,18 +257,18 @@ export default function ProjetoPage() {
           </div>
           {/* Step labels */}
           <div style={{ display: "flex", justifyContent: "space-between" }}>
-            {STEPS.map((label, i) => {
-              const stepPct = [0, 50, 75, 100][i];
-              const isDone = progress >= stepPct;
-              const isActive = progress === stepPct;
-              return (
-                <span key={label} style={{
-                  fontSize: 10, fontWeight: isActive ? 800 : 500,
-                  color: isDone ? T.ink : T.muted,
-                  fontFamily: FI,
-                }}>{label}</span>
-              );
-            })}
+            {([
+              { label: "Briefing",  done: true, active: status === "briefing" },
+              { label: "Produção",  done: ["producao","aguardando_aprovacao","concluido"].includes(status), active: status === "producao" },
+              { label: "Revisão",   done: ["aguardando_aprovacao","concluido"].includes(status), active: status === "aguardando_aprovacao" },
+              { label: "Concluído", done: status === "concluido", active: status === "concluido" },
+            ]).map((step) => (
+              <span key={step.label} style={{
+                fontSize: 10, fontWeight: step.active ? 800 : 500,
+                color: step.done ? T.ink : T.muted,
+                fontFamily: FI,
+              }}>{step.label}</span>
+            ))}
           </div>
         </div>
 
@@ -267,6 +280,7 @@ export default function ProjetoPage() {
             produto={order?.product || "post_instagram"}
             produtoLabel={productLabel}
             passo={formStep}
+            status={status}
           />
 
           {/* ── Coluna direita — muda por status ── */}
@@ -486,246 +500,141 @@ export default function ProjetoPage() {
 
             {/* ── ESTADO 4: CONCLUÍDO ── */}
             {status === "concluido" && (
-              <div style={{ padding: "24px 20px" }}>
-                {/* Banner */}
+              <div style={{ maxWidth: 700, margin: "0 auto", padding: "24px 20px" }}>
+                {/* Banner preto */}
                 <div style={{
-                  maxWidth: 700, margin: "0 auto 20px",
-                  background: T.ink, borderRadius: 12, padding: "16px 20px",
-                  display: "flex", alignItems: "center", gap: 10,
+                  background: T.ink, borderRadius: 12, padding: "12px 16px",
+                  display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
                 }}>
-                  <span style={{ fontSize: 16, color: T.lime }}>✓</span>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%", background: T.lime,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 900, color: T.ink,
+                  }}>✓</div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
-                      Projeto concluído{approvedChoice ? ` · ${approvedChoice.label} aprovada` : ""}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
-                      {order?.delivered_at ? `em ${new Date(order.delivered_at).toLocaleDateString("pt-BR")}` : ""}
+                    <div style={{ color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: FI }}>Projeto concluído</div>
+                    <div style={{ color: "#888", fontSize: 11 }}>
+                      {approvedChoice?.label || productLabel} aprovado{" "}
+                      {order?.delivered_at || order?.updated_at
+                        ? `em ${new Date(order.delivered_at || order.updated_at).toLocaleDateString("pt-BR")}`
+                        : ""}
                     </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {approvedChoice && (
-                      <button onClick={() => downloadPDF(approvedChoice)} style={{
-                        fontSize: 11, fontWeight: 700, background: T.lime, color: T.ink,
-                        border: "none", borderRadius: 6, padding: "6px 14px", cursor: "pointer", fontFamily: FI,
-                      }}>↓ PDF</button>
-                    )}
-                    <a href="/cliente/projetos/novo" style={{
-                      fontSize: 11, fontWeight: 600, background: "transparent", color: "#888",
-                      border: "1px solid #333", borderRadius: 6, padding: "6px 14px", textDecoration: "none",
-                    }}>+ Novo projeto</a>
-                  </div>
+                  <button
+                    onClick={() => router.push("/cliente/projetos/novo")}
+                    style={{
+                      marginLeft: "auto", background: T.lime, color: T.ink, border: "none",
+                      borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700,
+                      cursor: "pointer", fontFamily: FI,
+                    }}
+                  >+ Novo projeto</button>
                 </div>
 
-                {approvedChoice && (
-                  <>
-                    {/* ── Landing Page: iframe preview ── */}
-                    {order?.product === "landing_page_copy" && approvedChoice.html_content && (
-                      <div style={{ maxWidth: 900, margin: "0 auto" }}>
-                        {/* Browser chrome */}
+                {/* All choices — approved highlighted, others dimmed */}
+                {choices.map((choice) => (
+                  <div key={choice.id} style={{
+                    background: T.bg, border: `0.5px solid ${T.border}`, borderRadius: 12,
+                    padding: 16, marginBottom: 12,
+                    opacity: choice.is_selected ? 1 : 0.4,
+                  }}>
+                    {choice.is_selected && (
+                      <span style={{
+                        background: "#EAF3DE", color: "#27500A", fontSize: 10,
+                        fontWeight: 700, padding: "2px 10px", borderRadius: 20,
+                        display: "inline-block", marginBottom: 10,
+                      }}>✓ Opção aprovada</span>
+                    )}
+
+                    {/* Visual preview for posts/carrossel */}
+                    {["post_instagram","content_pack","carrossel"].includes(order?.product) && choice.image_url && (
+                      <div style={{ borderRadius: 8, overflow: "hidden", marginBottom: 10, border: `1px solid ${T.border}` }}>
+                        <img src={choice.image_url} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
+                      </div>
+                    )}
+
+                    {/* Landing page iframe */}
+                    {order?.product === "landing_page_copy" && choice.html_content && choice.is_selected && (
+                      <div style={{ marginBottom: 10 }}>
                         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderBottom: "none", borderRadius: "12px 12px 0 0", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ display: "flex", gap: 6 }}>{["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
-                          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 16px", fontSize: 11, color: "#64748b", flex: 1, textAlign: "center" }}>
-                            inseminas-agro.voku.one
-                          </div>
-                          <button onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(approvedChoice.html_content || ""); w.document.close(); } }} style={{ fontSize: 11, color: "#64748b", background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>↗ Abrir</button>
+                          <div style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 16px", fontSize: 11, color: "#64748b", flex: 1, textAlign: "center" }}>voku.one</div>
+                          <button onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(choice.html_content || ""); w.document.close(); } }} style={{ fontSize: 11, color: "#64748b", background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>↗ Abrir</button>
                         </div>
-                        <iframe
-                          srcDoc={approvedChoice.html_content}
-                          title="Landing Page Preview"
-                          sandbox="allow-scripts"
-                          style={{ width: "100%", height: 600, border: "1px solid #e2e8f0", borderRadius: "0 0 12px 12px", display: "block" }}
-                        />
-                        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                          <button onClick={() => { navigator.clipboard.writeText(approvedChoice.html_content || ""); }} style={{ flex: 1, padding: 10, borderRadius: 8, fontSize: 12, fontWeight: 600, background: T.bg, border: `1px solid ${T.border}`, color: T.ink, cursor: "pointer" }}>Copiar HTML</button>
-                          <button onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([approvedChoice.html_content || ""], { type: "text/html" })); a.download = "landing-page.html"; a.click(); }} style={{ flex: 1, padding: 10, borderRadius: 8, fontSize: 12, fontWeight: 700, background: T.lime, border: "none", color: T.ink, cursor: "pointer", fontFamily: FI }}>↓ Baixar HTML</button>
-                        </div>
+                        <iframe srcDoc={choice.html_content} title="Landing Page" sandbox="allow-scripts" style={{ width: "100%", height: 400, border: "1px solid #e2e8f0", borderRadius: "0 0 12px 12px", display: "block" }} />
                       </div>
                     )}
 
-                    {/* ── Posts / Carrossel: Instagram-style cards ── */}
-                    {(order?.product === "content_pack" || order?.product === "carrossel" || order?.product === "post_instagram") && (
-                      <div style={{ maxWidth: 480, margin: "0 auto" }}>
-                        {/* Instagram post simulation */}
-                        <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-                          {/* IG Header */}
-                          <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: T.ink, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: T.lime }}>
-                              {(order?.preview_text || "V")[0]}
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>{order?.preview_text?.split("—")[1]?.trim() || "voku.brand"}</div>
-                              <div style={{ fontSize: 10, color: T.muted }}>Patrocinado</div>
-                            </div>
+                    {/* Reels video/image */}
+                    {order?.product === "reels_script" && choice.is_selected && (() => {
+                      const videoClips = (choice.content as any)?.video_clips || [];
+                      const sceneImages = (choice.content as any)?.scene_images || [];
+                      return videoClips.length > 0 ? (
+                        <div style={{ marginBottom: 10 }}>
+                          <div style={{ background: T.ink, borderRadius: 16, padding: 8, maxWidth: 280, margin: "0 auto" }}>
+                            <video src={videoClips[0]} controls playsInline style={{ width: "100%", borderRadius: 12, display: "block", aspectRatio: "9/16", objectFit: "cover", background: "#000" }} />
                           </div>
-                          {/* Image */}
-                          {approvedChoice.image_url && (
-                            <img src={approvedChoice.image_url} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />
-                          )}
-                          {/* IG Actions */}
-                          <div style={{ padding: "10px 14px", display: "flex", gap: 14 }}>
-                            {["♡", "💬", "↗"].map(i => <span key={i} style={{ fontSize: 20, cursor: "pointer" }}>{i}</span>)}
-                          </div>
-                          {/* Caption */}
-                          <div style={{ padding: "0 14px 14px", position: "relative" }}>
-                            <button id="copy-post" onClick={() => copiar(approvedChoice.content?.text || "", "copy-post")} style={{
-                              position: "absolute", top: 0, right: 14, fontSize: 10, fontWeight: 600,
-                              color: T.muted, background: T.sand, border: `1px solid ${T.border}`,
-                              borderRadius: 4, padding: "2px 8px", cursor: "pointer",
-                            }}>Copiar</button>
-                            <p style={{ fontSize: 13, color: T.ink, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap", maxHeight: 200, overflowY: "auto" }}>
-                              {approvedChoice.content?.text}
-                            </p>
+                          <div style={{ textAlign: "center", marginTop: 8 }}>
+                            <a href={videoClips[0]} download style={{ fontSize: 12, fontWeight: 700, color: T.ink, background: T.lime, borderRadius: 8, padding: "8px 16px", textDecoration: "none", fontFamily: FI }}>↓ Baixar vídeo (.mp4)</a>
                           </div>
                         </div>
-                        {/* Other variations thumbnails */}
-                        {choices.filter(c => !c.is_selected).length > 0 && (
-                          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                            {choices.filter(c => !c.is_selected).map(c => (
-                              <div key={c.id} style={{ flex: 1, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, overflow: "hidden", opacity: 0.6 }}>
-                                {c.image_url && <img src={c.image_url} alt="" style={{ width: "100%", aspectRatio: "1/1", objectFit: "cover", display: "block" }} />}
-                                <div style={{ padding: "6px 8px", fontSize: 10, fontWeight: 600, color: T.muted }}>{c.label}</div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* ── Reels: Storyboard visual ── */}
-                    {order?.product === "reels_script" && (() => {
-                      const videoClips = (approvedChoice.content as any)?.video_clips || [];
-                      const sceneImages = (approvedChoice.content as any)?.scene_images || [];
-                      const videoStatus = (approvedChoice.content as any)?.video_status;
-                      const hasVideo = videoClips.length > 0;
-                      return (
-                        <div style={{ maxWidth: 500, margin: "0 auto" }}>
-                          {/* Video player (if available) */}
-                          {hasVideo && (
-                            <div style={{ marginBottom: 16 }}>
-                              <div style={{ background: T.ink, borderRadius: 24, padding: 12, maxWidth: 320, margin: "0 auto" }}>
-                                <video
-                                  src={videoClips[0]}
-                                  controls
-                                  playsInline
-                                  poster={approvedChoice.image_url || sceneImages[0] || undefined}
-                                  style={{ width: "100%", borderRadius: 16, display: "block", aspectRatio: "9/16", objectFit: "cover", background: "#000" }}
-                                />
-                              </div>
-                              <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center" }}>
-                                <a href={videoClips[0]} download style={{
-                                  fontSize: 12, fontWeight: 700, background: T.lime, color: T.ink,
-                                  border: "none", borderRadius: 8, padding: "10px 20px", textDecoration: "none", fontFamily: FI,
-                                }}>↓ Baixar vídeo (.mp4)</a>
-                              </div>
-                              <p style={{ textAlign: "center", fontSize: 11, color: T.muted, marginTop: 8 }}>
-                                Gerado por IA · Livre para uso comercial
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Video generating indicator */}
-                          {videoStatus === "generating" && !hasVideo && (
-                            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "20px", marginBottom: 16, textAlign: "center" }}>
-                              <div style={{ width: 24, height: 24, borderRadius: "50%", border: "3px solid #bbf7d0", borderTopColor: "#16a34a", animation: "spin 1s linear infinite", margin: "0 auto 10px" }} />
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>Gerando seu vídeo...</div>
-                              <div style={{ fontSize: 12, color: "#4ade80", marginTop: 4 }}>Pode levar alguns minutos. Feche e volte depois.</div>
-                            </div>
-                          )}
-
-                          {/* Phone frame with image (if no video) */}
-                          {!hasVideo && videoStatus !== "generating" && (
-                            <div style={{ background: T.ink, borderRadius: 24, padding: 12, maxWidth: 320, margin: "0 auto" }}>
-                              <div style={{ background: "#000", borderRadius: 16, overflow: "hidden", aspectRatio: "9/16", position: "relative" }}>
-                                {(approvedChoice.image_url || sceneImages[0]) && (
-                                  <img src={approvedChoice.image_url || sceneImages[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }} />
-                                )}
-                                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 16, background: "linear-gradient(transparent 40%, rgba(0,0,0,0.8))" }}>
-                                  <div style={{ fontSize: 11, fontWeight: 800, color: T.lime, marginBottom: 6 }}>ROTEIRO</div>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.5, maxHeight: 120, overflow: "hidden" }}>
-                                    {approvedChoice.content?.text?.split("\n").slice(0, 4).join("\n")}
-                                  </div>
-                                </div>
-                                <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%,-50%)", width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                  <div style={{ width: 0, height: 0, borderLeft: "16px solid #fff", borderTop: "10px solid transparent", borderBottom: "10px solid transparent", marginLeft: 4 }} />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Scene images strip */}
-                          {sceneImages.length > 0 && (
-                            <div style={{ display: "flex", gap: 4, overflowX: "auto", marginTop: 12, padding: "4px 0" }}>
-                              {sceneImages.map((img: string, si: number) => (
-                                <img key={si} src={img} alt={`Cena ${si + 1}`} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: `1px solid ${T.border}`, flexShrink: 0 }} />
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Script */}
-                          <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginTop: 16 }}>
-                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>Roteiro completo</div>
-                              <button id="copy-reels" onClick={() => copiar(approvedChoice.content?.text || "", "copy-reels")} style={{
-                                fontSize: 10, fontWeight: 600, color: T.muted, background: T.sand,
-                                border: `1px solid ${T.border}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer",
-                              }}>Copiar</button>
-                            </div>
-                            {(approvedChoice.content?.text || "").split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => {
-                              const isTimestamp = /^\[/.test(line.trim());
-                              return (
-                                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
-                                  {isTimestamp && <div style={{ width: 3, background: T.lime, borderRadius: 2, alignSelf: "stretch", flexShrink: 0 }} />}
-                                  <p style={{ fontSize: 12, color: isTimestamp ? T.ink : T.muted, fontWeight: isTimestamp ? 600 : 400, lineHeight: 1.5, margin: 0 }}>{line}</p>
-                                </div>
-                              );
-                            })}
-                          </div>
+                      ) : sceneImages.length > 0 ? (
+                        <div style={{ display: "flex", gap: 4, overflowX: "auto", marginBottom: 10, padding: "4px 0" }}>
+                          {sceneImages.map((img: string, si: number) => (
+                            <img key={si} src={img} alt={`Cena ${si + 1}`} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: `1px solid ${T.border}`, flexShrink: 0 }} />
+                          ))}
                         </div>
-                      );
+                      ) : null;
                     })()}
 
-                    {/* ── E-mails / Ads: Structured text view ── */}
-                    {(order?.product === "email_sequence" || order?.product === "ad_copy") && (
-                      <div style={{ maxWidth: 700, margin: "0 auto" }}>
-                        <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-                          {/* Email/Ad header bar */}
-                          <div style={{ background: order?.product === "email_sequence" ? "#1a1a2e" : "#1e3a5f", padding: "14px 18px", display: "flex", alignItems: "center", gap: 10 }}>
-                            <span style={{ fontSize: 18 }}>{order?.product === "email_sequence" ? "✉️" : "⚡"}</span>
-                            <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
-                                {order?.product === "email_sequence" ? "Sequência de E-mails" : "Copy Meta Ads"}
-                              </div>
-                              <div style={{ fontSize: 11, color: "#888" }}>{approvedChoice.label}</div>
-                            </div>
-                            <button id="copy-email" onClick={() => copiar(approvedChoice.content?.text || "", "copy-email")} style={{
-                              marginLeft: "auto", fontSize: 10, fontWeight: 600, color: "#888",
-                              background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
-                              borderRadius: 6, padding: "4px 12px", cursor: "pointer",
-                            }}>Copiar tudo</button>
-                          </div>
-                          {/* Content with separators */}
-                          <div style={{ padding: 18 }}>
-                            {(approvedChoice.content?.text || "").split(/\n(?=E-MAIL |ÂNGULO )/).map((block: string, i: number) => (
-                              <div key={i} style={{
-                                padding: "14px 0",
-                                borderBottom: i < (approvedChoice.content?.text || "").split(/\n(?=E-MAIL |ÂNGULO )/).length - 1 ? `1px solid ${T.border}` : "none",
-                              }}>
-                                <p style={{ fontSize: 13, color: T.ink, lineHeight: 1.7, margin: 0, whiteSpace: "pre-wrap" }}>{block.trim()}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    {/* Text content */}
+                    <div style={{
+                      background: T.sand, border: `0.5px solid ${T.border}`, borderRadius: 8,
+                      padding: "10px 12px", marginTop: 10, position: "relative",
+                    }}>
+                      <button
+                        id={`copy-done-${choice.id}`}
+                        onClick={() => copiar(choice.content?.text || "", `copy-done-${choice.id}`)}
+                        style={{
+                          position: "absolute", top: 8, right: 8, background: T.bg,
+                          border: `0.5px solid ${T.border}`, borderRadius: 5, padding: "3px 8px",
+                          fontSize: 9, fontWeight: 500, cursor: "pointer",
+                        }}
+                      >Copiar</button>
+                      <p style={{ fontSize: 13, lineHeight: 1.7, color: T.ink, whiteSpace: "pre-wrap", margin: 0, paddingRight: 60 }}>
+                        {choice.content?.text}
+                      </p>
+                    </div>
 
-                    {/* Generic fallback for unknown products */}
-                    {!["landing_page_copy","content_pack","carrossel","post_instagram","reels_script","email_sequence","ad_copy"].includes(order?.product) && (
-                      <div style={{ maxWidth: 700, margin: "0 auto", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16 }}>
-                        <p style={{ fontSize: 13, color: T.ink, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>{approvedChoice.content?.text}</p>
+                    {/* Actions for approved choice */}
+                    {choice.is_selected && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                        <button
+                          onClick={() => downloadPDF(choice)}
+                          style={{
+                            flex: 1, background: "transparent", border: `0.5px solid ${T.border}`,
+                            borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer", fontFamily: FF,
+                          }}
+                        >↓ Baixar PDF</button>
+                        {order?.product === "landing_page_copy" && choice.html_content && (
+                          <button
+                            onClick={() => { const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([choice.html_content || ""], { type: "text/html" })); a.download = "landing-page.html"; a.click(); }}
+                            style={{
+                              flex: 1, background: "transparent", border: `0.5px solid ${T.border}`,
+                              borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer", fontFamily: FF,
+                            }}
+                          >↓ Baixar HTML</button>
+                        )}
+                        <button
+                          onClick={() => router.push("/cliente/projetos/novo")}
+                          style={{
+                            flex: 1, background: "transparent", border: `0.5px solid ${T.border}`,
+                            borderRadius: 8, padding: "8px", fontSize: 12, cursor: "pointer", fontFamily: FF,
+                          }}
+                        >Solicitar nova versão</button>
                       </div>
                     )}
-                  </>
-                )}
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -13,6 +13,7 @@ interface RordensPanelProps {
   passo: number;
   formContext?: string;
   chips?: string[];
+  status?: "briefing" | "producao" | "aguardando_aprovacao" | "concluido";
 }
 
 /* ─── Product chip sets ─── */
@@ -59,7 +60,7 @@ const RORDENS_CSS = `
 @keyframes rordens-dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
 `;
 
-export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips }: RordensPanelProps) {
+export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status }: RordensPanelProps) {
   const [modo, setModo] = useState<"chat" | "form" | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -168,7 +169,25 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
         <div style={{
           flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 10,
         }} className="rordens-scroll">
-          {!modo ? (
+          {status === "concluido" && !modo ? (
+            /* ─── Concluded state ─── */
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{
+                padding: "10px 14px", borderRadius: "4px 12px 12px 12px",
+                background: "#1a1a1a", border: "1px solid #2a2a2a", maxWidth: 300,
+                fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, color: "#e8e8e8", lineHeight: 1.6,
+              }}>
+                Projeto concluído! O conteúdo aprovado está disponível para download quando precisar.
+              </div>
+              <div style={{
+                padding: "10px 14px", borderRadius: "4px 12px 12px 12px",
+                background: "#1a1a1a", border: "1px solid #2a2a2a", maxWidth: 300,
+                fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, color: "#e8e8e8", lineHeight: 1.6,
+              }}>
+                Quer criar algo novo? É só clicar em <strong style={{ color: "#C8F135" }}>+ Novo Projeto</strong>.
+              </div>
+            </div>
+          ) : !modo ? (
             /* ─── Mode selection ─── */
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{
@@ -248,29 +267,43 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
         </div>
 
         {/* ─── Chips ─── */}
-        {modo && activeChips.length > 0 && (
-          <div style={{
-            padding: "8px 16px", display: "flex", gap: 6, flexWrap: "wrap",
-            borderTop: "1px solid #1a1a1a",
-          }}>
-            {activeChips.map(chip => (
-              <button
-                key={chip}
-                onClick={() => { setInput(chip); textareaRef.current?.focus(); }}
-                style={{
-                  fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, color: "#888",
-                  background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 20,
-                  padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap",
-                  transition: "border-color 0.15s, color 0.15s",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.color = "#C8F135"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#888"; }}
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-        )}
+        {(() => {
+          const concludedChips = ["Iniciar novo projeto", "Baixar novamente", "Solicitar ajuste"];
+          const showConcludedChips = status === "concluido" && !modo;
+          const chipsToShow = showConcludedChips ? concludedChips : activeChips;
+          const shouldShow = showConcludedChips || (modo && chipsToShow.length > 0);
+          if (!shouldShow) return null;
+          return (
+            <div style={{
+              padding: "8px 16px", display: "flex", gap: 6, flexWrap: "wrap",
+              borderTop: "1px solid #1a1a1a",
+            }}>
+              {chipsToShow.map(chip => (
+                <button
+                  key={chip}
+                  onClick={() => {
+                    if (showConcludedChips) {
+                      selectMode("chat");
+                      setTimeout(() => sendMessage(chip), 100);
+                    } else {
+                      setInput(chip); textareaRef.current?.focus();
+                    }
+                  }}
+                  style={{
+                    fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, color: "#888",
+                    background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 20,
+                    padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap",
+                    transition: "border-color 0.15s, color 0.15s",
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.color = "#C8F135"; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#888"; }}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* ─── Input ─── */}
         {modo && (
