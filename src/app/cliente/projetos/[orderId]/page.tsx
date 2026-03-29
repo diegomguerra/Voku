@@ -363,8 +363,41 @@ export default function ProjetoPage() {
                       <span style={{ fontSize: 11, color: T.muted }}>{choice.label}</span>
                     </div>
 
-                    {/* Image if exists */}
-                    {choice.image_url && (
+                    {/* Video player for Reels */}
+                    {order?.product === "reels_script" && (choice.content as any)?.video_clips?.length > 0 && (
+                      <div style={{ borderRadius: 8, overflow: "hidden", marginBottom: 10, background: "#000" }}>
+                        <video
+                          src={(choice.content as any).video_clips[0]}
+                          controls
+                          playsInline
+                          style={{ width: "100%", maxHeight: 400, borderRadius: 8, display: "block" }}
+                        />
+                        <div style={{ padding: "8px 12px", background: "#111", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: 11, color: "#888" }}>Gerado por IA · Livre para uso comercial</span>
+                          <a href={(choice.content as any).video_clips[0]} download style={{ fontSize: 11, fontWeight: 600, color: T.lime, textDecoration: "none" }}>↓ Baixar .mp4</a>
+                        </div>
+                      </div>
+                    )}
+                    {/* Video generating indicator */}
+                    {order?.product === "reels_script" && (choice.content as any)?.video_status === "generating" && (
+                      <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, padding: "14px 16px", marginBottom: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ width: 16, height: 16, borderRadius: "50%", border: "2px solid #bbf7d0", borderTopColor: "#16a34a", animation: "spin 1s linear infinite", flexShrink: 0 }} />
+                        <div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: "#166534" }}>Gerando seu vídeo...</div>
+                          <div style={{ fontSize: 11, color: "#4ade80" }}>Pode levar alguns minutos. Avisaremos quando estiver pronto.</div>
+                        </div>
+                      </div>
+                    )}
+                    {/* Scene images for Reels */}
+                    {order?.product === "reels_script" && (choice.content as any)?.scene_images?.length > 0 && (
+                      <div style={{ display: "flex", gap: 4, overflowX: "auto", marginBottom: 10, padding: "4px 0" }}>
+                        {((choice.content as any).scene_images as string[]).map((img: string, si: number) => (
+                          <img key={si} src={img} alt={`Cena ${si + 1}`} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6, border: `1px solid ${T.border}`, flexShrink: 0 }} />
+                        ))}
+                      </div>
+                    )}
+                    {/* Image if exists (non-reels) */}
+                    {order?.product !== "reels_script" && choice.image_url && (
                       <div style={{ borderRadius: 8, overflow: "hidden", marginBottom: 10, border: `1px solid ${T.border}` }}>
                         <img src={choice.image_url} alt="" style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
                       </div>
@@ -559,46 +592,97 @@ export default function ProjetoPage() {
                     )}
 
                     {/* ── Reels: Storyboard visual ── */}
-                    {order?.product === "reels_script" && (
-                      <div style={{ maxWidth: 500, margin: "0 auto" }}>
-                        {/* Phone frame */}
-                        <div style={{ background: T.ink, borderRadius: 24, padding: "12px", maxWidth: 320, margin: "0 auto", position: "relative" }}>
-                          <div style={{ background: "#000", borderRadius: 16, overflow: "hidden", aspectRatio: "9/16", position: "relative" }}>
-                            {approvedChoice.image_url && (
-                              <img src={approvedChoice.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }} />
-                            )}
-                            {/* Overlay content */}
-                            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 16, background: "linear-gradient(transparent 40%, rgba(0,0,0,0.8))" }}>
-                              <div style={{ fontSize: 11, fontWeight: 800, color: T.lime, marginBottom: 6 }}>ROTEIRO · 60s</div>
-                              <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.5, maxHeight: 120, overflow: "hidden" }}>
-                                {approvedChoice.content?.text?.split("\n").slice(0, 4).join("\n")}
+                    {order?.product === "reels_script" && (() => {
+                      const videoClips = (approvedChoice.content as any)?.video_clips || [];
+                      const sceneImages = (approvedChoice.content as any)?.scene_images || [];
+                      const videoStatus = (approvedChoice.content as any)?.video_status;
+                      const hasVideo = videoClips.length > 0;
+                      return (
+                        <div style={{ maxWidth: 500, margin: "0 auto" }}>
+                          {/* Video player (if available) */}
+                          {hasVideo && (
+                            <div style={{ marginBottom: 16 }}>
+                              <div style={{ background: T.ink, borderRadius: 24, padding: 12, maxWidth: 320, margin: "0 auto" }}>
+                                <video
+                                  src={videoClips[0]}
+                                  controls
+                                  playsInline
+                                  poster={approvedChoice.image_url || sceneImages[0] || undefined}
+                                  style={{ width: "100%", borderRadius: 16, display: "block", aspectRatio: "9/16", objectFit: "cover", background: "#000" }}
+                                />
+                              </div>
+                              <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center" }}>
+                                <a href={videoClips[0]} download style={{
+                                  fontSize: 12, fontWeight: 700, background: T.lime, color: T.ink,
+                                  border: "none", borderRadius: 8, padding: "10px 20px", textDecoration: "none", fontFamily: FI,
+                                }}>↓ Baixar vídeo (.mp4)</a>
+                              </div>
+                              <p style={{ textAlign: "center", fontSize: 11, color: T.muted, marginTop: 8 }}>
+                                Gerado por IA · Livre para uso comercial
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Video generating indicator */}
+                          {videoStatus === "generating" && !hasVideo && (
+                            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 12, padding: "20px", marginBottom: 16, textAlign: "center" }}>
+                              <div style={{ width: 24, height: 24, borderRadius: "50%", border: "3px solid #bbf7d0", borderTopColor: "#16a34a", animation: "spin 1s linear infinite", margin: "0 auto 10px" }} />
+                              <div style={{ fontSize: 13, fontWeight: 600, color: "#166534" }}>Gerando seu vídeo...</div>
+                              <div style={{ fontSize: 12, color: "#4ade80", marginTop: 4 }}>Pode levar alguns minutos. Feche e volte depois.</div>
+                            </div>
+                          )}
+
+                          {/* Phone frame with image (if no video) */}
+                          {!hasVideo && videoStatus !== "generating" && (
+                            <div style={{ background: T.ink, borderRadius: 24, padding: 12, maxWidth: 320, margin: "0 auto" }}>
+                              <div style={{ background: "#000", borderRadius: 16, overflow: "hidden", aspectRatio: "9/16", position: "relative" }}>
+                                {(approvedChoice.image_url || sceneImages[0]) && (
+                                  <img src={approvedChoice.image_url || sceneImages[0]} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.6 }} />
+                                )}
+                                <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: 16, background: "linear-gradient(transparent 40%, rgba(0,0,0,0.8))" }}>
+                                  <div style={{ fontSize: 11, fontWeight: 800, color: T.lime, marginBottom: 6 }}>ROTEIRO</div>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: "#fff", lineHeight: 1.5, maxHeight: 120, overflow: "hidden" }}>
+                                    {approvedChoice.content?.text?.split("\n").slice(0, 4).join("\n")}
+                                  </div>
+                                </div>
+                                <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%,-50%)", width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                  <div style={{ width: 0, height: 0, borderLeft: "16px solid #fff", borderTop: "10px solid transparent", borderBottom: "10px solid transparent", marginLeft: 4 }} />
+                                </div>
                               </div>
                             </div>
-                            {/* Play button */}
-                            <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%,-50%)", width: 48, height: 48, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>
-                              <div style={{ width: 0, height: 0, borderLeft: "16px solid #fff", borderTop: "10px solid transparent", borderBottom: "10px solid transparent", marginLeft: 4 }} />
+                          )}
+
+                          {/* Scene images strip */}
+                          {sceneImages.length > 0 && (
+                            <div style={{ display: "flex", gap: 4, overflowX: "auto", marginTop: 12, padding: "4px 0" }}>
+                              {sceneImages.map((img: string, si: number) => (
+                                <img key={si} src={img} alt={`Cena ${si + 1}`} style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, border: `1px solid ${T.border}`, flexShrink: 0 }} />
+                              ))}
                             </div>
+                          )}
+
+                          {/* Script */}
+                          <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginTop: 16 }}>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: T.ink }}>Roteiro completo</div>
+                              <button id="copy-reels" onClick={() => copiar(approvedChoice.content?.text || "", "copy-reels")} style={{
+                                fontSize: 10, fontWeight: 600, color: T.muted, background: T.sand,
+                                border: `1px solid ${T.border}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer",
+                              }}>Copiar</button>
+                            </div>
+                            {(approvedChoice.content?.text || "").split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => {
+                              const isTimestamp = /^\[/.test(line.trim());
+                              return (
+                                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
+                                  {isTimestamp && <div style={{ width: 3, background: T.lime, borderRadius: 2, alignSelf: "stretch", flexShrink: 0 }} />}
+                                  <p style={{ fontSize: 12, color: isTimestamp ? T.ink : T.muted, fontWeight: isTimestamp ? 600 : 400, lineHeight: 1.5, margin: 0 }}>{line}</p>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
-                        {/* Script timeline */}
-                        <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginTop: 16 }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: T.ink, marginBottom: 12 }}>Roteiro completo</div>
-                          <button id="copy-reels" onClick={() => copiar(approvedChoice.content?.text || "", "copy-reels")} style={{
-                            float: "right", fontSize: 10, fontWeight: 600, color: T.muted, background: T.sand,
-                            border: `1px solid ${T.border}`, borderRadius: 4, padding: "2px 8px", cursor: "pointer",
-                          }}>Copiar</button>
-                          {(approvedChoice.content?.text || "").split("\n").filter((l: string) => l.trim()).map((line: string, i: number) => {
-                            const isTimestamp = /^\[/.test(line.trim());
-                            return (
-                              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
-                                {isTimestamp && <div style={{ width: 3, background: T.lime, borderRadius: 2, alignSelf: "stretch", flexShrink: 0 }} />}
-                                <p style={{ fontSize: 12, color: isTimestamp ? T.ink : T.muted, fontWeight: isTimestamp ? 600 : 400, lineHeight: 1.5, margin: 0 }}>{line}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     {/* ── E-mails / Ads: Structured text view ── */}
                     {(order?.product === "email_sequence" || order?.product === "ad_copy") && (

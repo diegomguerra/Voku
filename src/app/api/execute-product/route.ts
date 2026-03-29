@@ -153,7 +153,7 @@ const CREDIT_COST: Record<string, number> = {
   email_sequence: 25,
   post_instagram: 8,
   carrossel: 15,
-  reels_script: 10,
+  reels_script: 10, // +25 if gerarVideo = true (handled dynamically)
   ad_copy: 10,
   app: 20,
 }
@@ -246,8 +246,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, order_id, skipped: true })
     }
 
-    // ── 1. Credit check ──
-    const cost = CREDIT_COST[product] || 0
+    // ── 1. Credit check (add 25 for reels video) ──
+    const gerarVideo = product === 'reels_script' && structured_data?.gerarVideo === true
+    const cost = (CREDIT_COST[product] || 0) + (gerarVideo ? 25 : 0)
     if (cost > 0) {
       const { data: creditRow, error: creditError } = await supabase
         .from('credits').select('balance').eq('user_id', user_id).single()
@@ -387,6 +388,64 @@ Each variation must be complete and production-ready. Only output the JSON array
           })
         }
         console.log(`[execute-product] Fired ${insertedChoices.length} image jobs for order=${order_id}`)
+
+        // ── 6b. Fire video generation for Reels (if gerarVideo) ──
+        if (gerarVideo && insertedChoices?.length) {
+          for (const choice of insertedChoices) {
+            // Parse roteiro from the variation text (Claude generates structured content)
+            // Build a simple roteiro from the text sections
+            const text = choice.content?.text || ''
+            const hookMatch = text.match(/HOOK[^:]*:\s*([^\n]+)/i)
+            const cenas: any[] = []
+            const sectionMatches = text.matchAll(/\[(\d+)-(\d+)s\]\s*([^\n]+(?:\n(?!\[)[^\n]*)*)|\bCENA\s*#?(\d+)[^:]*:\s*([^\n]+(?:\n(?!\bCENA)[^\n]*)*)/gi)
+            let sceneNum = 1
+            for (const m of sectionMatches) {
+              const desc = (m[3] || m[5] || '').trim().slice(0, 200)
+              if (desc) {
+                cenas.push({
+                  numero: sceneNum++,
+                  duracao_segundos: 5,
+                  descricao_visual: desc.split('\n')[0],
+                  fala: desc,
+                  movimento: 'smooth cinematic camera motion',
+                })
+              }
+            }
+            // Fallback: if no scenes parsed, create 3 generic scenes
+            if (cenas.length === 0) {
+              const lines = text.split('\n').filter((l: string) => l.trim().length > 20)
+              for (let i = 0; i < Math.min(lines.length, 5); i++) {
+                cenas.push({
+                  numero: i + 1,
+                  duracao_segundos: 5,
+                  descricao_visual: lines[i].trim().slice(0, 150),
+                  fala: lines[i].trim(),
+                  movimento: 'smooth cinematic camera motion',
+                })
+              }
+            }
+
+            const roteiro = {
+              hook: hookMatch?.[1] || '',
+              cenas: cenas.slice(0, 8), // Max 8 scenes
+              cta: '',
+            }
+
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+            fetch(`${baseUrl}/api/generate-video`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                order_id,
+                choice_id: choice.id,
+                roteiro,
+                estilo_video: structured_data?.estiloVideo || 'slideshow_cinematografico',
+                proporcao: structured_data?.proporcao || '9:16',
+              }),
+            }).catch(e => console.error('[fire-video] fetch error:', e))
+          }
+          console.log(`[execute-product] Fired video generation for order=${order_id}`)
+        }
       }
     }
 

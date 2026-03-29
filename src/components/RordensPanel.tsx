@@ -39,6 +39,7 @@ const PRODUCT_CHIPS: Record<string, Record<number, string[]>> = {
     1: ["Reels para produto ou pessoa?", "Qual rede social?", "Nunca gravei antes"],
     2: ["Qual duração performa melhor?", "Posso não aparecer?", "Não tenho tema definido"],
     3: ["O que são cortes?", "Preciso de legenda?", "Pode ser mais dinâmico"],
+    4: ["Qual estilo fica melhor?", "Quanto tempo leva?", "O vídeo é meu para usar comercialmente?"],
   },
   ad_copy: {
     1: ["O que são diferenciais?", "Vendo produto físico", "Sou prestador de serviço"],
