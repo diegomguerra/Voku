@@ -109,18 +109,13 @@ End with: high quality, professional, sharp focus, 4k.
       console.log(`[generate-image] All images done for order=${order_id}, advancing phases`)
       const now = new Date().toISOString()
 
-      const [imgStep, prodPhase, approvalPhase, chooseStep] = await Promise.all([
-        supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 2).single(),
-        supabase.from('project_phases').select('id').eq('order_id', order_id).eq('phase_number', 1).single(),
-        supabase.from('project_phases').select('id').eq('order_id', order_id).eq('phase_number', 2).single(),
-        supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 3).single(),
-      ])
-
+      // Mark production steps 7+8 done, phase 3 done, phase 4 active, step 9 active
       await Promise.all([
-        imgStep.data ? supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('id', imgStep.data.id) : Promise.resolve(),
-        prodPhase.data ? supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('id', prodPhase.data.id) : Promise.resolve(),
-        approvalPhase.data ? supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('id', approvalPhase.data.id) : Promise.resolve(),
-        chooseStep.data ? supabase.from('project_steps').update({ status: 'active' }).eq('id', chooseStep.data.id) : Promise.resolve(),
+        supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('step_number', 7),
+        supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('step_number', 8),
+        supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('phase_number', 3),
+        supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('order_id', order_id).eq('phase_number', 4),
+        supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 9),
       ])
     }
 

@@ -95,15 +95,15 @@ export async function POST(req: NextRequest) {
       // Delete old choices
       await supabase.from('choices').delete().eq('order_id', order_id)
 
-      // Reset phases back to production
+      // Reset phases back to production (phase 3)
       const now = new Date().toISOString()
       await Promise.all([
-        supabase.from('project_phases').update({ status: 'active', started_at: now, completed_at: null }).eq('order_id', order_id).eq('phase_number', 1),
-        supabase.from('project_phases').update({ status: 'pending', started_at: null, completed_at: null }).eq('order_id', order_id).eq('phase_number', 2),
-        supabase.from('project_steps').update({ status: 'active', completed_at: null }).eq('order_id', order_id).eq('step_number', 1),
-        supabase.from('project_steps').update({ status: 'pending', completed_at: null }).eq('order_id', order_id).eq('step_number', 2),
-        supabase.from('project_steps').update({ status: 'pending', completed_at: null }).eq('order_id', order_id).eq('step_number', 3),
-        supabase.from('project_steps').update({ status: 'pending', completed_at: null }).eq('order_id', order_id).eq('step_number', 4),
+        supabase.from('project_phases').update({ status: 'active', started_at: now, completed_at: null }).eq('order_id', order_id).eq('phase_number', 3),
+        supabase.from('project_phases').update({ status: 'pending', started_at: null, completed_at: null }).eq('order_id', order_id).eq('phase_number', 4),
+        supabase.from('project_steps').update({ status: 'active', completed_at: null }).eq('order_id', order_id).eq('step_number', 6),
+        supabase.from('project_steps').update({ status: 'pending', completed_at: null }).eq('order_id', order_id).eq('step_number', 7),
+        supabase.from('project_steps').update({ status: 'pending', completed_at: null }).eq('order_id', order_id).eq('step_number', 8),
+        supabase.from('project_steps').update({ status: 'pending', completed_at: null }).eq('order_id', order_id).in('step_number', [9, 10, 11]),
         supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id),
       ])
 
@@ -153,10 +153,10 @@ Only output the JSON array, no other text.`,
         }))
       )
 
-      // Mark text step done, image step active
+      // Mark text generation step (6) done, image step (7) active
       await Promise.all([
-        supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('order_id', order_id).eq('step_number', 1),
-        supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 2),
+        supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('order_id', order_id).eq('step_number', 6),
+        supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 7),
       ])
 
       // Fire image generation
@@ -192,12 +192,12 @@ Only output the JSON array, no other text.`,
       // Clear existing image_urls
       await supabase.from('choices').update({ image_url: null }).eq('order_id', order_id)
 
-      // Reset image step
+      // Reset image step (7) to active, keep phase 3 active, reset phase 4 to pending
       await Promise.all([
-        supabase.from('project_steps').update({ status: 'active', completed_at: null }).eq('order_id', order_id).eq('step_number', 2),
-        supabase.from('project_phases').update({ status: 'active', completed_at: null }).eq('order_id', order_id).eq('phase_number', 1),
-        supabase.from('project_phases').update({ status: 'pending', started_at: null }).eq('order_id', order_id).eq('phase_number', 2),
-        supabase.from('project_steps').update({ status: 'pending' }).eq('order_id', order_id).eq('step_number', 3),
+        supabase.from('project_steps').update({ status: 'active', completed_at: null }).eq('order_id', order_id).eq('step_number', 7),
+        supabase.from('project_phases').update({ status: 'active', completed_at: null }).eq('order_id', order_id).eq('phase_number', 3),
+        supabase.from('project_phases').update({ status: 'pending', started_at: null }).eq('order_id', order_id).eq('phase_number', 4),
+        supabase.from('project_steps').update({ status: 'pending' }).eq('order_id', order_id).eq('step_number', 9),
       ])
 
       // Fire image generation

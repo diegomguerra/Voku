@@ -264,25 +264,17 @@ export async function POST(req: NextRequest) {
     const baseSystem = SYSTEM_PROMPTS[product as ProductId]
     const briefingText = JSON.stringify(structured_data, null, 2)
 
-    // ── 2. Create project phases ──
-    const [{ data: phase1 }, { data: phase2 }] = await Promise.all([
-      supabase.from('project_phases').insert({
-        order_id, title: 'Produção', phase_number: 1, status: 'active', started_at: new Date().toISOString(),
-      }).select('id').single(),
-      supabase.from('project_phases').insert({
-        order_id, title: 'Aprovação', phase_number: 2, status: 'pending',
-      }).select('id').single(),
-    ])
-
+    // ── 2. Advance project phases (trigger already created them on order INSERT) ──
+    const now = new Date().toISOString()
+    // Mark briefing phase (1) as done, research phase (2) as done, production phase (3) as active
     await Promise.all([
-      phase1?.id ? supabase.from('project_steps').insert([
-        { order_id, phase_id: phase1.id, label: 'Gerar 3 variações de texto', step_number: 1, status: 'active' },
-        { order_id, phase_id: phase1.id, label: 'Gerar imagens', step_number: 2, status: 'pending' },
-      ]) : Promise.resolve(),
-      phase2?.id ? supabase.from('project_steps').insert([
-        { order_id, phase_id: phase2.id, label: 'Escolher variação favorita', step_number: 3, status: 'pending' },
-        { order_id, phase_id: phase2.id, label: 'Aprovar entrega final', step_number: 4, status: 'pending' },
-      ]) : Promise.resolve(),
+      supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('phase_number', 1),
+      supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('phase_number', 2),
+      supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('order_id', order_id).eq('phase_number', 3),
+      // Mark all briefing + research steps as done
+      supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('order_id', order_id).in('step_number', [1, 2, 3, 4, 5]),
+      // Mark production step 6 (primeira entrega) as active
+      supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 6),
     ])
 
     // ── 3. Gerar variações via Anthropic ──
@@ -340,13 +332,10 @@ Each variation must be complete and production-ready. Only output the JSON array
     )
 
     // ── Avançar steps de texto ──
-    const [{ data: textStep }, { data: imageStep }] = await Promise.all([
-      supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 1).single(),
-      supabase.from('project_steps').select('id').eq('order_id', order_id).eq('step_number', 2).single(),
-    ])
+    // Mark "Primeira entrega gerada" (step 6) as done, "Variações e alternativas" (step 7) as active
     await Promise.all([
-      textStep ? supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', textStep.id) : Promise.resolve(),
-      imageStep ? supabase.from('project_steps').update({ status: 'active' }).eq('id', imageStep.id) : Promise.resolve(),
+      supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('order_id', order_id).eq('step_number', 6),
+      supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 7),
     ])
 
     await supabase.from('iterations').insert({

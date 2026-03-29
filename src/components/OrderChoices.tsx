@@ -156,20 +156,12 @@ export default function OrderChoices({ order, choices: initialChoices, deliverab
     // 5. Update order status
     await sb.from("orders").update({ status: "delivered", delivered_at: new Date().toISOString() }).eq("id", order.id);
 
-    // 6. Advance project steps: mark "Escolher variação" + "Aprovar entrega" as done
-    const { data: steps } = await sb.from("project_steps").select("id, step_number, status").eq("order_id", order.id).order("step_number");
-    if (steps) {
-      for (const step of steps) {
-        if (step.status !== "done") {
-          await sb.from("project_steps").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", step.id);
-        }
-      }
-    }
-    // Mark approval phase as done
-    const { data: approvalPhase } = await sb.from("project_phases").select("id").eq("order_id", order.id).eq("phase_number", 2).single();
-    if (approvalPhase) {
-      await sb.from("project_phases").update({ status: "done", completed_at: new Date().toISOString() }).eq("id", approvalPhase.id);
-    }
+    // 6. Mark all remaining steps + phases as done (project complete)
+    const completedAt = new Date().toISOString();
+    await Promise.all([
+      sb.from("project_steps").update({ status: "done", completed_at: completedAt }).eq("order_id", order.id).neq("status", "done"),
+      sb.from("project_phases").update({ status: "done", completed_at: completedAt }).eq("order_id", order.id).neq("status", "done"),
+    ]);
 
     // 7. Get download URL
     const { data: urlData } = await sb.storage.from("deliverables").createSignedUrl(filePath, 3600);
