@@ -11,6 +11,7 @@ import CarrosselBriefingForm, { CarrosselBriefing } from "@/components/Carrossel
 import EmailBriefingForm, { EmailBriefing } from "@/components/EmailBriefingForm";
 import ReelsBriefingForm, { ReelsBriefing } from "@/components/ReelsBriefingForm";
 import MetaAdsBriefingForm, { MetaAdsBriefing } from "@/components/MetaAdsBriefingForm";
+import RevisionPanel, { REVISION_PRODUCTS } from "@/components/RevisionPanel";
 
 /* ── Design tokens ── */
 const T = {
@@ -100,6 +101,8 @@ export default function ProjetoPage() {
   const [revisionOpen, setRevisionOpen] = useState<string | null>(null);
   const [revisionText, setRevisionText] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [showRevision, setShowRevision] = useState(false);
+  const [revisionSent, setRevisionSent] = useState<number | false>(false);
   const userIdRef = useRef<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -495,6 +498,52 @@ export default function ProjetoPage() {
                     </div>
                   </div>
                 ))}
+
+                {/* Revision button + panel for qualifying products */}
+                {REVISION_PRODUCTS.includes(order?.product) && !revisionSent && (
+                  <>
+                    {!showRevision ? (
+                      <button onClick={() => setShowRevision(true)} style={{
+                        width: "100%", background: "transparent", border: `1.5px solid ${T.border}`,
+                        borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 600,
+                        color: T.ink, cursor: "pointer", display: "flex", alignItems: "center",
+                        justifyContent: "center", gap: 8, marginTop: 8, fontFamily: FF,
+                      }}>
+                        Solicitar alteração
+                      </button>
+                    ) : (
+                      <RevisionPanel
+                        orderId={orderId}
+                        choiceId={choices[0]?.id}
+                        produto={order?.product}
+                        onClose={() => setShowRevision(false)}
+                        onSubmit={(count) => { setShowRevision(false); setRevisionSent(count); }}
+                      />
+                    )}
+                  </>
+                )}
+                {revisionSent !== false && (
+                  <div style={{
+                    background: "#EAF3DE", border: "1px solid #C0DD97", borderRadius: 12,
+                    padding: "16px 20px", marginTop: 12, display: "flex", alignItems: "flex-start", gap: 12,
+                  }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", background: "#3B6D11",
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2 2 4-4" stroke="#C8F135" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#27500A" }}>Pedido de alteração enviado!</div>
+                      <div style={{ fontSize: 12, color: "#3B6D11", marginTop: 3, lineHeight: 1.5 }}>
+                        Nossa equipe vai analisar e retornar com a versão revisada em breve.
+                        {revisionSent > 0 && ` ${revisionSent} arquivo(s) de referência recebido(s).`}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -635,6 +684,52 @@ export default function ProjetoPage() {
                     )}
                   </div>
                 ))}
+
+                {/* Revision button + panel for qualifying products */}
+                {REVISION_PRODUCTS.includes(order?.product) && !revisionSent && (
+                  <>
+                    {!showRevision ? (
+                      <button onClick={() => setShowRevision(true)} style={{
+                        width: "100%", background: "transparent", border: `1.5px solid ${T.border}`,
+                        borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 600,
+                        color: T.ink, cursor: "pointer", display: "flex", alignItems: "center",
+                        justifyContent: "center", gap: 8, marginTop: 8, fontFamily: FF,
+                      }}>
+                        Solicitar alteração
+                      </button>
+                    ) : (
+                      <RevisionPanel
+                        orderId={orderId}
+                        choiceId={approvedChoice?.id}
+                        produto={order?.product}
+                        onClose={() => setShowRevision(false)}
+                        onSubmit={(count) => { setShowRevision(false); setRevisionSent(count); }}
+                      />
+                    )}
+                  </>
+                )}
+                {revisionSent !== false && (
+                  <div style={{
+                    background: "#EAF3DE", border: "1px solid #C0DD97", borderRadius: 12,
+                    padding: "16px 20px", marginTop: 12, display: "flex", alignItems: "flex-start", gap: 12,
+                  }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%", background: "#3B6D11",
+                      display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                    }}>
+                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                        <path d="M2 5l2 2 4-4" stroke="#C8F135" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#27500A" }}>Pedido de alteração enviado!</div>
+                      <div style={{ fontSize: 12, color: "#3B6D11", marginTop: 3, lineHeight: 1.5 }}>
+                        Nossa equipe vai analisar e retornar com a versão revisada em breve.
+                        {revisionSent > 0 && ` ${revisionSent} arquivo(s) de referência recebido(s).`}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

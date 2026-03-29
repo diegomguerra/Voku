@@ -3,15 +3,30 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: NextRequest, { params }: { params: { orderId: string } }) {
   try {
-    const { descricao, choice_id } = await req.json();
+    const { descricao, choice_id, tipos, arquivos_referencia } = await req.json();
     const sb = supabaseAdmin();
 
-    // Insert revision request into platform_messages (reusing existing table)
+    // Save structured revision to revisoes table
+    await sb.from("revisoes").insert({
+      order_id: params.orderId,
+      choice_id: choice_id || null,
+      tipos: tipos || [],
+      descricao,
+      arquivos_referencia: arquivos_referencia || [],
+      status: "pendente",
+    });
+
+    // Also insert into platform_messages for existing notification flow
     await sb.from("platform_messages").insert({
       order_id: params.orderId,
       sender: "client",
       content: descricao,
-      metadata: { type: "revision_request", choice_id },
+      metadata: {
+        type: "revision_request",
+        choice_id,
+        tipos: tipos || [],
+        arquivos_referencia: arquivos_referencia || [],
+      },
     });
 
     // Set order back to in_production
