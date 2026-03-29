@@ -233,24 +233,6 @@ export default function ProjetoPage() {
       <style>{KEYFRAMES}</style>
       <div style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 64px)", fontFamily: FF, background: T.sand, overflow: "hidden" }}>
 
-        {/* ═══ ZONA A: Cabeçalho ═══ */}
-        <header style={{
-          background: T.bg, borderBottom: `1px solid ${T.border}`, padding: "14px 16px",
-          display: "flex", alignItems: "center", gap: 14, flexShrink: 0,
-        }}>
-          <a href="/cliente/projetos" style={{ fontSize: 13, fontWeight: 600, color: T.muted, textDecoration: "none" }}>← Projetos</a>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontFamily: FI, fontWeight: 700, fontSize: 14, color: T.ink, margin: 0 }}>
-              {order?.preview_text?.slice(0, 60) || productLabel} · {productLabel}
-            </h1>
-            <p style={{ fontSize: 11, color: T.muted, margin: "2px 0 0" }}>{SUBTITLE[status]}</p>
-          </div>
-          <span style={{
-            fontSize: 10, fontWeight: 800, letterSpacing: 0.5, padding: "4px 10px", borderRadius: 6,
-            background: sl.bg, color: sl.color,
-          }}>{sl.label}</span>
-        </header>
-
         {/* ═══ ZONA B: Barra de progresso ═══ */}
         <div style={{
           background: T.bg, borderBottom: `1px solid ${T.border}`, padding: "10px 16px",
