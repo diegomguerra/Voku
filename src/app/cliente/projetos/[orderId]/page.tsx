@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
 import LandingPageViewer from "@/components/LandingPageViewer";
 import RordensPanel from "@/components/RordensPanel";
+import PostsBriefingForm, { PostsBriefing } from "@/components/PostsBriefingForm";
 
 /* ── Design tokens ── */
 const C = {
@@ -691,6 +692,103 @@ export default function ProjetoPage() {
         </div>
       </div>
     );
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     CONTENT PACK — dedicated flow with Rordens split-screen
+     ══════════════════════════════════════════════════════════════ */
+  if (order?.product === 'content_pack') {
+    const handlePostsBriefingSubmit = async (data: PostsBriefing) => {
+      setExecuting(true);
+      try {
+        const sb = supabase();
+        const { data: sessionData } = await sb.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        const userId = userIdRef.current;
+        if (!token || !userId) return;
+
+        await sb.from("orders").update({ product: "content_pack", status: "in_production" }).eq("id", orderId);
+
+        const res = await fetch("/api/execute-product", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            product: "content_pack",
+            structured_data: {
+              ...data,
+              type: "content_pack",
+              resumo: data.descricao,
+            },
+            order_id: orderId,
+            user_id: userId,
+            name: ctx?.name || "",
+            email: ctx?.email || "",
+          }),
+        });
+
+        if (!res.ok) {
+          console.error("Execute error:", res.status);
+          setExecuting(false);
+        } else {
+          loadChoices();
+        }
+      } catch (err) {
+        console.error("Execute error:", err);
+        setExecuting(false);
+      }
+    };
+
+    // If choices already exist, show them in the standard flow
+    if (hasChoices) {
+      // Fall through to standard render below
+    } else {
+      return (
+        <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", height: "calc(100vh - 64px)", fontFamily: FF, overflow: "hidden" }}>
+          <RordensPanel
+            produto="content_pack"
+            produtoLabel="Pack de Posts"
+            passo={formStep}
+          />
+          <div style={{ background: "#FAF8F3", overflowY: "auto" }}>
+            <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
+              <div style={{ marginBottom: 24 }}>
+                <span style={{
+                  background: '#eff6ff', color: '#2563eb', fontSize: 12, fontWeight: 600,
+                  padding: '3px 10px', borderRadius: 100, border: '1px solid #bfdbfe',
+                  display: 'inline-block'
+                }}>
+                  📱 PACK DE POSTS
+                </span>
+                <h1 style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: '#0f172a' }}>
+                  {order.preview_text?.slice(0, 80) || 'Pack de Posts'}
+                </h1>
+                <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                  Preencha o briefing para gerar seu pack de conteúdo com IA
+                </p>
+              </div>
+
+              {executing ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 32px', gap: 20 }}>
+                  <div style={{ position: 'relative', width: 64, height: 64 }}>
+                    <div style={{ position: 'absolute', inset: 0, border: '3px solid #e2e8f0', borderTopColor: '#CCEE33', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                  </div>
+                  <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginBottom: 6 }}>Gerando seu pack de posts</p>
+                    <p style={{ fontSize: 13, color: '#64748b' }}>3 variações com textos e imagens por IA...</p>
+                  </div>
+                </div>
+              ) : (
+                <PostsBriefingForm
+                  onSubmit={handlePostsBriefingSubmit}
+                  loading={executing}
+                  onStepChange={setFormStep}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
   }
 
   /* ══════════════════════════════════════════════════════════════

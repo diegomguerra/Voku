@@ -39,6 +39,8 @@ const PRODUCT_CHIPS: Record<string, Record<number, string[]>> = {
   },
   content_pack: {
     1: ["O que são pilares de conteúdo?", "Quantos posts por semana?", "Meu público é..."],
+    2: ["Qual formato engaja mais?", "Posso misturar formatos?", "Quero mais carrosséis"],
+    3: ["O que é tom de voz?", "Não tenho logo ainda", "Quero algo mais sério"],
   },
 };
 
