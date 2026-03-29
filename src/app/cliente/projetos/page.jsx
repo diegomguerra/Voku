@@ -367,7 +367,7 @@ export default function ProjetosPage() {
                   fontSize: 13, fontWeight: 600, color: T.ink,
                   whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
                 }}>
-                  {PRODUCT_NAME[order.product] || order.product}
+                  {order.preview_text || PRODUCT_NAME[order.product] || order.product}
                 </div>
                 <div style={{ fontSize: 11, color: T.inkFaint }}>{fmtDate(order.created_at)}</div>
               </div>
@@ -378,6 +378,19 @@ export default function ProjetosPage() {
                 {st.label}
               </div>
             </div>
+            {order.status === "delivered" && (
+              <a
+                href={`/cliente/projetos/${order.id}`}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  display: "block", marginTop: 8, fontSize: 11, fontWeight: 700,
+                  color: T.ink, background: T.lime, borderRadius: 6,
+                  padding: "6px 12px", textDecoration: "none", textAlign: "center",
+                }}
+              >
+                Ver entrega →
+              </a>
+            )}
           </div>
         );
       })}
