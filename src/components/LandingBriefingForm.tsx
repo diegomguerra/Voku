@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import ColorExtractor, { type CoreExtraida } from './ColorExtractor';
 
 // ─────────────────────────────────────────────
 // TIPOS
@@ -16,6 +17,7 @@ export interface LandingBriefing {
   cor_primaria:  string;
   cor_secundaria:string;
   cor_texto:     string;
+  paletaCores:   CoreExtraida[];
   estilo:        string;
   logo_url:      string;
   logo_base64:   string;
@@ -85,6 +87,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
     cor_primaria:   prefill?.cor_primaria ?? '#CCEE33',
     cor_secundaria: prefill?.cor_secundaria ?? '#0a0a0a',
     cor_texto:      prefill?.cor_texto ?? '#ffffff',
+    paletaCores:    prefill?.paletaCores ?? [],
     estilo:         prefill?.estilo ?? 'moderno',
     logo_url:       prefill?.logo_url ?? '',
     logo_base64:    prefill?.logo_base64 ?? '',
@@ -258,47 +261,45 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
             </div>
           </div>
 
-          {/* PALETAS PRONTAS */}
+          {/* PALETA DE CORES VIA IA */}
           <div style={s.row1}>
-            <label style={s.label}>Paleta de cores</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 16 }}>
-              {PALETTES.map(p => (
-                <div
-                  key={p.name}
-                  onClick={() => applyPalette(p)}
-                  style={{ borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: '2px solid', borderColor: briefing.cor_primaria === p.primary ? '#CCEE33' : 'transparent', transition: 'border-color 0.15s' }}
-                >
-                  <div style={{ height: 36, background: p.secondary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: p.primary }} />
-                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: p.text, opacity: 0.6 }} />
-                  </div>
-                  <div style={{ padding: '6px 8px', background: '#f8fafc', fontSize: 11, fontWeight: 600, color: '#374151', textAlign: 'center' }}>{p.name}</div>
-                </div>
-              ))}
-            </div>
+            <label style={s.label}>Paleta de cores da marca</label>
+            <ColorExtractor
+              cores={briefing.paletaCores}
+              onChange={cores => {
+                setBriefing(b => {
+                  // Auto-assign first 3 cores to primary/secondary/text
+                  const updates: Partial<LandingBriefing> = { paletaCores: cores };
+                  if (cores.length >= 1) updates.cor_primaria = cores[0].hex;
+                  if (cores.length >= 2) updates.cor_secundaria = cores[1].hex;
+                  if (cores.length >= 3) updates.cor_texto = cores[2].hex;
+                  return { ...b, ...updates };
+                });
+              }}
+            />
 
-            {/* Cores customizadas */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              {[
-                { key: 'cor_primaria', label: 'Cor primária' },
-                { key: 'cor_secundaria', label: 'Fundo / Secundária' },
-                { key: 'cor_texto', label: 'Cor do texto' },
-              ].map(({ key, label }) => (
-                <div key={key}>
-                  <label style={{ ...s.label, fontSize: 12 }}>{label}</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, border: '1.5px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', background: '#fff' }}>
-                    <input
-                      type="color"
-                      value={briefing[key as keyof LandingBriefing] as string}
-                      onChange={e => set(key as keyof LandingBriefing, e.target.value)}
-                      style={{ width: 28, height: 28, border: 'none', borderRadius: 6, cursor: 'pointer', padding: 0, background: 'none' }}
-                    />
-                    <span style={{ fontSize: 12, fontFamily: 'monospace', color: '#374151', fontWeight: 600 }}>
-                      {briefing[key as keyof LandingBriefing] as string}
-                    </span>
-                  </div>
-                </div>
-              ))}
+            {/* Quick palette presets */}
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 8 }}>Ou use uma paleta pronta:</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {PALETTES.map(p => (
+                  <button
+                    key={p.name}
+                    onClick={() => applyPalette(p)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
+                      background: briefing.cor_primaria === p.primary ? '#EAF3DE' : '#fff',
+                      border: briefing.cor_primaria === p.primary ? '1.5px solid #C8F135' : '1px solid #e2e8f0',
+                      fontSize: 11, fontWeight: 600, color: '#374151', transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.primary }} />
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.secondary }} />
+                    {p.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

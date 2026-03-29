@@ -12,6 +12,8 @@ import EmailBriefingForm, { EmailBriefing } from "@/components/EmailBriefingForm
 import ReelsBriefingForm, { ReelsBriefing } from "@/components/ReelsBriefingForm";
 import MetaAdsBriefingForm, { MetaAdsBriefing } from "@/components/MetaAdsBriefingForm";
 import RevisionPanel, { REVISION_PRODUCTS } from "@/components/RevisionPanel";
+import ColorAssigner from "@/components/ColorAssigner";
+import type { CoreExtraida } from "@/components/ColorExtractor";
 
 /* ── Design tokens ── */
 const T = {
@@ -103,6 +105,8 @@ export default function ProjetoPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showRevision, setShowRevision] = useState(false);
   const [revisionSent, setRevisionSent] = useState<number | false>(false);
+  const [paletaCores, setPaletaCores] = useState<CoreExtraida[]>([]);
+  const [atribuicoesCores, setAtribuicoesCores] = useState<Record<string, string>>({});
   const userIdRef = useRef<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -121,7 +125,11 @@ export default function ProjetoPage() {
       if (!auth.user) { window.location.href = "/cliente"; return; }
       userIdRef.current = auth.user.id;
       const { data: o } = await sb.from("orders").select("*").eq("id", orderId).single();
-      if (o) setOrder(o);
+      if (o) {
+        setOrder(o);
+        if (o.paleta_cores?.length) setPaletaCores(o.paleta_cores);
+        if (o.atribuicoes_cores && Object.keys(o.atribuicoes_cores).length) setAtribuicoesCores(o.atribuicoes_cores);
+      }
       loadChoices();
     });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -610,6 +618,34 @@ export default function ProjetoPage() {
                           <button onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(choice.html_content || ""); w.document.close(); } }} style={{ fontSize: 11, color: "#64748b", background: "none", border: "1px solid #e2e8f0", borderRadius: 6, padding: "3px 10px", cursor: "pointer" }}>↗ Abrir</button>
                         </div>
                         <iframe srcDoc={choice.html_content} title="Landing Page" sandbox="allow-scripts" style={{ width: "100%", height: 400, border: "1px solid #e2e8f0", borderRadius: "0 0 12px 12px", display: "block" }} />
+
+                        {/* Color Assigner for landing pages */}
+                        {paletaCores.length > 0 && (
+                          <div style={{ marginTop: 16 }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: T.ink, marginBottom: 4, fontFamily: FI }}>
+                              Personalizar cores da landing page
+                            </div>
+                            <div style={{ fontSize: 12, color: T.muted, marginBottom: 12 }}>
+                              Clique nas bolinhas de cor para atribuir cada cor da sua paleta aos elementos da página.
+                            </div>
+                            <ColorAssigner
+                              paletaCores={paletaCores}
+                              atribuicoes={atribuicoesCores}
+                              onAtribuir={(elementoId, hex) => {
+                                const updated = { ...atribuicoesCores };
+                                if (hex) updated[elementoId] = hex;
+                                else delete updated[elementoId];
+                                setAtribuicoesCores(updated);
+                                // Persist to DB
+                                fetch(`/api/projects/${orderId}/paleta`, {
+                                  method: "PATCH",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ atribuicoes: updated }),
+                                });
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
 
