@@ -7,6 +7,10 @@ import LandingPageViewer from "@/components/LandingPageViewer";
 import RordensPanel from "@/components/RordensPanel";
 import PostsBriefingForm, { PostsBriefing } from "@/components/PostsBriefingForm";
 import LandingBriefingForm, { LandingBriefing } from "@/components/LandingBriefingForm";
+import CarrosselBriefingForm, { CarrosselBriefing } from "@/components/CarrosselBriefingForm";
+import EmailBriefingForm, { EmailBriefing } from "@/components/EmailBriefingForm";
+import ReelsBriefingForm, { ReelsBriefing } from "@/components/ReelsBriefingForm";
+import MetaAdsBriefingForm, { MetaAdsBriefing } from "@/components/MetaAdsBriefingForm";
 
 /* ── Design tokens ── */
 const T = {
@@ -302,8 +306,31 @@ export default function ProjetoPage() {
                     loading={executing}
                     onStepChange={setFormStep}
                   />
+                ) : order?.product === "carrossel" ? (
+                  <CarrosselBriefingForm
+                    onSubmit={(data) => handleBriefingSubmit({ ...data, type: "carrossel", resumo: data.tema }, "carrossel")}
+                    loading={executing}
+                    onStepChange={setFormStep}
+                  />
+                ) : order?.product === "email_sequence" ? (
+                  <EmailBriefingForm
+                    onSubmit={(data) => handleBriefingSubmit({ ...data, type: "email_sequence", resumo: `${data.contexto}\n${data.produto}` }, "email_sequence")}
+                    loading={executing}
+                    onStepChange={setFormStep}
+                  />
+                ) : order?.product === "reels_script" ? (
+                  <ReelsBriefingForm
+                    onSubmit={(data) => handleBriefingSubmit({ ...data, type: "reels_script", resumo: data.tema }, "reels_script")}
+                    loading={executing}
+                    onStepChange={setFormStep}
+                  />
+                ) : order?.product === "ad_copy" ? (
+                  <MetaAdsBriefingForm
+                    onSubmit={(data) => handleBriefingSubmit({ ...data, type: "ad_copy", resumo: `${data.diferenciais}\n${data.produto}` }, "ad_copy")}
+                    loading={executing}
+                    onStepChange={setFormStep}
+                  />
                 ) : (
-                  /* Generic briefing form */
                   <GenericBriefingForm
                     productLabel={productLabel}
                     onSubmit={(text) => handleBriefingSubmit({ type: order?.product, resumo: text }, order?.product)}

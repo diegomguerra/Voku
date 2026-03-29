@@ -26,16 +26,24 @@ const PRODUCT_CHIPS: Record<string, Record<number, string[]>> = {
     1: ["O que é um bom hook?", "Quantas hashtags devo usar?", "Meu público é..."],
   },
   carrossel: {
-    1: ["Quantos slides é ideal?", "O que vai no primeiro slide?", "Meu objetivo é..."],
+    1: ["O que é segmento?", "Posso ter mais de um público?", "Não tenho segmento definido"],
+    2: ["O que é estrutura narrativa?", "Quantos slides é o ideal?", "Qual objetivo converte mais?"],
+    3: ["O que é CTA?", "Pode escrever no meu estilo", "Quero algo mais direto"],
   },
   email_sequence: {
-    1: ["Qual frequência de envio?", "Posso usar tom informal?", "Quero vender no último e-mail"],
+    1: ["O que é sequência de e-mails?", "Meu lead veio de anúncio", "Ainda não tenho lista"],
+    2: ["Qual sequência converte mais?", "O que é onboarding?", "Posso vender logo no primeiro e-mail?"],
+    3: ["O que é tom persuasivo?", "Como evitar spam?", "Pode escrever em meu nome"],
   },
   reels_script: {
-    1: ["Qual duração ideal?", "Preciso de cortes?", "Quero algo mais direto"],
+    1: ["Reels para produto ou pessoa?", "Qual rede social?", "Nunca gravei antes"],
+    2: ["Qual duração performa melhor?", "Posso não aparecer?", "Não tenho tema definido"],
+    3: ["O que são cortes?", "Preciso de legenda?", "Pode ser mais dinâmico"],
   },
   ad_copy: {
-    1: ["Quais ângulos funcionam?", "Meu produto é...", "Quero focar em dor"],
+    1: ["O que são diferenciais?", "Vendo produto físico", "Sou prestador de serviço"],
+    2: ["Qual ângulo converte mais?", "Posso usar mais de um ângulo?", "Não tenho oferta ainda"],
+    3: ["O que o Meta bloqueia?", "Como funciona prova social?", "Pode ser mais agressivo"],
   },
   content_pack: {
     1: ["O que são pilares de conteúdo?", "Quantos posts por semana?", "Meu público é..."],
