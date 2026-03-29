@@ -292,6 +292,7 @@ export default function ProjetoPage() {
             produtoLabel={productLabel}
             passo={formStep}
             status={status}
+            orderId={orderId}
           />
 
           {/* ── Coluna direita — muda por status ── */}

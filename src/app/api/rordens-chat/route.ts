@@ -29,6 +29,8 @@ function buildSystemPrompt(produto: string, passo: number, formContext: string) 
 
   return `Você é Rordens, Coordenador de Prompts da Voku. Guia o usuário pelo briefing de ${productLabel[produto] || "conteúdo"}. Seja conciso (máx 3 frases por resposta). Quando o usuário responder algo que preenche um campo do formulário, confirme que anotou e sugira o próximo campo. Se o modo for "formulário", seja reativo — responda dúvidas. Nunca revele ser Claude ou usar a Anthropic. Responda em pt-BR.
 
+Se o usuário enviar uma imagem, analise o que vê e relacione com o briefing (ex: paleta de cores, estilo visual, referências de marca, logo, etc.).
+
 ${productFields}
 
 Passo atual do formulário: ${passo}
@@ -36,7 +38,7 @@ ${formContext ? `\nEstado atual do formulário:\n${formContext}` : ""}`;
 }
 
 export async function POST(req: Request) {
-  const { messages, formContext, produto, passo, secaoAtiva, modo } = await req.json();
+  const { messages, formContext, produto, passo, secaoAtiva, modo, imagem } = await req.json();
 
   const system = buildSystemPrompt(
     produto || "post_instagram",
@@ -46,14 +48,41 @@ export async function POST(req: Request) {
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
+  // Build messages — if last message has an image, use multimodal content
+  const apiMessages = (messages || []).map((m: { role: string; content: string }, idx: number) => {
+    const isLast = idx === (messages || []).length - 1;
+
+    if (isLast && imagem && m.role === "user") {
+      return {
+        role: "user" as const,
+        content: [
+          {
+            type: "image" as const,
+            source: {
+              type: "base64" as const,
+              media_type: imagem.mediaType,
+              data: imagem.base64,
+            },
+          },
+          {
+            type: "text" as const,
+            text: m.content,
+          },
+        ],
+      };
+    }
+
+    return {
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    };
+  });
+
   const stream = await client.messages.stream({
     model: "claude-sonnet-4-20250514",
     max_tokens: 512,
     system,
-    messages: (messages || []).map((m: { role: string; content: string }) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
+    messages: apiMessages,
   });
 
   const encoder = new TextEncoder();

@@ -5,6 +5,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  imageUrl?: string;       // blob URL for preview
+  imageBase64?: string;    // base64 for API
+  imageMediaType?: string; // MIME type
+  fileName?: string;       // file attachment name
+  fileSize?: number;       // file attachment size
 }
 
 interface RordensPanelProps {
@@ -14,6 +19,7 @@ interface RordensPanelProps {
   formContext?: string;
   chips?: string[];
   status?: "briefing" | "producao" | "aguardando_aprovacao" | "concluido";
+  orderId?: string;
 }
 
 /* ─── Product chip sets ─── */
@@ -54,19 +60,40 @@ const PRODUCT_CHIPS: Record<string, Record<number, string[]>> = {
   },
 };
 
+/* ─── Helpers ─── */
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string).split(",")[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes}B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
 /* ─── CSS keyframes ─── */
 const RORDENS_CSS = `
 @keyframes rordens-pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(1.15)}}
 @keyframes rordens-dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
 `;
 
-export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status }: RordensPanelProps) {
+export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status, orderId }: RordensPanelProps) {
   const [modo, setModo] = useState<"chat" | "form" | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
+  const [gravando, setGravando] = useState(false);
+  const [pendingImage, setPendingImage] = useState<{ base64: string; mediaType: string; url: string } | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -80,6 +107,29 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     }
   }, [input]);
 
+  /* Ctrl+V paste image */
+  useEffect(() => {
+    const handlePaste = async (e: ClipboardEvent) => {
+      const items = Array.from(e.clipboardData?.items || []);
+      const imageItem = items.find(item => item.type.startsWith("image/"));
+      if (!imageItem) return;
+      e.preventDefault();
+      const file = imageItem.getAsFile();
+      if (!file) return;
+
+      // If not in chat mode yet, auto-activate
+      if (!modo) selectMode("chat");
+
+      const base64 = await fileToBase64(file);
+      const url = URL.createObjectURL(file);
+      setPendingImage({ base64, mediaType: file.type, url });
+      textareaRef.current?.focus();
+    };
+    document.addEventListener("paste", handlePaste);
+    return () => document.removeEventListener("paste", handlePaste);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo]);
+
   const activeChips = chips || PRODUCT_CHIPS[produto]?.[passo] || PRODUCT_CHIPS[produto]?.[1] || [];
 
   const selectMode = (m: "chat" | "form") => {
@@ -90,19 +140,40 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     setMessages([{ role: "assistant", content: greeting }]);
   };
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!text.trim() || streaming) return;
-    const userMsg: Msg = { role: "user", content: text.trim() };
+  const sendMessage = useCallback(async (text: string, image?: { base64: string; mediaType: string; url: string }) => {
+    if ((!text.trim() && !image) || streaming) return;
+
+    const userMsg: Msg = {
+      role: "user",
+      content: text.trim() || (image ? "O que você vê nessa imagem?" : ""),
+      ...(image && { imageUrl: image.url, imageBase64: image.base64, imageMediaType: image.mediaType }),
+    };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setInput("");
+    setPendingImage(null);
     setStreaming(true);
 
     try {
+      // Build API payload — only send base64 for the last message if it has an image
+      const apiMessages = newMsgs.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
       const res = await fetch("/api/rordens-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: newMsgs, formContext, produto, passo, modo }),
+        body: JSON.stringify({
+          messages: apiMessages,
+          formContext,
+          produto,
+          passo,
+          modo,
+          ...(image && {
+            imagem: { base64: image.base64, mediaType: image.mediaType },
+          }),
+        }),
       });
 
       const reader = res.body!.getReader();
@@ -135,6 +206,91 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
       setStreaming(false);
     }
   }, [messages, formContext, produto, passo, modo, streaming]);
+
+  /* ─── File upload handler ─── */
+  const handleFiles = async (files: FileList) => {
+    if (!modo) selectMode("chat");
+
+    for (const file of Array.from(files)) {
+      if (file.type.startsWith("image/") && file.size <= 10 * 1024 * 1024) {
+        const base64 = await fileToBase64(file);
+        const url = URL.createObjectURL(file);
+        // Send image message directly
+        await sendMessage(
+          `Recebi essa imagem (${file.name}). O que você identifica que pode ser útil para o briefing?`,
+          { base64, mediaType: file.type, url }
+        );
+      } else if (file.size <= 20 * 1024 * 1024) {
+        // Non-image file — show as attachment chip
+        const fileMsg: Msg = {
+          role: "user",
+          content: `Arquivo enviado: ${file.name}`,
+          fileName: file.name,
+          fileSize: file.size,
+        };
+        setMessages(prev => [...prev, fileMsg]);
+        // Notify Rordens
+        await sendMessage(`O cliente subiu o arquivo "${file.name}" (${formatFileSize(file.size)}). Confirme o recebimento.`);
+      }
+    }
+  };
+
+  /* ─── Microphone ─── */
+  const toggleGravacao = async () => {
+    if (gravando) {
+      mediaRecorderRef.current?.stop();
+      setGravando(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        chunksRef.current = [];
+        recorder.ondataavailable = e => chunksRef.current.push(e.data);
+        recorder.onstop = async () => {
+          const blob = new Blob(chunksRef.current, { type: "audio/webm" });
+          stream.getTracks().forEach(t => t.stop());
+          // Transcribe
+          const reader = new FileReader();
+          reader.onload = async () => {
+            const base64 = (reader.result as string).split(",")[1];
+            try {
+              const res = await fetch("/api/transcribe", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ audio: base64, mediaType: "audio/webm" }),
+              });
+              const data = await res.json();
+              if (data.texto) {
+                setInput(prev => prev + (prev ? " " : "") + data.texto);
+                textareaRef.current?.focus();
+              }
+            } catch {
+              setMessages(prev => [
+                ...prev,
+                { role: "assistant", content: "Não consegui transcrever o áudio. Tente digitar sua mensagem." },
+              ]);
+            }
+          };
+          reader.readAsDataURL(blob);
+        };
+        recorder.start();
+        mediaRecorderRef.current = recorder;
+        setGravando(true);
+      } catch {
+        setMessages(prev => [
+          ...prev,
+          { role: "assistant", content: "Não consegui acessar o microfone. Verifique as permissões do navegador." },
+        ]);
+      }
+    }
+  };
+
+  /* ─── Send with pending image ─── */
+  const handleSend = () => {
+    sendMessage(input, pendingImage || undefined);
+  };
+
+  const canSend = input.trim() || pendingImage;
 
   return (
     <>
@@ -233,17 +389,46 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
                     maxWidth: 300,
                   }}
                 >
-                  <div style={{
-                    background: m.role === "user" ? "#C8F135" : "#1a1a1a",
-                    border: m.role === "user" ? "none" : "1px solid #2a2a2a",
-                    color: m.role === "user" ? "#111" : "#e8e8e8",
-                    padding: "10px 14px",
-                    borderRadius: m.role === "user" ? "12px 4px 12px 12px" : "4px 12px 12px 12px",
-                    fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, lineHeight: 1.6,
-                    whiteSpace: "pre-wrap",
-                  }}>
-                    {m.content}
-                  </div>
+                  {/* Image preview */}
+                  {m.imageUrl && (
+                    <div style={{ marginBottom: 4 }}>
+                      <img src={m.imageUrl} alt="" style={{
+                        width: "100%", maxWidth: 240, borderRadius: 10, display: "block",
+                      }} />
+                    </div>
+                  )}
+
+                  {/* File attachment chip */}
+                  {m.fileName && !m.imageUrl && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      background: "#1a1a1a", border: "1px solid #333",
+                      borderRadius: 8, padding: "8px 12px", marginBottom: 4,
+                    }}>
+                      <span style={{ fontSize: 16 }}>📎</span>
+                      <div>
+                        <div style={{ fontSize: 12, color: "#e8e8e8", fontWeight: 500 }}>{m.fileName}</div>
+                        {m.fileSize && (
+                          <div style={{ fontSize: 10, color: "#666" }}>{formatFileSize(m.fileSize)}</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Text bubble */}
+                  {m.content && (
+                    <div style={{
+                      background: m.role === "user" ? "#C8F135" : "#1a1a1a",
+                      border: m.role === "user" ? "none" : "1px solid #2a2a2a",
+                      color: m.role === "user" ? "#111" : "#e8e8e8",
+                      padding: "10px 14px",
+                      borderRadius: m.role === "user" ? "12px 4px 12px 12px" : "4px 12px 12px 12px",
+                      fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, lineHeight: 1.6,
+                      whiteSpace: "pre-wrap",
+                    }}>
+                      {m.content}
+                    </div>
+                  )}
                 </div>
               ))}
               {/* Typing indicator */}
@@ -305,38 +490,100 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           );
         })()}
 
-        {/* ─── Input ─── */}
+        {/* ─── Pending image preview ─── */}
+        {pendingImage && (
+          <div style={{ padding: "6px 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+            <img src={pendingImage.url} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover", border: "1px solid #333" }} />
+            <span style={{ fontSize: 11, color: "#888", flex: 1 }}>Imagem pronta para enviar</span>
+            <button onClick={() => setPendingImage(null)} style={{ background: "none", border: "none", color: "#888", cursor: "pointer", fontSize: 16 }}>×</button>
+          </div>
+        )}
+
+        {/* ─── Input area: [+] [mic] [textarea] [→] ─── */}
         {modo && (
           <div style={{
-            padding: "12px 16px", borderTop: "1px solid #222",
+            padding: "10px 14px", borderTop: "1px solid #222",
             display: "flex", alignItems: "flex-end", gap: 8, flexShrink: 0,
           }}>
+            {/* Upload button */}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Enviar arquivo ou imagem"
+              style={{
+                width: 34, height: 34, borderRadius: "50%",
+                background: "#1a1a1a", border: "1px solid #333",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "#C8F135")}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = "#333")}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path d="M7 1v12M1 7h12" stroke="#888" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,.pdf,.doc,.docx,.ai,.svg,.fig,.sketch"
+              onChange={e => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
+              style={{ display: "none" }}
+            />
+
+            {/* Microphone button */}
+            <button
+              onClick={toggleGravacao}
+              title={gravando ? "Parar gravação" : "Gravar áudio"}
+              style={{
+                width: 34, height: 34, borderRadius: "50%",
+                background: gravando ? "#C8F135" : "#1a1a1a",
+                border: `1px solid ${gravando ? "#C8F135" : "#333"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: "pointer", flexShrink: 0, transition: "all 0.15s",
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4Z"
+                  stroke={gravando ? "#111" : "#888"} strokeWidth="2" />
+                <path d="M19 10v1a7 7 0 0 1-14 0v-1M12 19v4M8 23h8"
+                  stroke={gravando ? "#111" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+
+            {/* Textarea */}
             <textarea
               ref={textareaRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
-              placeholder="Escreva para o Rordens..."
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+              placeholder={pendingImage ? "Adicione uma pergunta sobre a imagem..." : "Escreva para o Rordens... (Ctrl+V para colar imagem)"}
               rows={1}
               style={{
-                flex: 1, padding: "10px 14px", borderRadius: 10,
+                flex: 1, padding: "8px 12px", borderRadius: 10,
                 background: "#1a1a1a", border: "1px solid #2a2a2a",
                 fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, color: "#e8e8e8",
                 outline: "none", resize: "none", maxHeight: 100, lineHeight: 1.5,
               }}
             />
+
+            {/* Send button */}
             <button
-              onClick={() => sendMessage(input)}
-              disabled={streaming || !input.trim()}
+              onClick={handleSend}
+              disabled={streaming || !canSend}
               style={{
-                width: 36, height: 36, borderRadius: 8, background: "#C8F135",
-                border: "none", cursor: streaming ? "wait" : "pointer",
+                width: 34, height: 34, borderRadius: 10,
+                background: canSend ? "#C8F135" : "#1a1a1a",
+                border: "none", cursor: canSend && !streaming ? "pointer" : "default",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                opacity: streaming || !input.trim() ? 0.4 : 1, flexShrink: 0,
+                flexShrink: 0, transition: "background 0.15s",
+                opacity: streaming ? 0.4 : 1,
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <path d="M5 12h14M13 6l6 6-6 6" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12h14M13 6l6 6-6 6"
+                  stroke={canSend ? "#111" : "#555"}
+                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
           </div>
