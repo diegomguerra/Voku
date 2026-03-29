@@ -53,6 +53,9 @@ function deriveStatus(order: any, choices: Choice[], executing: boolean): "brief
   // Choices with a selected one = concluído (even if status is stale)
   if (choices.length > 0 && choices.some(c => c.is_selected)) return "concluido";
 
+  // Choices with html_content (landing pages) → at least aguardando_aprovacao
+  if (choices.length > 0 && choices.some(c => c.html_content)) return "aguardando_aprovacao";
+
   // Choices generated but not yet approved
   if (choices.length > 0 && !executing) return "aguardando_aprovacao";
 
@@ -98,6 +101,7 @@ export default function ProjetoPage() {
 
   const [order, setOrder] = useState<any>(null);
   const [choices, setChoices] = useState<Choice[]>([]);
+  const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [revisionOpen, setRevisionOpen] = useState<string | null>(null);
@@ -124,16 +128,22 @@ export default function ProjetoPage() {
     sb.auth.getUser().then(async ({ data: auth }) => {
       if (!auth.user) { window.location.href = "/cliente"; return; }
       userIdRef.current = auth.user.id;
-      const { data: o } = await sb.from("orders").select("*").eq("id", orderId).single();
+      const [{ data: o }, { data: ch }] = await Promise.all([
+        sb.from("orders").select("*").eq("id", orderId).single(),
+        sb.from("choices")
+          .select("id, label, content, image_url, position, is_selected, html_content")
+          .eq("order_id", orderId).order("position"),
+      ]);
       if (o) {
         setOrder(o);
         if (o.paleta_cores?.length) setPaletaCores(o.paleta_cores);
         if (o.atribuicoes_cores && Object.keys(o.atribuicoes_cores).length) setAtribuicoesCores(o.atribuicoes_cores);
       }
-      loadChoices();
+      if (ch) setChoices(ch as Choice[]);
+      setLoading(false);
     });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [orderId, loadChoices]);
+  }, [orderId]);
 
   /* ── Poll choices when executing ── */
   useEffect(() => {
@@ -252,6 +262,22 @@ export default function ProjetoPage() {
   /* ══════════════════════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════════════════════ */
+
+  // Loading state — prevent rendering briefing form before data arrives
+  if (loading) {
+    return (
+      <>
+        <style>{KEYFRAMES}</style>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 64px)", fontFamily: FF, background: T.sand }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${T.border}`, borderTopColor: T.lime, animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
+            <div style={{ fontSize: 13, color: T.muted }}>Carregando projeto...</div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <style>{KEYFRAMES}</style>
