@@ -4,6 +4,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useUserContext } from "@/hooks/useUserContext";
 import LandingPageViewer from "@/components/LandingPageViewer";
+import RordensPanel from "@/components/RordensPanel";
 
 /* ── Design tokens ── */
 const C = {
@@ -636,8 +637,11 @@ export default function ProjetoPage() {
   const allImagesReady = hasChoices && choices.every(c => c.image_url);
   const selectedChoice = choices.find(c => c.is_selected);
 
+  /* ── Form step tracking for Rordens ── */
+  const [formStep, setFormStep] = useState(1);
+
   /* ══════════════════════════════════════════════════════════════
-     LANDING PAGE — dedicated flow
+     LANDING PAGE — dedicated flow with Rordens split-screen
      ══════════════════════════════════════════════════════════════ */
   if (order?.product === 'landing_page_copy') {
     const choiceComHTML = choices?.find((c: any) => c.html_content);
@@ -650,39 +654,50 @@ export default function ProjetoPage() {
     };
 
     return (
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px', fontFamily: FF }}>
-        <div style={{ marginBottom: 24 }}>
-          <span style={{
-            background: '#f0fdf4', color: '#16a34a', fontSize: 12, fontWeight: 600,
-            padding: '3px 10px', borderRadius: 100, border: '1px solid #bbf7d0',
-            display: 'inline-block'
-          }}>
-            🌐 LANDING PAGE
-          </span>
-          <h1 style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: '#0f172a' }}>
-            {order.preview_text?.slice(0, 80) || 'Landing Page'}
-          </h1>
-          <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-            {choiceComHTML
-              ? '✓ HTML gerado · visualize o preview ou baixe abaixo'
-              : 'Preencha o formulário para gerar sua landing page com IA'}
-          </p>
-        </div>
-
-        <LandingPageViewer
-          orderId={order.id}
-          choiceId={choiceComHTML?.id}
-          userId={userIdRef.current || ''}
-          initialHtml={choiceComHTML?.html_content || ''}
-          prefill={prefill}
+      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", height: "calc(100vh - 64px)", fontFamily: FF, overflow: "hidden" }}>
+        <RordensPanel
+          produto="landing_page_copy"
+          produtoLabel="Landing Page"
+          passo={formStep}
         />
+        <div style={{ background: "#FAF8F3", overflowY: "auto" }}>
+          <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 24px' }}>
+            <div style={{ marginBottom: 24 }}>
+              <span style={{
+                background: '#f0fdf4', color: '#16a34a', fontSize: 12, fontWeight: 600,
+                padding: '3px 10px', borderRadius: 100, border: '1px solid #bbf7d0',
+                display: 'inline-block'
+              }}>
+                🌐 LANDING PAGE
+              </span>
+              <h1 style={{ fontSize: 22, fontWeight: 700, marginTop: 8, color: '#0f172a' }}>
+                {order.preview_text?.slice(0, 80) || 'Landing Page'}
+              </h1>
+              <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                {choiceComHTML
+                  ? '✓ HTML gerado · visualize o preview ou baixe abaixo'
+                  : 'Preencha o formulário para gerar sua landing page com IA'}
+              </p>
+            </div>
+
+            <LandingPageViewer
+              orderId={order.id}
+              choiceId={choiceComHTML?.id}
+              userId={userIdRef.current || ''}
+              initialHtml={choiceComHTML?.html_content || ''}
+              prefill={prefill}
+            />
+          </div>
+        </div>
       </div>
     );
   }
 
   /* ══════════════════════════════════════════════════════════════
-     RENDER — standard products
+     RENDER — standard products with Rordens split-screen
      ══════════════════════════════════════════════════════════════ */
+  const productLabel = PRODUCT_LABELS[order?.product] || "Conteúdo";
+
   return (
     <>
       <style>{KEYFRAMES}</style>
@@ -699,10 +714,17 @@ export default function ProjetoPage() {
         </nav>
 
         {/* ── BODY ── */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: hasChoices ? "380px 1fr 1fr" : "380px 1fr", overflow: "hidden" }}>
+
+          {/* ── RORDENS PANEL ── */}
+          <RordensPanel
+            produto={order?.product || "post_instagram"}
+            produtoLabel={productLabel}
+            passo={1}
+          />
 
           {/* ── CHAT COLUMN ── */}
-          <div style={{ width: hasChoices ? 400 : "100%", maxWidth: 600, flexShrink: 0, borderRight: hasChoices ? `1px solid ${C.border}` : "none", display: "flex", flexDirection: "column", background: C.bg, margin: hasChoices ? 0 : "0 auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", background: C.bg }}>
 
             {/* Chat header */}
             <div style={{ padding: "12px 16px", borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
