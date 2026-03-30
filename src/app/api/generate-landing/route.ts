@@ -32,6 +32,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: data.error || 'Falha ao gerar' }, { status: 502 });
     }
 
+    // Inject logo into generated HTML if available
+    const logoBase64 = structured_data?.brand_context?.logo_base64;
+    const logoUrl = structured_data?.brand_context?.logo_url;
+    const logoSrc = logoBase64 || logoUrl;
+    if (logoSrc && data.html) {
+      // Replace text-only logo with <img> logo in nav
+      data.html = data.html.replace(
+        /<a\s+href="#"\s+class="logo">[^<]*<\/a>/i,
+        `<a href="#" class="logo"><img src="${logoSrc}" alt="${structured_data?.brand_context?.nome_marca || ''}" style="height:36px;object-fit:contain;" /></a>`
+      );
+      // Also replace hero badge if it just has the brand name
+      const nomeMarca = structured_data?.brand_context?.nome_marca || '';
+      if (nomeMarca) {
+        data.html = data.html.replace(
+          new RegExp(`<div class="hero-badge">✦\\s*${nomeMarca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*</div>`, 'i'),
+          `<div class="hero-badge"><img src="${logoSrc}" alt="${nomeMarca}" style="height:20px;object-fit:contain;vertical-align:middle;margin-right:6px;" /> ${nomeMarca}</div>`
+        );
+      }
+    }
+
     // Upsert: atualiza choice existente OU cria novo
     if (order_id && user_id && data.html) {
       const sb = createClient(supabaseUrl, serviceKey);
