@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
     const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const serviceKey   = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-    // Chama a Edge Function generate-landing-page
-    const res = await fetch(`${supabaseUrl}/functions/v1/generate-landing-page`, {
+    // Chama a Edge Function gerar-landing-page (nome real no Supabase)
+    const res = await fetch(`${supabaseUrl}/functions/v1/gerar-landing-page`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
