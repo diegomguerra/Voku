@@ -84,20 +84,18 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
     if (hex) colorMap[hex] = (colorMap[hex] || 0) + 1;
   }
 
-  // Convert to array, compute saturation, filter, sort
+  // Convert to array, keep ALL colors that appear frequently enough (like Canvas does)
+  const totalColors = Object.values(colorMap).reduce((a, b) => a + b, 0);
+  const minCount = Math.max(3, totalColors * 0.005); // at least 0.5% of all occurrences
+
   return Object.entries(colorMap)
     .map(([hex, count]) => ({ hex, count, sat: saturation(hex) }))
-    .filter(({ hex, sat }) => {
-      const lum = luminance(hex);
-      // Keep if: saturated (brand color) OR very frequent dark/light (might be brand black/white)
-      if (sat > 0.15) return true; // chromatic color
-      if (lum < 10 || lum > 245) return false; // pure black/white
-      return false; // skip grays
-    })
+    .filter(({ count }) => count >= minCount)
     .sort((a, b) => {
-      // Prioritize: high saturation first, then frequency
-      if (a.sat > 0.3 && b.sat <= 0.3) return -1;
-      if (b.sat > 0.3 && a.sat <= 0.3) return 1;
+      // Saturated colors first, then by frequency
+      const aChromatic = a.sat > 0.2 ? 1 : 0;
+      const bChromatic = b.sat > 0.2 ? 1 : 0;
+      if (aChromatic !== bChromatic) return bChromatic - aChromatic;
       return b.count - a.count;
     })
     .slice(0, 8);
