@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const { image, mediaType, filename } = await req.json();
 
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 1024,
       messages: [
         {
@@ -20,29 +20,35 @@ export async function POST(req: Request) {
             },
             {
               type: "text",
-              text: `Analise esta imagem e extraia as cores principais da paleta ou identidade visual presente.
+              text: `Você é um especialista em design e identidade visual. Olhe com atenção para esta imagem e extraia as cores EXATAS que aparecem nela.
 
-Retorne APENAS um JSON válido, sem texto adicional, no formato:
+INSTRUÇÕES CRÍTICAS:
+1. Use um eyedropper mental — identifique os pixels reais das áreas de cor sólida
+2. Para cada cor, aponte EXATAMENTE onde ela aparece na imagem (botão, header, fundo, logo, texto, etc.)
+3. NÃO invente cores que não existem na imagem
+4. NÃO use cores genéricas — extraia os hex codes PRECISOS que você observa
+5. Se a imagem é um screenshot de site, foque nos elementos de UI: botões, headers, links, backgrounds, badges
+
+Retorne APENAS este JSON válido, sem markdown nem texto adicional:
 {
   "cores": [
     {
-      "hex": "#1A3A2A",
-      "rgb": "rgb(26, 58, 42)",
-      "nome": "Verde floresta",
-      "uso_sugerido": "Cor principal / fundo",
+      "hex": "#E02020",
+      "rgb": "rgb(224, 32, 32)",
+      "nome": "Vermelho vibrante",
+      "uso_sugerido": "Botões e CTAs",
       "fonte": "${filename}"
     }
   ]
 }
 
 Regras:
-- Extraia entre 2 e 8 cores dominantes e significativas
-- Ignore brancos puros (#FFFFFF) e pretos puros (#000000) a menos que sejam claramente parte da identidade visual
-- Prefira cores que parecem ser da identidade de marca (não cores de fotos de fundo aleatórias)
-- O campo "nome" deve ser em português, descritivo (ex: "Verde musgo", "Amarelo vibrante", "Creme quente")
-- O campo "uso_sugerido" deve ser uma sugestão prática em português (ex: "Cor primária", "Destaque / CTA", "Texto sobre fundo escuro", "Fundo secundário")
-- Os hex codes devem ser em maiúsculas com # (ex: #1A3A2A)
-- Retorne SOMENTE o JSON, nada mais`,
+- 3 a 8 cores que REALMENTE aparecem na imagem
+- Hex codes PRECISOS em MAIÚSCULAS com # (ex: #6366F1, não #6060F0)
+- Ignore brancos puros e pretos puros, a menos que sejam claramente parte da marca
+- Nomes descritivos em português
+- uso_sugerido baseado em ONDE a cor aparece na imagem
+- Retorne SOMENTE o JSON`,
             },
           ],
         },
@@ -50,10 +56,13 @@ Regras:
     });
 
     const text = response.content[0].type === "text" ? response.content[0].text : "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const data = JSON.parse(clean);
+    const jsonMatch = text.replace(/```json|```/g, "").trim().match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("JSON não encontrado");
+
+    const data = JSON.parse(jsonMatch[0]);
     return NextResponse.json(data);
-  } catch {
+  } catch (err: any) {
+    console.error("[extract-colors]", err?.message);
     return NextResponse.json({ cores: [] }, { status: 200 });
   }
 }
