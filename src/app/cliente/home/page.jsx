@@ -188,8 +188,11 @@ export default function ClienteHomePage() {
               {/* Title */}
               <div style={{
                 fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 16,
-                color: "#111", marginTop: 12,
+                color: "#111", marginTop: 12, display: "flex", alignItems: "baseline", gap: 8,
               }}>
+                {order.order_number && (
+                  <span style={{ fontSize: 12, fontWeight: 800, color: "#888" }}>#{order.order_number}</span>
+                )}
                 {PRODUCT_NAME[order.product] || order.product} — {fmtShort(order.created_at)}
               </div>
 
