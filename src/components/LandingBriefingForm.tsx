@@ -274,7 +274,7 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
                 setBriefing(b => ({
                   ...b,
                   cor_primaria:   d.primaria   ?? b.cor_primaria,
-                  cor_secundaria: d.secundaria ?? b.cor_secundaria,
+                  cor_secundaria: d.fundo      ?? d.secundaria ?? b.cor_secundaria,
                   cor_texto:      d.texto      ?? b.cor_texto,
                 }));
               }}
@@ -325,29 +325,59 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
             </div>
           </div>
 
-          {/* PREVIEW DE CORES */}
-          <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-            <div style={{ background: briefing.cor_secundaria, padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                {briefing.logo_base64
-                  ? <img src={briefing.logo_base64} alt="logo" style={{ height: 32, objectFit: 'contain' }} />
-                  : <span style={{ color: briefing.cor_primaria, fontWeight: 800, fontSize: 20 }}>{briefing.nome_marca || 'Sua Marca'}</span>
-                }
+          {/* PREVIEW DE CORES — reflete exatamente as designações */}
+          {(() => {
+            const bg = designacoes.fundo || briefing.cor_secundaria;
+            const pri = designacoes.primaria || briefing.cor_primaria;
+            const txt = designacoes.texto || briefing.cor_texto;
+            const sec = designacoes.secundaria || briefing.cor_secundaria;
+            const acc = designacoes.acento || pri;
+            // Contraste: texto do botão escuro se primária é clara
+            const priLum = (() => { const r = parseInt(pri.slice(1,3),16); const g = parseInt(pri.slice(3,5),16); const b = parseInt(pri.slice(5,7),16); return (r*299+g*587+b*114)/1000; })();
+            const btnText = priLum > 150 ? '#111111' : '#FFFFFF';
+            return (
+              <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                {/* Nav */}
+                <div style={{ background: sec, padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    {briefing.logo_base64
+                      ? <img src={briefing.logo_base64} alt="logo" style={{ height: 28, objectFit: 'contain' }} />
+                      : <span style={{ color: pri, fontWeight: 800, fontSize: 18 }}>{briefing.nome_marca || 'Sua Marca'}</span>
+                    }
+                  </div>
+                  <div style={{ background: pri, color: btnText, padding: '7px 18px', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
+                    {briefing.cta_texto || 'Começar agora'}
+                  </div>
+                </div>
+                {/* Hero */}
+                <div style={{ background: bg, padding: '32px 24px' }}>
+                  <p style={{ color: acc, fontSize: 10, fontWeight: 700, letterSpacing: 2, marginBottom: 8, textTransform: 'uppercase' }}>
+                    {briefing.nome_marca || 'SUA MARCA'}
+                  </p>
+                  <h3 style={{ color: txt, fontSize: 22, fontWeight: 900, marginBottom: 8, lineHeight: 1.2 }}>
+                    {briefing.produto || 'Headline da sua landing page'}
+                  </h3>
+                  <p style={{ color: txt, opacity: 0.65, fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>
+                    {briefing.publico || 'Subheadline descrevendo benefícios'}
+                  </p>
+                  <div style={{ display: 'inline-block', background: pri, color: btnText, padding: '10px 24px', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+                    {briefing.cta_texto || 'Saiba mais'}
+                  </div>
+                </div>
+                {/* Section alt */}
+                <div style={{ background: sec !== bg ? sec : (priLum > 150 ? '#111' : '#f8f8f8'), padding: '16px 24px' }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    {['Benefício 1', 'Benefício 2', 'Benefício 3'].map((b, i) => (
+                      <div key={i} style={{ flex: 1, background: bg, borderRadius: 8, padding: '12px 10px', textAlign: 'center' }}>
+                        <div style={{ fontSize: 18, marginBottom: 4, color: acc }}>✦</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: txt }}>{b}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div style={{ background: briefing.cor_primaria, color: briefing.cor_secundaria, padding: '8px 20px', borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
-                {briefing.cta_texto || 'Começar agora'}
-              </div>
-            </div>
-            <div style={{ background: briefing.cor_secundaria, padding: '24px', borderTop: `1px solid ${briefing.cor_primaria}22` }}>
-              <p style={{ color: briefing.cor_primaria, fontSize: 11, fontWeight: 700, letterSpacing: 2, marginBottom: 8, textTransform: 'uppercase' }}>Preview</p>
-              <h3 style={{ color: briefing.cor_texto, fontSize: 22, fontWeight: 900, marginBottom: 8 }}>
-                {briefing.produto || 'Headline da sua landing page vai aparecer aqui'}
-              </h3>
-              <p style={{ color: briefing.cor_texto, opacity: 0.6, fontSize: 14 }}>
-                {briefing.publico || 'Subheadline descrevendo o público e benefícios'}
-              </p>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       )}
 

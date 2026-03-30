@@ -75,18 +75,23 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
   // Combine all text
   const allText = html + "\n" + cssTexts.join("\n");
 
-  // Extract all hex codes
-  const hexRe = /#[0-9a-fA-F]{3,6}\b/g;
+  // Extract hex codes ONLY from color-relevant CSS properties
+  // This avoids picking up random hex from SVGs, data URIs, comments, etc.
+  const colorPropRe = /(?:color|background(?:-color)?|border(?:-color|-top-color|-bottom-color|-left-color|-right-color)?|fill|stroke|outline-color|box-shadow|text-shadow)\s*:\s*([^;}{]+)/gi;
   const colorMap: Record<string, number> = {};
-  let match;
-  while ((match = hexRe.exec(allText)) !== null) {
-    const hex = normalizeHex(match[0]);
-    if (hex) colorMap[hex] = (colorMap[hex] || 0) + 1;
+  let propMatch;
+  while ((propMatch = colorPropRe.exec(allText)) !== null) {
+    const value = propMatch[1];
+    const hexInValue = value.match(/#[0-9a-fA-F]{3,6}\b/g) || [];
+    for (const raw of hexInValue) {
+      const hex = normalizeHex(raw);
+      if (hex) colorMap[hex] = (colorMap[hex] || 0) + 1;
+    }
   }
 
-  // Convert to array, keep ALL colors that appear frequently enough (like Canvas does)
+  // Convert to array, keep colors that appear frequently (≥1.5% of total or ≥15 times)
   const totalColors = Object.values(colorMap).reduce((a, b) => a + b, 0);
-  const minCount = Math.max(3, totalColors * 0.005); // at least 0.5% of all occurrences
+  const minCount = Math.max(15, totalColors * 0.015);
 
   return Object.entries(colorMap)
     .map(([hex, count]) => ({ hex, count, sat: saturation(hex) }))
