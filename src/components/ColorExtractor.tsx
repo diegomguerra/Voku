@@ -201,54 +201,31 @@ export default function ColorExtractor({
     if (!urlInput.trim()) return;
     setExtraindoUrl(true);
     setErroUrl("");
-    setScreenshotPreview(null);
+
+    const urlNorm = urlInput.trim().startsWith("http") ? urlInput.trim() : `https://${urlInput.trim()}`;
+    setScreenshotPreview(urlNorm);
 
     try {
-      // Step 1: Screenshot the URL via Puppeteer
-      const ssRes = await fetch("/api/screenshot-url", {
+      // Extract colors from CSS of the site (server-side fetch + parse)
+      const res = await fetch("/api/extract-colors-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: urlInput.trim() }),
-      });
-      const ssData = await ssRes.json();
-      if (ssData.erro) { setErroUrl(ssData.erro); setExtraindoUrl(false); return; }
-
-      // Step 2: Convert base64 PNG to File for Canvas extraction
-      const dataUrl = `data:image/png;base64,${ssData.image}`;
-      setScreenshotPreview(dataUrl);
-      const blob = await (await fetch(dataUrl)).blob();
-      const file = new File([blob], `screenshot-${urlInput.trim().replace(/[^a-z0-9]/gi, "-")}.png`, { type: "image/png" });
-
-      // Step 3: Extract real pixel colors via Canvas (same as image upload)
-      const pixelColors = await extractColorsFromImage(file);
-      if (pixelColors.length === 0) { setErroUrl("Nenhuma cor encontrada no screenshot."); setExtraindoUrl(false); return; }
-
-      // Step 4: Send to Claude for naming/categorizing
-      const res = await fetch("/api/extract-colors", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cores_extraidas: pixelColors, filename: urlInput.trim() }),
+        body: JSON.stringify({ url: urlNorm }),
       });
       const data = await res.json();
-
-      let novasCores: CoreExtraida[];
+      if (data.erro) { setErroUrl(data.erro); setExtraindoUrl(false); return; }
       if (data.cores?.length > 0) {
-        novasCores = data.cores;
+        const novas = data.cores.filter(
+          (nova: CoreExtraida) => !cores.some(e => e.hex.toLowerCase() === nova.hex.toLowerCase())
+        );
+        const merged = [...cores, ...novas].slice(0, maxCores);
+        onChange(merged);
+        autoDesignar(merged);
+        setImagensProcessadas(prev => [...prev, urlInput.trim()]);
+        setUrlInput("");
       } else {
-        novasCores = pixelColors.map(c => ({
-          hex: c.hex, rgb: hexToRgb(c.hex), nome: nomeAutomatico(c.hex),
-          uso_sugerido: "", fonte: urlInput.trim(),
-        }));
+        setErroUrl("Nenhuma cor de marca encontrada. Tente subir uma imagem do site.");
       }
-
-      const filtradas = novasCores.filter(
-        (nova: CoreExtraida) => !cores.some(e => e.hex.toLowerCase() === nova.hex.toLowerCase())
-      );
-      const merged = [...cores, ...filtradas].slice(0, maxCores);
-      onChange(merged);
-      autoDesignar(merged);
-      setImagensProcessadas(prev => [...prev, urlInput]);
-      setUrlInput("");
     } catch {
       setErroUrl("Erro ao processar a URL. Tente subir uma imagem.");
     } finally {
@@ -366,14 +343,17 @@ export default function ColorExtractor({
         {erroUrl && <div style={{ fontSize: 11, color: "#E24B4A", marginTop: 4 }}>{erroUrl}</div>}
       </div>
 
-      {/* ── SCREENSHOT PREVIEW ───────────────────── */}
+      {/* ── SITE PREVIEW ────────────────────────── */}
       {screenshotPreview && (
         <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border}` }}>
           <div style={{ background: T.sand, padding: "6px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>Screenshot capturado</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <div style={{ display: "flex", gap: 4 }}>{["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} style={{ width: 7, height: 7, borderRadius: "50%", background: c }} />)}</div>
+              <span style={{ fontSize: 10, color: T.muted, fontFamily: "monospace" }}>{screenshotPreview.replace("https://", "").slice(0, 40)}</span>
+            </div>
             <button onClick={() => setScreenshotPreview(null)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
           </div>
-          <img src={screenshotPreview} alt="Screenshot" style={{ width: "100%", display: "block" }} />
+          <iframe src={screenshotPreview} title="Site preview" sandbox="allow-scripts allow-same-origin" style={{ width: "100%", height: 250, border: "none", display: "block", pointerEvents: "none" }} />
         </div>
       )}
 
