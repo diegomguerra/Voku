@@ -45,7 +45,7 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
   };
 
   // Fetch HTML
-  const htmlRes = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+  const htmlRes = await fetch(url, { headers, signal: (() => { const c = new AbortController(); setTimeout(() => c.abort(), 10000); return c.signal; })() });
   if (!htmlRes.ok) throw new Error(`HTTP ${htmlRes.status}`);
   const html = await htmlRes.text();
 
@@ -65,7 +65,8 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
   const cssTexts = await Promise.all(
     cssUrls.slice(0, 3).map(async (u) => {
       try {
-        const r = await fetch(u, { headers, signal: AbortSignal.timeout(8000) });
+        const ac = new AbortController(); setTimeout(() => ac.abort(), 8000);
+        const r = await fetch(u, { headers, signal: ac.signal });
         return r.ok ? await r.text() : "";
       } catch { return ""; }
     })
