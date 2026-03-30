@@ -369,7 +369,12 @@ export default function ProjetosPage() {
                 }}>
                   {order.preview_text || PRODUCT_NAME[order.product] || order.product}
                 </div>
-                <div style={{ fontSize: 11, color: T.inkFaint }}>{fmtDate(order.created_at)}</div>
+                <div style={{ fontSize: 11, color: T.inkFaint, display: "flex", gap: 6, alignItems: "center" }}>
+                  {order.order_number && (
+                    <span style={{ fontWeight: 700, color: T.inkMid }}>\#{order.order_number}</span>
+                  )}
+                  <span>{fmtDate(order.created_at)}</span>
+                </div>
               </div>
               <div style={{
                 fontSize: 10, fontWeight: 700, color: st.color, background: st.bg,

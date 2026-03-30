@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import ColorExtractor, { type CoreExtraida } from './ColorExtractor';
+import ColorExtractor, { type CoreExtraida, type DesignacoesCores } from './ColorExtractor';
 
 // ─────────────────────────────────────────────
 // TIPOS
@@ -78,6 +78,7 @@ const TONS = [
 // ─────────────────────────────────────────────
 export default function LandingBriefingForm({ onSubmit, loading = false, prefill }: LandingBriefingFormProps) {
   const [step, setStep]       = useState(1);
+  const [designacoes, setDesignacoes] = useState<DesignacoesCores>({});
   const [briefing, setBriefing] = useState<LandingBriefing>({
     nome_marca:     prefill?.nome_marca ?? '',
     produto:        prefill?.produto ?? '',
@@ -266,15 +267,16 @@ export default function LandingBriefingForm({ onSubmit, loading = false, prefill
             <label style={s.label}>Paleta de cores da marca</label>
             <ColorExtractor
               cores={briefing.paletaCores}
-              onChange={cores => {
-                setBriefing(b => {
-                  // Auto-assign first 3 cores to primary/secondary/text
-                  const updates: Partial<LandingBriefing> = { paletaCores: cores };
-                  if (cores.length >= 1) updates.cor_primaria = cores[0].hex;
-                  if (cores.length >= 2) updates.cor_secundaria = cores[1].hex;
-                  if (cores.length >= 3) updates.cor_texto = cores[2].hex;
-                  return { ...b, ...updates };
-                });
+              designacoes={designacoes}
+              onChange={cores => setBriefing(b => ({ ...b, paletaCores: cores }))}
+              onDesignacoes={d => {
+                setDesignacoes(d);
+                setBriefing(b => ({
+                  ...b,
+                  cor_primaria:   d.primaria   ?? b.cor_primaria,
+                  cor_secundaria: d.secundaria ?? b.cor_secundaria,
+                  cor_texto:      d.texto      ?? b.cor_texto,
+                }));
               }}
             />
 

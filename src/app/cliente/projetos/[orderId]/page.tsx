@@ -53,9 +53,6 @@ function deriveStatus(order: any, choices: Choice[], executing: boolean): "brief
   // Choices with a selected one = concluído (even if status is stale)
   if (choices.length > 0 && choices.some(c => c.is_selected)) return "concluido";
 
-  // Choices with html_content (landing pages) → at least aguardando_aprovacao
-  if (choices.length > 0 && choices.some(c => c.html_content)) return "aguardando_aprovacao";
-
   // Choices generated but not yet approved
   if (choices.length > 0 && !executing) return "aguardando_aprovacao";
 
@@ -101,7 +98,6 @@ export default function ProjetoPage() {
 
   const [order, setOrder] = useState<any>(null);
   const [choices, setChoices] = useState<Choice[]>([]);
-  const [loading, setLoading] = useState(true);
   const [executing, setExecuting] = useState(false);
   const [formStep, setFormStep] = useState(1);
   const [revisionOpen, setRevisionOpen] = useState<string | null>(null);
@@ -128,29 +124,27 @@ export default function ProjetoPage() {
     sb.auth.getUser().then(async ({ data: auth }) => {
       if (!auth.user) { window.location.href = "/cliente"; return; }
       userIdRef.current = auth.user.id;
-      const [{ data: o }, { data: ch }] = await Promise.all([
-        sb.from("orders").select("*").eq("id", orderId).single(),
-        sb.from("choices")
-          .select("id, label, content, image_url, position, is_selected, html_content")
-          .eq("order_id", orderId).order("position"),
-      ]);
+      const { data: o } = await sb.from("orders").select("*").eq("id", orderId).single();
       if (o) {
         setOrder(o);
         if (o.paleta_cores?.length) setPaletaCores(o.paleta_cores);
         if (o.atribuicoes_cores && Object.keys(o.atribuicoes_cores).length) setAtribuicoesCores(o.atribuicoes_cores);
       }
-      if (ch) setChoices(ch as Choice[]);
-      setLoading(false);
+      loadChoices();
     });
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
-  }, [orderId]);
+  }, [orderId, loadChoices]);
 
   /* ── Poll choices when executing ── */
   useEffect(() => {
     if (executing && !pollRef.current) {
       pollRef.current = setInterval(loadChoices, 4000);
     }
-    if (choices.length >= 3 && choices.every(c => c.image_url)) {
+    const isLanding = choices.length > 0 && (choices[0] as any)?.html_content !== undefined;
+    const generationDone = isLanding
+      ? choices.length >= 1 && choices.some(c => c.html_content)
+      : choices.length >= 3 && choices.every(c => c.image_url);
+    if (generationDone) {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
       setExecuting(false);
       // Reload order to get updated status
@@ -262,22 +256,6 @@ export default function ProjetoPage() {
   /* ══════════════════════════════════════════════════════════════
      RENDER
      ══════════════════════════════════════════════════════════════ */
-
-  // Loading state — prevent rendering briefing form before data arrives
-  if (loading) {
-    return (
-      <>
-        <style>{KEYFRAMES}</style>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 64px)", fontFamily: FF, background: T.sand }}>
-          <div style={{ textAlign: "center" }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${T.border}`, borderTopColor: T.lime, animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
-            <div style={{ fontSize: 13, color: T.muted }}>Carregando projeto...</div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <style>{KEYFRAMES}</style>
@@ -292,8 +270,14 @@ export default function ProjetoPage() {
           <div style={{ height: 4, background: "#E8E5DE", borderRadius: 2, overflow: "hidden", marginBottom: 8 }}>
             <div style={{ height: "100%", background: T.lime, borderRadius: 2, width: `${progress}%`, transition: "width 0.5s ease" }} />
           </div>
-          {/* Step labels */}
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          {/* Step labels + código */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            {order?.order_number && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: T.muted, fontFamily: FI, letterSpacing: 0.5 }}>
+                #{order.order_number}
+              </span>
+            )}
+            <div style={{ display: "flex", gap: 16 }}>
             {([
               { label: "Briefing",  done: true, active: status === "briefing" },
               { label: "Produção",  done: ["producao","aguardando_aprovacao","concluido"].includes(status), active: status === "producao" },
@@ -306,6 +290,7 @@ export default function ProjetoPage() {
                 fontFamily: FI,
               }}>{step.label}</span>
             ))}
+            </div>
           </div>
         </div>
 
@@ -330,8 +315,9 @@ export default function ProjetoPage() {
                 {order?.product === "landing_page_copy" ? (
                   <LandingPageViewer
                     orderId={orderId}
+                    choiceId={choices[0]?.id}
                     userId={userIdRef.current || ""}
-                    initialHtml=""
+                    initialHtml={choices.find(c => c.html_content)?.html_content || ""}
                     prefill={{ resumo: order?.preview_text || "" }}
                   />
                 ) : order?.product === "content_pack" ? (
@@ -400,8 +386,68 @@ export default function ProjetoPage() {
                   </span>
                 </div>
 
-                {/* Choices */}
-                {choices.map((choice, idx) => (
+                {/* Landing page: mostrar viewer com HTML gerado + botão de aprovação */}
+                {order?.product === "landing_page_copy" && (() => {
+                  const landingChoice = choices.find(c => c.html_content);
+                  if (!landingChoice) return null;
+                  return (
+                    <div style={{ background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                      <LandingPageViewer
+                        orderId={orderId}
+                        choiceId={landingChoice.id}
+                        userId={userIdRef.current || ""}
+                        initialHtml={landingChoice.html_content || ""}
+                      />
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                        <button
+                          onClick={() => aprovar(landingChoice.id)}
+                          disabled={submitting}
+                          style={{
+                            flex: 1, padding: "12px", borderRadius: 8, fontSize: 13, fontWeight: 800,
+                            background: T.lime, border: "none", color: T.ink, cursor: "pointer",
+                            fontFamily: FI, opacity: submitting ? 0.6 : 1,
+                          }}
+                        >Aprovar esta landing page</button>
+                        <button
+                          onClick={() => setRevisionOpen(revisionOpen === landingChoice.id ? null : landingChoice.id)}
+                          style={{
+                            flex: 1, padding: "12px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                            background: "transparent", border: `1px solid ${T.border}`, color: T.ink,
+                            cursor: "pointer", fontFamily: FF,
+                          }}
+                        >↺ Pedir ajustes</button>
+                      </div>
+                      {revisionOpen === landingChoice.id && (
+                        <div style={{ background: T.sand, border: `1px solid ${T.border}`, borderRadius: 8, padding: 10, marginTop: 8 }}>
+                          <textarea
+                            value={revisionText}
+                            onChange={e => setRevisionText(e.target.value)}
+                            placeholder="Descreva o que mudar na landing page..."
+                            rows={3}
+                            style={{
+                              width: "100%", padding: "8px 10px", borderRadius: 6, border: `1px solid ${T.border}`,
+                              fontSize: 13, fontFamily: FF, resize: "vertical", outline: "none", background: T.bg,
+                              boxSizing: "border-box",
+                            }}
+                          />
+                          <button
+                            onClick={() => pedirAjuste(landingChoice.id, revisionText)}
+                            disabled={submitting || !revisionText.trim()}
+                            style={{
+                              marginTop: 6, width: "100%", padding: "10px", borderRadius: 8,
+                              fontSize: 12, fontWeight: 700, background: T.ink, color: T.lime,
+                              border: "none", cursor: "pointer", fontFamily: FI,
+                              opacity: submitting || !revisionText.trim() ? 0.5 : 1,
+                            }}
+                          >Enviar pedido de ajuste</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {/* Choices para outros produtos */}
+                {order?.product !== "landing_page_copy" && choices.map((choice, idx) => (
                   <div key={choice.id} style={{
                     background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12,
                     padding: 12, marginBottom: 10, opacity: idx > 0 && !choices[0].is_selected ? 1 : 1,
@@ -448,20 +494,8 @@ export default function ProjetoPage() {
                         ))}
                       </div>
                     )}
-                    {/* Landing page iframe preview */}
-                    {order?.product === "landing_page_copy" && choice.html_content && (
-                      <div style={{ marginBottom: 10 }}>
-                        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderBottom: "none", borderRadius: "12px 12px 0 0", padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
-                          <div style={{ display: "flex", gap: 4 }}>{["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />)}</div>
-                          <div style={{ fontSize: 10, color: "#64748b", flex: 1, textAlign: "center" }}>Preview da Landing Page</div>
-                          <button onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(choice.html_content || ""); w.document.close(); } }} style={{ fontSize: 10, color: "#64748b", background: "none", border: "1px solid #e2e8f0", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>↗ Abrir</button>
-                        </div>
-                        <iframe srcDoc={choice.html_content} title="Landing Page Preview" sandbox="allow-scripts" style={{ width: "100%", height: 300, border: "1px solid #e2e8f0", borderRadius: "0 0 12px 12px", display: "block" }} />
-                      </div>
-                    )}
-
-                    {/* Image if exists (non-reels, non-landing) */}
-                    {order?.product !== "reels_script" && order?.product !== "landing_page_copy" && choice.image_url && (
+                    {/* Image if exists (non-reels) */}
+                    {order?.product !== "reels_script" && choice.image_url && (
                       <div style={{ borderRadius: 8, overflow: "hidden", marginBottom: 10, border: `1px solid ${T.border}` }}>
                         <img src={choice.image_url} alt="" style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
                       </div>
