@@ -48,6 +48,8 @@ export async function POST(req: NextRequest) {
         label: 'Landing Page',
         type: 'landing_page_copy',
         image_url: null,
+        is_selected: true,
+        position: 0,
       };
 
       if (existing?.id) {

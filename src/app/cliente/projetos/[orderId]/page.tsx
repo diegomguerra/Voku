@@ -644,7 +644,7 @@ export default function ProjetoPage() {
                   <div style={{ flex: 1 }}>
                     <div style={{ color: "#fff", fontSize: 13, fontWeight: 600, fontFamily: FI }}>Projeto concluído</div>
                     <div style={{ color: "#888", fontSize: 11 }}>
-                      {approvedChoice?.label || productLabel} aprovado{" "}
+                      {approvedChoice?.label || choices[0]?.label || productLabel} aprovado{" "}
                       {order?.delivered_at || order?.updated_at
                         ? `em ${new Date(order.delivered_at || order.updated_at).toLocaleDateString("pt-BR")}`
                         : ""}
@@ -661,18 +661,21 @@ export default function ProjetoPage() {
                 </div>
 
                 {/* All choices — approved highlighted, others dimmed */}
-                {choices.map((choice) => (
+                {/* For single-choice products (landing pages), treat the only choice as approved */}
+                {choices.map((choice) => {
+                  const isApproved = choice.is_selected || (choices.length === 1 && choice.html_content);
+                  return (
                   <div key={choice.id} style={{
                     background: T.bg, border: `0.5px solid ${T.border}`, borderRadius: 12,
                     padding: 16, marginBottom: 12,
-                    opacity: choice.is_selected ? 1 : 0.4,
+                    opacity: isApproved ? 1 : 0.4,
                   }}>
-                    {choice.is_selected && (
+                    {isApproved && (
                       <span style={{
                         background: "#EAF3DE", color: "#27500A", fontSize: 10,
                         fontWeight: 700, padding: "2px 10px", borderRadius: 20,
                         display: "inline-block", marginBottom: 10,
-                      }}>✓ Opção aprovada</span>
+                      }}>✓ {choices.length === 1 ? "Entregue" : "Opção aprovada"}</span>
                     )}
 
                     {/* Visual preview for posts/carrossel */}
@@ -683,7 +686,7 @@ export default function ProjetoPage() {
                     )}
 
                     {/* Landing page iframe */}
-                    {order?.product === "landing_page_copy" && choice.html_content && choice.is_selected && (
+                    {order?.product === "landing_page_copy" && choice.html_content && isApproved && (
                       <div style={{ marginBottom: 10 }}>
                         <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderBottom: "none", borderRadius: "12px 12px 0 0", padding: "10px 16px", display: "flex", alignItems: "center", gap: 10 }}>
                           <div style={{ display: "flex", gap: 6 }}>{["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c }} />)}</div>
@@ -723,7 +726,7 @@ export default function ProjetoPage() {
                     )}
 
                     {/* Reels video/image */}
-                    {order?.product === "reels_script" && choice.is_selected && (() => {
+                    {order?.product === "reels_script" && isApproved && (() => {
                       const videoClips = (choice.content as any)?.video_clips || [];
                       const sceneImages = (choice.content as any)?.scene_images || [];
                       return videoClips.length > 0 ? (
@@ -764,7 +767,7 @@ export default function ProjetoPage() {
                     </div>
 
                     {/* Actions for approved choice */}
-                    {choice.is_selected && (
+                    {isApproved && (
                       <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
                         <button
                           onClick={() => downloadPDF(choice)}
@@ -792,7 +795,8 @@ export default function ProjetoPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
 
                 {/* Revision button + panel for qualifying products */}
                 {REVISION_PRODUCTS.includes(order?.product) && !revisionSent && (
@@ -809,7 +813,7 @@ export default function ProjetoPage() {
                     ) : (
                       <RevisionPanel
                         orderId={orderId}
-                        choiceId={approvedChoice?.id}
+                        choiceId={approvedChoice?.id || choices[0]?.id}
                         produto={order?.product}
                         onClose={() => setShowRevision(false)}
                         onSubmit={(count) => { setShowRevision(false); setRevisionSent(count); }}
