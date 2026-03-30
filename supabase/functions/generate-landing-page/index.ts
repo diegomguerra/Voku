@@ -89,7 +89,7 @@ Retorne SOMENTE o código HTML, começando com <!DOCTYPE html>`;
     });
   }
 
-  return new Response(JSON.stringify({ slug, url: `/lp/${slug}` }), {
+  return new Response(JSON.stringify({ ok: true, slug, url: `/lp/${slug}`, html }), {
     headers: { ...CORS, "Content-Type": "application/json" },
   });
 });

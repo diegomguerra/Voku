@@ -448,8 +448,20 @@ export default function ProjetoPage() {
                         ))}
                       </div>
                     )}
-                    {/* Image if exists (non-reels) */}
-                    {order?.product !== "reels_script" && choice.image_url && (
+                    {/* Landing page iframe preview */}
+                    {order?.product === "landing_page_copy" && choice.html_content && (
+                      <div style={{ marginBottom: 10 }}>
+                        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderBottom: "none", borderRadius: "12px 12px 0 0", padding: "8px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                          <div style={{ display: "flex", gap: 4 }}>{["#ef4444","#f59e0b","#22c55e"].map(c => <div key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c }} />)}</div>
+                          <div style={{ fontSize: 10, color: "#64748b", flex: 1, textAlign: "center" }}>Preview da Landing Page</div>
+                          <button onClick={() => { const w = window.open("", "_blank"); if (w) { w.document.write(choice.html_content || ""); w.document.close(); } }} style={{ fontSize: 10, color: "#64748b", background: "none", border: "1px solid #e2e8f0", borderRadius: 4, padding: "2px 8px", cursor: "pointer" }}>↗ Abrir</button>
+                        </div>
+                        <iframe srcDoc={choice.html_content} title="Landing Page Preview" sandbox="allow-scripts" style={{ width: "100%", height: 300, border: "1px solid #e2e8f0", borderRadius: "0 0 12px 12px", display: "block" }} />
+                      </div>
+                    )}
+
+                    {/* Image if exists (non-reels, non-landing) */}
+                    {order?.product !== "reels_script" && order?.product !== "landing_page_copy" && choice.image_url && (
                       <div style={{ borderRadius: 8, overflow: "hidden", marginBottom: 10, border: `1px solid ${T.border}` }}>
                         <img src={choice.image_url} alt="" style={{ width: "100%", height: 200, objectFit: "cover", display: "block" }} />
                       </div>
