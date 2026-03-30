@@ -72,6 +72,18 @@ function luminancia(hex: string): number {
   return (r * 299 + g * 587 + b * 114) / 1000;
 }
 
+function saturacao(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return 0;
+  const d = max - min;
+  return l > 0.5 ? d / (2 - max - min) : d / (max + min);
+}
+
 /* ── Component ── */
 export default function ColorExtractor({
   cores, onChange, designacoes = {}, onDesignacoes, maxCores = 12,
@@ -157,15 +169,25 @@ export default function ColorExtractor({
   // Auto-assign funções nas primeiras cores extraídas
   const autoDesignar = (novas: CoreExtraida[]) => {
     if (!onDesignacoes || novas.length === 0) return;
-    const sorted = [...novas].sort((a, b) => luminancia(b.hex) - luminancia(a.hex));
     const d: DesignacoesCores = { ...designacoes };
-    // heurística: mais clara → fundo, mais escura → secundária, vibrante → primária
-    if (!d.fundo && sorted[0]) d.fundo = sorted[0].hex;
-    if (!d.secundaria && sorted[sorted.length - 1]) d.secundaria = sorted[sorted.length - 1].hex;
-    if (!d.texto && sorted[sorted.length - 1]) d.texto = sorted[sorted.length - 1].hex;
-    // primária = cor do meio com mais saturação
-    const meio = novas[Math.floor(novas.length / 2)];
-    if (!d.primaria && meio) d.primaria = meio.hex;
+
+    // Primária = cor mais saturada/vibrante
+    const porSaturacao = [...novas].sort((a, b) => saturacao(b.hex) - saturacao(a.hex));
+    if (!d.primaria && porSaturacao[0]) d.primaria = porSaturacao[0].hex;
+
+    const restantes = novas.filter(c => c.hex !== d.primaria);
+    const porLum = [...restantes].sort((a, b) => luminancia(b.hex) - luminancia(a.hex));
+
+    // Fundo = cor mais clara (que não seja a primária)
+    if (!d.fundo && porLum[0]) d.fundo = porLum[0].hex;
+
+    // Secundária = cor mais escura (que não seja primária nem fundo)
+    const semFundo = porLum.filter(c => c.hex !== d.fundo);
+    if (!d.secundaria && semFundo.length > 0) d.secundaria = semFundo[semFundo.length - 1].hex;
+
+    // Texto = cor mais escura disponível (que não seja primária)
+    if (!d.texto && porLum.length > 0) d.texto = porLum[porLum.length - 1].hex;
+
     onDesignacoes(d);
   };
 
