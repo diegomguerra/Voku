@@ -87,6 +87,9 @@ export default function LandingPageViewer({
         cor_texto:      briefing.cor_texto,
         logo_base64:    briefing.logo_base64,
         logo_url:       briefing.logo_url,
+        paleta_completa: briefing.paletaCores?.map((c: any) => ({
+          hex: c.hex, nome: c.nome, uso: c.uso_sugerido,
+        })),
       },
       cta_texto: briefing.cta_texto,
     };

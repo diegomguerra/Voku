@@ -142,6 +142,7 @@ export default function ColorExtractor({
   const [extraindoUrl, setExtraindoUrl] = useState(false);
   const [erroUrl, setErroUrl] = useState("");
   const [corSelecionada, setCorSelecionada] = useState<number | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Pre-load saved brand palette
@@ -200,24 +201,54 @@ export default function ColorExtractor({
     if (!urlInput.trim()) return;
     setExtraindoUrl(true);
     setErroUrl("");
+    setScreenshotPreview(null);
+
     try {
-      const res = await fetch("/api/extract-colors-url", {
+      // Step 1: Screenshot the URL via Puppeteer
+      const ssRes = await fetch("/api/screenshot-url", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: urlInput.trim() }),
       });
+      const ssData = await ssRes.json();
+      if (ssData.erro) { setErroUrl(ssData.erro); setExtraindoUrl(false); return; }
+
+      // Step 2: Convert base64 PNG to File for Canvas extraction
+      const dataUrl = `data:image/png;base64,${ssData.image}`;
+      setScreenshotPreview(dataUrl);
+      const blob = await (await fetch(dataUrl)).blob();
+      const file = new File([blob], `screenshot-${urlInput.trim().replace(/[^a-z0-9]/gi, "-")}.png`, { type: "image/png" });
+
+      // Step 3: Extract real pixel colors via Canvas (same as image upload)
+      const pixelColors = await extractColorsFromImage(file);
+      if (pixelColors.length === 0) { setErroUrl("Nenhuma cor encontrada no screenshot."); setExtraindoUrl(false); return; }
+
+      // Step 4: Send to Claude for naming/categorizing
+      const res = await fetch("/api/extract-colors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cores_extraidas: pixelColors, filename: urlInput.trim() }),
+      });
       const data = await res.json();
-      if (data.erro) { setErroUrl(data.erro); return; }
+
+      let novasCores: CoreExtraida[];
       if (data.cores?.length > 0) {
-        const novas = data.cores.filter(
-          (nova: CoreExtraida) => !cores.some(e => e.hex.toLowerCase() === nova.hex.toLowerCase())
-        );
-        const merged = [...cores, ...novas].slice(0, maxCores);
-        onChange(merged);
-        autoDesignar(merged);
-        setImagensProcessadas(prev => [...prev, urlInput]);
-        setUrlInput("");
+        novasCores = data.cores;
+      } else {
+        novasCores = pixelColors.map(c => ({
+          hex: c.hex, rgb: hexToRgb(c.hex), nome: nomeAutomatico(c.hex),
+          uso_sugerido: "", fonte: urlInput.trim(),
+        }));
       }
+
+      const filtradas = novasCores.filter(
+        (nova: CoreExtraida) => !cores.some(e => e.hex.toLowerCase() === nova.hex.toLowerCase())
+      );
+      const merged = [...cores, ...filtradas].slice(0, maxCores);
+      onChange(merged);
+      autoDesignar(merged);
+      setImagensProcessadas(prev => [...prev, urlInput]);
+      setUrlInput("");
     } catch {
       setErroUrl("Erro ao processar a URL. Tente subir uma imagem.");
     } finally {
@@ -334,6 +365,39 @@ export default function ColorExtractor({
         </div>
         {erroUrl && <div style={{ fontSize: 11, color: "#E24B4A", marginTop: 4 }}>{erroUrl}</div>}
       </div>
+
+      {/* ── SCREENSHOT PREVIEW ───────────────────── */}
+      {screenshotPreview && (
+        <div style={{ borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border}` }}>
+          <div style={{ background: T.sand, padding: "6px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>Screenshot capturado</span>
+            <button onClick={() => setScreenshotPreview(null)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 14 }}>×</button>
+          </div>
+          <img src={screenshotPreview} alt="Screenshot" style={{ width: "100%", display: "block" }} />
+        </div>
+      )}
+
+      {/* ── TABELA DE CORES COM LOCALIZAÇÃO ──────── */}
+      {cores.length > 0 && cores[0].uso_sugerido && (
+        <div style={{ border: `1px solid ${T.border}`, borderRadius: 10, overflow: "hidden" }}>
+          <div style={{ background: T.sand, padding: "8px 12px", fontSize: 11, fontWeight: 700, color: T.muted, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            Cores identificadas
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            {cores.map((cor, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+                borderTop: i > 0 ? `1px solid ${T.border}` : "none",
+              }}>
+                <div style={{ width: 24, height: 24, borderRadius: 6, background: cor.hex, border: "1px solid rgba(0,0,0,0.1)", flexShrink: 0 }} />
+                <span style={{ fontSize: 11, fontFamily: "monospace", color: T.ink, fontWeight: 600, width: 70, flexShrink: 0 }}>{cor.hex}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: T.ink, flex: 1 }}>{cor.nome}</span>
+                <span style={{ fontSize: 11, color: T.muted }}>{cor.uso_sugerido}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── ENTRADA: Upload de imagem ─────────────── */}
       <div
