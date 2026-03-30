@@ -45,6 +45,51 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
+function extractColorsFromImage(file: File): Promise<{ hex: string; count: number }[]> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxDim = 200; // downsample for speed
+      const scale = Math.min(maxDim / img.width, maxDim / img.height, 1);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+      // Quantize colors: round to nearest 16 to group similar colors
+      const colorMap: Record<string, number> = {};
+      for (let i = 0; i < data.length; i += 4) {
+        const r = Math.round(data[i] / 16) * 16;
+        const g = Math.round(data[i + 1] / 16) * 16;
+        const b = Math.round(data[i + 2] / 16) * 16;
+        const a = data[i + 3];
+        if (a < 128) continue; // skip transparent
+        const hex = "#" + [r, g, b].map(c => Math.min(c, 255).toString(16).padStart(2, "0")).join("").toUpperCase();
+        colorMap[hex] = (colorMap[hex] || 0) + 1;
+      }
+
+      // Sort by frequency, filter out near-white and near-black
+      const sorted = Object.entries(colorMap)
+        .map(([hex, count]) => ({ hex, count }))
+        .filter(({ hex }) => {
+          const r = parseInt(hex.slice(1, 3), 16);
+          const g = parseInt(hex.slice(3, 5), 16);
+          const b = parseInt(hex.slice(5, 7), 16);
+          const lum = (r * 299 + g * 587 + b * 114) / 1000;
+          return lum > 20 && lum < 240; // skip near-black and near-white
+        })
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+
+      resolve(sorted);
+    };
+    img.onerror = () => resolve([]);
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 function hexToRgb(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -115,23 +160,37 @@ export default function ColorExtractor({
     setExtraindo(true);
     for (const file of Array.from(files)) {
       if (file.size > 10 * 1024 * 1024) continue;
-      const base64 = await fileToBase64(file);
       try {
+        // Step 1: Extract real hex codes from pixels via Canvas
+        const pixelColors = await extractColorsFromImage(file);
+        if (pixelColors.length === 0) continue;
+
+        // Step 2: Send extracted hex codes to Claude for naming/categorizing
         const res = await fetch("/api/extract-colors", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64, mediaType: file.type, filename: file.name }),
+          body: JSON.stringify({ cores_extraidas: pixelColors, filename: file.name }),
         });
         const data = await res.json();
+
+        let novasCores: CoreExtraida[];
         if (data.cores?.length > 0) {
-          const novas = data.cores.filter(
-            (nova: CoreExtraida) => !cores.some(e => e.hex.toLowerCase() === nova.hex.toLowerCase())
-          );
-          const merged = [...cores, ...novas].slice(0, maxCores);
-          onChange(merged);
-          autoDesignar(merged);
-          setImagensProcessadas(prev => [...prev, file.name]);
+          novasCores = data.cores;
+        } else {
+          // Fallback: use raw pixel colors with auto-generated names
+          novasCores = pixelColors.map(c => ({
+            hex: c.hex, rgb: hexToRgb(c.hex), nome: nomeAutomatico(c.hex),
+            uso_sugerido: "", fonte: file.name,
+          }));
         }
+
+        const filtradas = novasCores.filter(
+          (nova: CoreExtraida) => !cores.some(e => e.hex.toLowerCase() === nova.hex.toLowerCase())
+        );
+        const merged = [...cores, ...filtradas].slice(0, maxCores);
+        onChange(merged);
+        autoDesignar(merged);
+        setImagensProcessadas(prev => [...prev, file.name]);
       } catch { /* silently fail */ }
     }
     setExtraindo(false);

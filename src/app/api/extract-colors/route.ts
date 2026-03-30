@@ -5,31 +5,26 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: Request) {
   try {
-    const { image, mediaType, filename } = await req.json();
+    const { cores_extraidas, filename } = await req.json();
+
+    // Client already extracted hex codes via Canvas — ask Claude to name/categorize them
+    if (!cores_extraidas || cores_extraidas.length === 0) {
+      return NextResponse.json({ cores: [] });
+    }
+
+    const hexList = cores_extraidas.map((c: { hex: string }) => c.hex).join(", ");
 
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 800,
       messages: [
         {
           role: "user",
-          content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: image },
-            },
-            {
-              type: "text",
-              text: `Você é um especialista em design e identidade visual. Olhe com atenção para esta imagem e extraia as cores EXATAS que aparecem nela.
+          content: `Estas cores foram extraídas de uma imagem/site (${filename}): ${hexList}
 
-INSTRUÇÕES CRÍTICAS:
-1. Use um eyedropper mental — identifique os pixels reais das áreas de cor sólida
-2. Para cada cor, aponte EXATAMENTE onde ela aparece na imagem (botão, header, fundo, logo, texto, etc.)
-3. NÃO invente cores que não existem na imagem
-4. NÃO use cores genéricas — extraia os hex codes PRECISOS que você observa
-5. Se a imagem é um screenshot de site, foque nos elementos de UI: botões, headers, links, backgrounds, badges
+Para cada cor, dê um nome descritivo em português e sugira uso em design.
 
-Retorne APENAS este JSON válido, sem markdown nem texto adicional:
+Retorne APENAS JSON válido:
 {
   "cores": [
     {
@@ -43,14 +38,10 @@ Retorne APENAS este JSON válido, sem markdown nem texto adicional:
 }
 
 Regras:
-- 3 a 8 cores que REALMENTE aparecem na imagem
-- Hex codes PRECISOS em MAIÚSCULAS com # (ex: #6366F1, não #6060F0)
-- Ignore brancos puros e pretos puros, a menos que sejam claramente parte da marca
-- Nomes descritivos em português
-- uso_sugerido baseado em ONDE a cor aparece na imagem
+- Mantenha os hex codes EXATAMENTE como fornecidos
+- Nomes descritivos em português (ex: "Azul royal", "Verde musgo", "Dourado quente")
+- uso_sugerido prático (ex: "Cor primária / botões", "Fundo escuro", "Texto / títulos")
 - Retorne SOMENTE o JSON`,
-            },
-          ],
         },
       ],
     });
