@@ -310,21 +310,8 @@ export default function LandingPageViewer({
                 ← Voltar e reajustar briefing
               </button>
 
-              {/* Direita: regenerar + aprovar */}
+              {/* Direita: aprovar */}
               <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={() => lastBriefing && gerar(lastBriefing)}
-                  disabled={!lastBriefing}
-                  style={{
-                    padding: '10px 18px', borderRadius: 8, border: `1px solid ${T.border}`,
-                    background: 'transparent', fontSize: 13, fontWeight: 600,
-                    color: T.muted, cursor: lastBriefing ? 'pointer' : 'not-allowed',
-                    opacity: lastBriefing ? 1 : 0.4,
-                  }}
-                >
-                  ↺ Regenerar
-                </button>
-
                 <button
                   onClick={aprovar}
                   disabled={approving || !currentChoiceId}

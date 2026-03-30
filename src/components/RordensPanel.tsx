@@ -20,6 +20,7 @@ interface RordensPanelProps {
   chips?: string[];
   status?: "briefing" | "producao" | "aguardando_aprovacao" | "concluido";
   orderId?: string;
+  onExecute?: (action: any) => void;
 }
 
 /* ─── Product chip sets ─── */
@@ -82,13 +83,14 @@ const RORDENS_CSS = `
 @keyframes rordens-dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
 `;
 
-export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status, orderId }: RordensPanelProps) {
+export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status, orderId, onExecute }: RordensPanelProps) {
   const [modo, setModo] = useState<"chat" | "form" | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [gravando, setGravando] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ base64: string; mediaType: string; url: string } | null>(null);
+  const [imagensReferencia, setImagensReferencia] = useState<string[]>([]);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -148,6 +150,10 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
       content: text.trim() || (image ? "O que você vê nessa imagem?" : ""),
       ...(image && { imageUrl: image.url, imageBase64: image.base64, imageMediaType: image.mediaType }),
     };
+    // Accumulate image references for briefing
+    if (image?.base64) {
+      setImagensReferencia(prev => [...prev, image.base64]);
+    }
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setInput("");
@@ -200,12 +206,37 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           } catch {}
         }
       }
+      // Check if assistant response contains an execute action
+      if (onExecute && assistantText) {
+        const actionIdx = assistantText.indexOf('"action"');
+        if (actionIdx !== -1) {
+          let start = assistantText.lastIndexOf("{", actionIdx);
+          if (start !== -1) {
+            let depth = 0, end = -1;
+            for (let i = start; i < assistantText.length; i++) {
+              if (assistantText[i] === "{") depth++;
+              else if (assistantText[i] === "}") { depth--; if (depth === 0) { end = i; break; } }
+            }
+            if (end !== -1) {
+              try {
+                const parsed = JSON.parse(assistantText.slice(start, end + 1));
+                if (parsed.action === "execute") {
+                  if (imagensReferencia.length > 0 && parsed.structured_data) {
+                    parsed.structured_data.imagens_referencia = imagensReferencia;
+                  }
+                  onExecute(parsed);
+                }
+              } catch { /* not valid JSON */ }
+            }
+          }
+        }
+      }
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Desculpe, tive um problema. Pode repetir?" }]);
     } finally {
       setStreaming(false);
     }
-  }, [messages, formContext, produto, passo, modo, streaming]);
+  }, [messages, formContext, produto, passo, modo, streaming, imagensReferencia, onExecute]);
 
   /* ─── File upload handler ─── */
   const handleFiles = async (files: FileList) => {

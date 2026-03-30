@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import ColorExtractor, { type CoreExtraida, type DesignacoesCores } from './ColorExtractor';
 
 // ─────────────────────────────────────────────
 // TIPOS
@@ -17,6 +18,8 @@ export interface CarrosselBriefing {
   incluirCTA: boolean;
   ctaTexto: string;
   evitar: string;
+  cor_primaria: string;
+  cor_secundaria: string;
 }
 
 interface Props {
@@ -60,18 +63,22 @@ const TONS = [
 // ─────────────────────────────────────────────
 export default function CarrosselBriefingForm({ onSubmit, loading = false, prefill, onStepChange }: Props) {
   const [step, setStep] = useState(1);
+  const [paletaCores, setPaletaCores] = useState<CoreExtraida[]>([]);
+  const [designacoes, setDesignacoes] = useState<DesignacoesCores>({});
   const [briefing, setBriefing] = useState<CarrosselBriefing>({
-    nomeMarca:    prefill?.nomeMarca ?? '',
-    segmento:     prefill?.segmento ?? '',
-    publicoAlvo:  prefill?.publicoAlvo ?? '',
-    tema:         prefill?.tema ?? '',
-    objetivo:     prefill?.objetivo ?? '',
-    numeroSlides: prefill?.numeroSlides ?? 7,
-    estrutura:    prefill?.estrutura ?? '',
-    tomVoz:       prefill?.tomVoz ?? '',
-    incluirCTA:   prefill?.incluirCTA ?? true,
-    ctaTexto:     prefill?.ctaTexto ?? '',
-    evitar:       prefill?.evitar ?? '',
+    nomeMarca:      prefill?.nomeMarca ?? '',
+    segmento:       prefill?.segmento ?? '',
+    publicoAlvo:    prefill?.publicoAlvo ?? '',
+    tema:           prefill?.tema ?? '',
+    objetivo:       prefill?.objetivo ?? '',
+    numeroSlides:   prefill?.numeroSlides ?? 7,
+    estrutura:      prefill?.estrutura ?? '',
+    tomVoz:         prefill?.tomVoz ?? '',
+    incluirCTA:     prefill?.incluirCTA ?? true,
+    ctaTexto:       prefill?.ctaTexto ?? '',
+    evitar:         prefill?.evitar ?? '',
+    cor_primaria:   prefill?.cor_primaria ?? '#CCEE33',
+    cor_secundaria: prefill?.cor_secundaria ?? '#0a0a0a',
   });
 
   const TOTAL_STEPS = 3;
@@ -218,6 +225,24 @@ export default function CarrosselBriefingForm({ onSubmit, loading = false, prefi
               <input style={s.input} placeholder="Ex: Salve este post, Comente sua dúvida, Link na bio..." value={briefing.ctaTexto} onChange={e => set('ctaTexto', e.target.value)} />
             </div>
           )}
+
+          {/* Paleta de cores via ColorExtractor */}
+          <div style={s.row1}>
+            <label style={s.label}>Paleta de cores da marca</label>
+            <ColorExtractor
+              cores={paletaCores}
+              designacoes={designacoes}
+              onChange={cores => setPaletaCores(cores)}
+              onDesignacoes={d => {
+                setDesignacoes(d);
+                setBriefing(b => ({
+                  ...b,
+                  cor_primaria:   d.primaria   ?? b.cor_primaria,
+                  cor_secundaria: d.secundaria ?? b.cor_secundaria,
+                }));
+              }}
+            />
+          </div>
 
           <div style={s.row1}>
             <label style={s.label}>O que evitar</label>

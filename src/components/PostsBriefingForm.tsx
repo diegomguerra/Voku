@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import ColorExtractor, { type CoreExtraida, type DesignacoesCores } from './ColorExtractor';
 
 // ─────────────────────────────────────────────
 // TIPOS
@@ -115,6 +116,8 @@ const PALETTES = [
 // ─────────────────────────────────────────────
 export default function PostsBriefingForm({ onSubmit, loading = false, prefill, onStepChange }: PostsBriefingFormProps) {
   const [step, setStep] = useState(1);
+  const [paletaCores, setPaletaCores] = useState<CoreExtraida[]>([]);
+  const [designacoes, setDesignacoes] = useState<DesignacoesCores>({});
   const [briefing, setBriefing] = useState<PostsBriefing>({
     nome_marca:     prefill?.nome_marca ?? '',
     segmento:       prefill?.segmento ?? '',
@@ -415,22 +418,45 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
             </div>
           </div>
 
-          {/* Paleta */}
+          {/* Paleta de cores via ColorExtractor */}
           <div style={s.row1}>
-            <label style={s.label}>Paleta de cores</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-              {PALETTES.map(p => (
-                <div
-                  key={p.name}
-                  onClick={() => setBriefing(b => ({ ...b, cor_primaria: p.primary, cor_secundaria: p.secondary }))}
-                  style={{ borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: '2px solid', borderColor: briefing.cor_primaria === p.primary ? '#CCEE33' : 'transparent', transition: 'border-color 0.15s' }}
-                >
-                  <div style={{ height: 36, background: p.secondary, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
-                    <div style={{ width: 16, height: 16, borderRadius: '50%', background: p.primary }} />
-                  </div>
-                  <div style={{ padding: '6px 8px', background: '#f8fafc', fontSize: 11, fontWeight: 600, color: '#374151', textAlign: 'center' }}>{p.name}</div>
-                </div>
-              ))}
+            <label style={s.label}>Paleta de cores da marca</label>
+            <ColorExtractor
+              cores={paletaCores}
+              designacoes={designacoes}
+              onChange={cores => setPaletaCores(cores)}
+              onDesignacoes={d => {
+                setDesignacoes(d);
+                setBriefing(b => ({
+                  ...b,
+                  cor_primaria:   d.primaria   ?? b.cor_primaria,
+                  cor_secundaria: d.secundaria ?? b.cor_secundaria,
+                }));
+              }}
+            />
+
+            {/* Quick palette presets */}
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#888', marginBottom: 8 }}>Ou use uma paleta pronta:</div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {PALETTES.map(p => (
+                  <button
+                    key={p.name}
+                    onClick={() => setBriefing(b => ({ ...b, cor_primaria: p.primary, cor_secundaria: p.secondary }))}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
+                      background: briefing.cor_primaria === p.primary ? '#EAF3DE' : '#fff',
+                      border: briefing.cor_primaria === p.primary ? '1.5px solid #C8F135' : '1px solid #e2e8f0',
+                      fontSize: 11, fontWeight: 600, color: '#374151', transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.primary }} />
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: p.secondary }} />
+                    {p.name}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
