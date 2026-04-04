@@ -9,7 +9,7 @@ const T = {
     nav: ["Serviços", "Processo", "Sobre"],
     navCta: "Começar projeto",
     hero: { eyebrow: "Estúdio de Mídia · IA", sub: "Pacotes fixos. Preço visível. Entrega em até 48h. Sem reunião, sem proposta, sem surpresa." },
-    ticker: "Landing Page Copy · $100 · 24h · Social Media Pack · $140 · 48h · Email Nurture · $195 · 48h · Sem reunião · Revisão inclusa",
+    ticker: "Landing Page Copy · Social Media Pack · Email Nurture · Sem Reunião · Revisão Inclusa · Preço Fixo em BRL · Entrega Garantida · Área do Cliente · Briefing em minutos · Estúdio de Mídia · IA",
     portfolio: {
       label: "PORTFÓLIO",
       title: "Você já viu esse tipo de conteúdo por aí.",
@@ -55,7 +55,7 @@ const T = {
     nav: ["Services", "Process", "About"],
     navCta: "Start project",
     hero: { eyebrow: "Media Studio · AI", sub: "Fixed packages. Visible pricing. Delivery in 48h. No meetings, no proposals, no surprises." },
-    ticker: "Landing Page Copy · $100 · 24h · Social Media Pack · $140 · 48h · Email Nurture · $195 · 48h · No meetings · Revision included",
+    ticker: "Landing Page Copy · Social Media Pack · Email Nurture · No Meetings · Revision Included · Fixed Price · Guaranteed Delivery · Client Dashboard · Briefing in minutes · AI Media Studio",
     portfolio: {
       label: "PORTFOLIO",
       title: "You've seen this kind of content before.",
@@ -101,7 +101,7 @@ const T = {
     nav: ["Servicios", "Proceso", "Acerca"],
     navCta: "Empezar proyecto",
     hero: { eyebrow: "Estudio de Medios · IA", sub: "Paquetes fijos. Precio visible. Entrega en 48h. Sin reuniones, sin propuestas, sin sorpresas." },
-    ticker: "Landing Page Copy · $100 · 24h · Social Media Pack · $140 · 48h · Email Nurture · $195 · 48h · Sin reuniones · Revisión incluida",
+    ticker: "Landing Page Copy · Social Media Pack · Email Nurture · Sin Reuniones · Revisión Incluida · Precio Fijo · Entrega Garantizada · Área del Cliente · Briefing en minutos · Estudio de Medios · IA",
     portfolio: {
       label: "PORTAFOLIO",
       title: "Ya viste este tipo de contenido por ahí.",
@@ -420,9 +420,9 @@ export default function VokuLanding() {
         {/* Right — 2 stacked cells */}
         <div style={{ display: "grid", gridTemplateRows: "1fr 1fr" }}>
           <div style={{ background: "#111", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 3, color: "#444", textTransform: "uppercase", marginBottom: 8 }}>{lang === "PT" ? "Tempo de entrega" : lang === "ES" ? "Tiempo de entrega" : "Delivery time"}</div>
-            <div style={{ fontSize: 72, fontWeight: 900, color: "#AAFF00", letterSpacing: -3, lineHeight: 1 }}>48h</div>
-            <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>{lang === "PT" ? "Do briefing à entrega. Garantido." : lang === "ES" ? "Del briefing a la entrega. Garantizado." : "From briefing to delivery. Guaranteed."}</div>
+            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 3, color: "#444", textTransform: "uppercase", marginBottom: 8 }}>{lang === "PT" ? "Briefing pronto em" : lang === "ES" ? "Briefing listo en" : "Brief ready in"}</div>
+            <div style={{ fontSize: 72, fontWeight: 900, color: "#AAFF00", letterSpacing: -3, lineHeight: 1 }}>{lang === "PT" ? "minutos" : lang === "ES" ? "minutos" : "minutes"}</div>
+            <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>{lang === "PT" ? "Nossa IA organiza tudo. Você responde 2 perguntas." : lang === "ES" ? "Nuestra IA organiza todo. Respondes 2 preguntas." : "Our AI organizes everything. You answer 2 questions."}</div>
           </div>
           <div style={{ background: "#AAFF00", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <div style={{ fontSize: 16, fontWeight: 900, color: "#111", lineHeight: 1.4, maxWidth: 320, marginBottom: 16 }}>
