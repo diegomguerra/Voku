@@ -6,6 +6,11 @@ import Anthropic from '@anthropic-ai/sdk'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
+/** Strip markdown code fences from a string (```json ... ```) */
+function stripFences(s: string): string {
+  return s.replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim()
+}
+
 const IMAGE_PRODUCTS: Record<string, string> = {
   post_instagram: 'product-scene',
   carrossel: 'product-scene',
@@ -147,7 +152,7 @@ Only output the JSON array, no other text.`,
           order_id,
           type: product,
           label: v.label || `Option ${String.fromCharCode(65 + i)}`,
-          content: { text: v.text },
+          content: { text: stripFences(v.text || '') },
           is_selected: false,
           position: i,
         }))
@@ -261,7 +266,7 @@ Output ONLY the revised content text, no JSON wrapper, no labels.`,
 
       // Update the choice
       await supabase.from('choices').update({
-        content: { text: revisedText },
+        content: { text: stripFences(revisedText) },
         image_url: null, // Clear image so it regenerates
         is_selected: false,
       }).eq('id', choice_id)

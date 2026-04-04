@@ -8,6 +8,11 @@ import { Resend } from 'resend'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60  // Texto + DB only — images are fire-and-forget
 
+/** Strip markdown code fences from a string (```json ... ```) */
+function stripFences(s: string): string {
+  return s.replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim()
+}
+
 const SYSTEM_PROMPTS: Record<ProductId, string> = {
   landing_page_copy: `Você é RORDENS, o motor de execução da Voku. Escreva uma landing page copy completa e de alta conversão.
 
@@ -326,7 +331,7 @@ Each variation must be complete and production-ready. Only output the JSON array
         order_id,
         type: product,
         label: v.label || TONE_INSTRUCTIONS[i]?.label || `Option ${i + 1}`,
-        content: { text: v.text },
+        content: { text: stripFences(v.text || '') },
         is_selected: false,
         position: i,
       }))

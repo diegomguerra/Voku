@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import OrderChoices from "@/components/OrderChoices";
+import SocialPackViewer from "@/components/SocialPackViewer";
 import { useParams } from "next/navigation";
 
 const FF = "'Plus Jakarta Sans', sans-serif";
@@ -99,12 +100,20 @@ export default function OrderDetailPage() {
 
       {/* Content */}
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 24px" }}>
-        <OrderChoices
-          order={order}
-          choices={choices}
-          deliverables={deliverables}
-          iterationId={iterationId}
-        />
+        {order.product === "content_pack" ? (
+          <SocialPackViewer
+            order={order}
+            choices={choices}
+            iterationId={iterationId}
+          />
+        ) : (
+          <OrderChoices
+            order={order}
+            choices={choices}
+            deliverables={deliverables}
+            iterationId={iterationId}
+          />
+        )}
       </div>
     </div>
   );
