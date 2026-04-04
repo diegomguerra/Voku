@@ -21,6 +21,7 @@ interface RordensPanelProps {
   status?: "briefing" | "producao" | "aguardando_aprovacao" | "concluido";
   orderId?: string;
   onExecute?: (action: any) => void;
+  onHandleDetected?: (handle: string) => void;
 }
 
 /* ─── Product chip sets ─── */
@@ -83,7 +84,7 @@ const RORDENS_CSS = `
 @keyframes rordens-dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
 `;
 
-export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status, orderId, onExecute }: RordensPanelProps) {
+export default function RordensPanel({ produto, produtoLabel, passo, formContext, chips, status, orderId, onExecute, onHandleDetected }: RordensPanelProps) {
   const [modo, setModo] = useState<"chat" | "form" | null>(null);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -154,6 +155,12 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     if (image?.base64) {
       setImagensReferencia(prev => [...prev, image.base64]);
     }
+    // Detect @handle in user text
+    const handleMatch = text.match(/@([a-zA-Z0-9_.]{2,30})/);
+    if (handleMatch && onHandleDetected) {
+      onHandleDetected(handleMatch[1]);
+    }
+
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setInput("");
@@ -236,7 +243,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     } finally {
       setStreaming(false);
     }
-  }, [messages, formContext, produto, passo, modo, streaming, imagensReferencia, onExecute]);
+  }, [messages, formContext, produto, passo, modo, streaming, imagensReferencia, onExecute, onHandleDetected]);
 
   /* ─── File upload handler ─── */
   const handleFiles = async (files: FileList) => {

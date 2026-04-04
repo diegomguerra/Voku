@@ -108,6 +108,8 @@ export default function ProjetoPage() {
   const [revisionSent, setRevisionSent] = useState<number | false>(false);
   const [paletaCores, setPaletaCores] = useState<CoreExtraida[]>([]);
   const [atribuicoesCores, setAtribuicoesCores] = useState<Record<string, string>>({});
+  const [chatHandleDetected, setChatHandleDetected] = useState(false);
+  const [scrapedBrand, setScrapedBrand] = useState<any>(null);
   const userIdRef = useRef<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -296,7 +298,7 @@ export default function ProjetoPage() {
         </div>
 
         {/* ═══ ZONA C: Split — Rordens + Conteúdo ═══ */}
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "380px 1fr", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: chatHandleDetected && status === "briefing" ? "1fr" : "380px 1fr", overflow: "hidden" }}>
 
           {/* ── Rordens ── */}
           <RordensPanel
@@ -305,13 +307,14 @@ export default function ProjetoPage() {
             passo={formStep}
             status={status}
             orderId={orderId}
+            onHandleDetected={(handle) => setChatHandleDetected(true)}
           />
 
           {/* ── Coluna direita — muda por status ── */}
           <div style={{ background: T.sand, overflowY: "auto" }}>
 
             {/* ── ESTADO 1: BRIEFING ── */}
-            {status === "briefing" && (
+            {status === "briefing" && !chatHandleDetected && (
               <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
                 {order?.product === "landing_page_copy" ? (
                   <LandingPageViewer
