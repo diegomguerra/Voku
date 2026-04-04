@@ -47,10 +47,14 @@ async function mkPrompt(post: any): Promise<string> {
 }
 
 // ── Engine 1: fal.ai (FLUX Pro v1.1) ──────────────────────────────────
-async function falGen(p: string, reel: boolean): Promise<string | null> {
+async function falGen(
+  p: string,
+  reel: boolean,
+  opts?: { width?: number; height?: number; num_inference_steps?: number; guidance_scale?: number }
+): Promise<string | null> {
   if (!FAL_KEY) return null;
-  const w = reel ? 1080 : 1024;
-  const h = reel ? 1920 : 1024;
+  const w = opts?.width || (reel ? 1080 : 1080);
+  const h = opts?.height || (reel ? 1920 : 1350);
 
   const r = await fetch("https://fal.run/fal-ai/flux-pro/v1.1", {
     method: "POST",
@@ -62,6 +66,8 @@ async function falGen(p: string, reel: boolean): Promise<string | null> {
       prompt: p,
       image_size: { width: w, height: h },
       num_images: 1,
+      num_inference_steps: opts?.num_inference_steps || 32,
+      guidance_scale: opts?.guidance_scale || 3.2,
       enable_safety_checker: true,
       sync_mode: true,
     }),
@@ -167,6 +173,75 @@ Deno.serve(async (req: Request) => {
   const u = new URL(req.url);
   const b = req.method === "POST" ? await req.json().catch(() => ({})) : {};
 
+  const sb = createClient(SB_URL, SB_KEY);
+
+  // ── Direct prompt mode (called from /api/generate-image) ──
+  if (b.prompt && b.storage_key) {
+    const pr = b.prompt as string;
+    const sp = b.storage_key as string;
+    const eo = b.engine || "fal";
+    const reel = (b.height || 0) > (b.width || 0);
+    const falOpts = {
+      width: b.width || 1080,
+      height: b.height || 1350,
+      num_inference_steps: b.num_inference_steps || 32,
+      guidance_scale: b.guidance_scale || 3.2,
+    };
+
+    const eng: Array<[string, () => Promise<string | null>]> = [
+      ["fal", () => falGen(pr, reel, falOpts)],
+      ["ideogram", () => idgGen(pr, reel)],
+      ["imagineart", () => imaGen(pr, reel)],
+    ];
+
+    let iu: string | null = null;
+    let eu = "none";
+    const errs: Record<string, string> = {};
+
+    for (const [n, fn] of eng) {
+      if (eo && eo !== n) continue;
+      try {
+        iu = await fn();
+        if (iu) { eu = n; break; }
+      } catch (e: any) {
+        errs[n] = e.message;
+        // If specific engine requested and failed, try next
+        if (eo === n) continue;
+      }
+    }
+    // If requested engine failed, try remaining engines
+    if (!iu && eo) {
+      for (const [n, fn] of eng) {
+        if (n === eo) continue;
+        try {
+          iu = await fn();
+          if (iu) { eu = n; break; }
+        } catch (e: any) { errs[n] = e.message; }
+      }
+    }
+
+    if (!iu) {
+      return new Response(
+        JSON.stringify({ ok: false, error: "Falha em todos os engines", prompt: pr, engine_errors: errs }),
+        { status: 503, headers: { ...CORS, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (b.upload && eu !== "imagineart") {
+      const pu = await upRemoto(sb, iu, sp);
+      return new Response(
+        JSON.stringify({ ok: true, url: pu ?? iu, path: pu ? sp : null, engine: eu, prompt: pr }),
+        { headers: { ...CORS, "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response(
+      JSON.stringify({ ok: true, url: iu, engine: eu, prompt: pr }),
+      { headers: { ...CORS, "Content-Type": "application/json" } }
+    );
+  }
+
+  // ── Legacy mode (semana_key + post_id from calendar) ──
   const sk = u.searchParams.get("semana_key") || b.semana_key;
   const pi = u.searchParams.get("post_id") || b.post_id;
   const up = u.searchParams.get("upload") === "true" || b.upload === true;
@@ -179,7 +254,6 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  const sb = createClient(SB_URL, SB_KEY);
   const { data: sem, error: se } = await sb
     .from("semanas_conteudo")
     .select("posts")
