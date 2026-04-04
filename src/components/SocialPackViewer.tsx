@@ -19,7 +19,7 @@ type Choice = {
   content: any;
   position: number;
   is_selected: boolean;
-  image_url?: string;
+  image_url?: string | null;
 };
 
 type OrderData = {
@@ -44,6 +44,8 @@ type Props = {
   order: OrderData;
   choices: Choice[];
   iterationId: string | null;
+  onAprovar?: (choiceId: string) => Promise<void>;
+  onPedirAjuste?: (choiceId: string, descricao: string) => Promise<void>;
 };
 
 /* ─── Parse helpers ─── */
@@ -71,20 +73,6 @@ function parsePosts(choice: Choice): Post[] {
   // Unescape literal \\n to real newlines
   if (text.includes("\\n")) {
     text = text.replace(/\\n/g, "\n");
-  }
-
-  // If text is itself a JSON array string (embedded variations), try parsing
-  if (text.trim().startsWith("[")) {
-    try {
-      const arr = JSON.parse(text);
-      if (Array.isArray(arr) && arr.length > 0 && arr[0].text) {
-        // Use the first variation's text to extract posts
-        const inner = arr[0].text.replace(/\\n/g, "\n");
-        return splitPostsFromText(inner);
-      }
-    } catch {
-      // fall through to text splitting
-    }
   }
 
   return splitPostsFromText(text);
@@ -200,7 +188,7 @@ function expandChoices(choices: Choice[]): Choice[] {
 
 /* ─── Component ─── */
 
-export default function SocialPackViewer({ order, choices: rawChoices, iterationId }: Props) {
+export default function SocialPackViewer({ order, choices: rawChoices, iterationId, onAprovar, onPedirAjuste }: Props) {
   const choices = useMemo(() => expandChoices(rawChoices), [rawChoices]);
   const sorted = [...choices].sort((a, b) => a.position - b.position);
   const [activeTab, setActiveTab] = useState(0);
@@ -222,58 +210,34 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
   const handleApprove = async () => {
     if (!activeChoice || submitting) return;
     setSubmitting(true);
-    const sb = supabase();
 
-    await sb
-      .from("choices")
-      .update({ is_selected: true, selected_at: new Date().toISOString() })
-      .eq("id", activeChoice.id);
-
-    if (iterationId) {
-      await sb
-        .from("iterations")
-        .update({
-          status: "approved",
-          client_replied_at: new Date().toISOString(),
-          approved_at: new Date().toISOString(),
-        })
-        .eq("id", iterationId);
+    if (onAprovar) {
+      await onAprovar(realChoiceId);
+    } else {
+      const sb = supabase();
+      await sb.from("choices").update({ is_selected: true, selected_at: new Date().toISOString() }).eq("id", activeChoice.id);
+      if (iterationId) {
+        await sb.from("iterations").update({ status: "approved", client_replied_at: new Date().toISOString(), approved_at: new Date().toISOString() }).eq("id", iterationId);
+      }
+      const choicePosts = parsePosts(activeChoice);
+      const text = choicePosts.map((p) =>
+        [p.label, p.formato && `FORMATO: ${p.formato}`, p.gancho && `GANCHO: ${p.gancho}`,
+         p.desenvolvimento && `DESENVOLVIMENTO:\n${p.desenvolvimento}`, p.cta && `CTA: ${p.cta}`,
+         p.hashtags.length > 0 && `HASHTAGS: ${p.hashtags.join(" ")}`,
+         p.sugestaoVisual && `SUGESTÃO VISUAL: ${p.sugestaoVisual}`].filter(Boolean).join("\n")
+      ).join("\n\n---\n\n");
+      const fileName = `${order.product}_${order.id}.txt`;
+      const filePath = `choices/${fileName}`;
+      await sb.storage.from("deliverables").upload(filePath, new Blob([text], { type: "text/plain" }), { upsert: true });
+      const { data: userData } = await sb.auth.getUser();
+      await sb.from("deliverables").insert({ order_id: order.id, user_id: userData?.user?.id, file_name: fileName, file_path: filePath, file_type: "txt", storage_bucket: "deliverables" });
+      await sb.from("orders").update({ status: "delivered", delivered_at: new Date().toISOString() }).eq("id", order.id);
+      const completedAt = new Date().toISOString();
+      await Promise.all([
+        sb.from("project_steps").update({ status: "done", completed_at: completedAt }).eq("order_id", order.id).neq("status", "done"),
+        sb.from("project_phases").update({ status: "done", completed_at: completedAt }).eq("order_id", order.id).neq("status", "done"),
+      ]);
     }
-
-    // Save deliverable — use the parsed posts for clean output
-    const choicePosts = parsePosts(activeChoice);
-    const text = choicePosts.map((p) =>
-      [p.label, p.formato && `FORMATO: ${p.formato}`, p.gancho && `GANCHO: ${p.gancho}`,
-       p.desenvolvimento && `DESENVOLVIMENTO:\n${p.desenvolvimento}`, p.cta && `CTA: ${p.cta}`,
-       p.hashtags.length > 0 && `HASHTAGS: ${p.hashtags.join(" ")}`,
-       p.sugestaoVisual && `SUGESTÃO VISUAL: ${p.sugestaoVisual}`].filter(Boolean).join("\n")
-    ).join("\n\n---\n\n");
-    const fileName = `${order.product}_${order.id}.txt`;
-    const filePath = `choices/${fileName}`;
-    await sb.storage
-      .from("deliverables")
-      .upload(filePath, new Blob([text], { type: "text/plain" }), { upsert: true });
-
-    const { data: userData } = await sb.auth.getUser();
-    await sb.from("deliverables").insert({
-      order_id: order.id,
-      user_id: userData?.user?.id,
-      file_name: fileName,
-      file_path: filePath,
-      file_type: "txt",
-      storage_bucket: "deliverables",
-    });
-
-    await sb
-      .from("orders")
-      .update({ status: "delivered", delivered_at: new Date().toISOString() })
-      .eq("id", order.id);
-
-    const completedAt = new Date().toISOString();
-    await Promise.all([
-      sb.from("project_steps").update({ status: "done", completed_at: completedAt }).eq("order_id", order.id).neq("status", "done"),
-      sb.from("project_phases").update({ status: "done", completed_at: completedAt }).eq("order_id", order.id).neq("status", "done"),
-    ]);
 
     setDone(true);
     setSubmitting(false);
@@ -288,18 +252,22 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
     setAdjustSending(true);
 
     try {
-      const { data: userData } = await supabase().auth.getUser();
-      await fetch("/api/request-revision", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_id: order.id,
-          user_id: userData?.user?.id,
-          type: "new_variations",
-          choice_id: realChoiceId,
-          notes: adjustNotes.trim(),
-        }),
-      });
+      if (onPedirAjuste) {
+        await onPedirAjuste(realChoiceId, adjustNotes.trim());
+      } else {
+        const { data: userData } = await supabase().auth.getUser();
+        await fetch("/api/request-revision", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_id: order.id,
+            user_id: userData?.user?.id,
+            type: "new_variations",
+            choice_id: realChoiceId,
+            notes: adjustNotes.trim(),
+          }),
+        });
+      }
       setAdjustSent(true);
       setShowAdjustForm(false);
       setAdjustNotes("");

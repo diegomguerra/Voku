@@ -12,6 +12,7 @@ import EmailBriefingForm, { EmailBriefing } from "@/components/EmailBriefingForm
 import ReelsBriefingForm, { ReelsBriefing } from "@/components/ReelsBriefingForm";
 import MetaAdsBriefingForm, { MetaAdsBriefing } from "@/components/MetaAdsBriefingForm";
 import RevisionPanel, { REVISION_PRODUCTS } from "@/components/RevisionPanel";
+import SocialPackViewer from "@/components/SocialPackViewer";
 import ColorAssigner from "@/components/ColorAssigner";
 import type { CoreExtraida } from "@/components/ColorExtractor";
 
@@ -446,8 +447,19 @@ export default function ProjetoPage() {
                   );
                 })()}
 
-                {/* Choices para outros produtos */}
-                {order?.product !== "landing_page_copy" && choices.map((choice, idx) => (
+                {/* Social Pack: viewer dedicado com posts paginados */}
+                {order?.product === "content_pack" && (
+                  <SocialPackViewer
+                    order={{ id: order.id, order_number: order.order_number, product: order.product, status: order.status, delivered_at: order.delivered_at }}
+                    choices={choices}
+                    iterationId={null}
+                    onAprovar={aprovar}
+                    onPedirAjuste={pedirAjuste}
+                  />
+                )}
+
+                {/* Choices para outros produtos (exceto landing page e content_pack) */}
+                {order?.product !== "landing_page_copy" && order?.product !== "content_pack" && choices.map((choice, idx) => (
                   <div key={choice.id} style={{
                     background: T.bg, border: `1px solid ${T.border}`, borderRadius: 12,
                     padding: 12, marginBottom: 10, opacity: idx > 0 && !choices[0].is_selected ? 1 : 1,
