@@ -24,7 +24,7 @@ const T = {
     ctaSec: "Ver serviços",
     scrollHint: "role para explorar",
 
-    trustBadges: ["Sem contrato longo", "Revisão inclusa", "Entrega em 24h"],
+    trustBadges: ["Sem créditos", "1 projeto = 1 preço fixo", "Revisão inclusa", "Entrega 24–48h"],
 
     statsLabel: "Por que a Voku",
     stats: [
@@ -124,7 +124,7 @@ const T = {
     cta: "Start my project",
     ctaSec: "See services",
     scrollHint: "scroll to explore",
-    trustBadges: ["No long contracts", "Revision included", "24h delivery"],
+    trustBadges: ["No credits", "1 project = 1 fixed price", "Revision included", "24–48h delivery"],
     statsLabel: "Why Voku",
     stats: [
       { n: "24h", l: "First delivery" },
@@ -186,7 +186,7 @@ const T = {
     cta: "Quiero mi proyecto",
     ctaSec: "Ver servicios",
     scrollHint: "desliza para explorar",
-    trustBadges: ["Sin contrato largo", "Revisión incluida", "Entrega en 24h"],
+    trustBadges: ["Sin créditos", "1 proyecto = 1 precio fijo", "Revisión incluida", "Entrega 24–48h"],
     statsLabel: "Por qué Voku",
     stats: [
       { n: "24h", l: "Primera entrega" },
@@ -439,6 +439,10 @@ function ServiceExplorer({ services, lang }) {
               <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 26, fontWeight: 800, color: isDark ? "#E9F59E" : "#111", letterSpacing: -0.5 }}>{svc.price}{svc.priceSuffix}</div>
               <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 10, color: isDark ? "#555" : "#AAA", marginTop: 2 }}>{svc.priceNote}</div>
             </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, fontSize: 11, color: isDark ? "#888" : "#555" }}>
+            <span style={{ color: "#AAFF00", fontWeight: 700 }}>✓</span>
+            <span>{lang === "PT" ? "Preço fixo. Sem créditos. Sem surpresa." : lang === "ES" ? "Precio fijo. Sin créditos. Sin sorpresas." : "Fixed price. No credits. No surprises."}</span>
           </div>
 
           <h3 style={{ fontFamily: "'DM Serif Display',serif", fontStyle: "italic", fontSize: "clamp(26px,2.8vw,40px)", fontWeight: 400, color: svc.textColor, lineHeight: 1.15, margin: "0 0 16px", whiteSpace: "pre-line", opacity: dlVisible ? 1 : 0, transform: dlVisible ? "translateY(0)" : "translateY(12px)", transition: "all 0.45s ease 0.05s" }}>{svc.tagline}</h3>
@@ -1100,6 +1104,40 @@ export default function VokuLanding() {
 
       {/* ══ GAP SECTION ══ */}
       <GapSection t={t} />
+
+      {/* ══ COMPARISON GRID ══ */}
+      <div style={{ maxWidth: 800, margin: "0 auto", padding: "0 24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, margin: "48px 0", padding: 32, background: "#F8F8F8", borderRadius: 16 }}>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, color: "#999", marginBottom: 8 }}>
+              {lang === "PT" ? "Freelancers" : lang === "ES" ? "Freelancers" : "Freelancers"}
+            </div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 12, color: "#888", lineHeight: 1.8 }}>
+              {lang === "PT" ? "Preço invisível" : lang === "ES" ? "Precio invisible" : "Invisible pricing"}<br />
+              {lang === "PT" ? "Sem processo" : lang === "ES" ? "Sin proceso" : "No process"}<br />
+              {lang === "PT" ? "Somem após entrega" : lang === "ES" ? "Desaparecen tras entrega" : "Disappear after delivery"}
+            </div>
+          </div>
+          <div style={{ textAlign: "center", background: "#111", borderRadius: 12, padding: 24, margin: "-8px 0" }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, color: "#AAFF00", fontWeight: 700, marginBottom: 8 }}>VOKU</div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 12, color: "#FFF", lineHeight: 1.8 }}>
+              {lang === "PT" ? "Preço fixo e visível" : lang === "ES" ? "Precio fijo y visible" : "Fixed & visible pricing"}<br />
+              {lang === "PT" ? "Entrega em 24–48h" : lang === "ES" ? "Entrega en 24–48h" : "Delivered in 24–48h"}<br />
+              {lang === "PT" ? "Revisão até aprovar" : lang === "ES" ? "Revisión hasta aprobar" : "Revision until approved"}
+            </div>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 13, color: "#999", marginBottom: 8 }}>
+              {lang === "PT" ? "Agências" : lang === "ES" ? "Agencias" : "Agencies"}
+            </div>
+            <div style={{ fontFamily: "'Plus Jakarta Sans',sans-serif", fontSize: 12, color: "#888", lineHeight: 1.8 }}>
+              {lang === "PT" ? "R$10k+/mês" : lang === "ES" ? "$3k+/mes" : "$3k+/mo"}<br />
+              {lang === "PT" ? "Reunião semanal" : lang === "ES" ? "Reunión semanal" : "Weekly meetings"}<br />
+              {lang === "PT" ? "6 meses de contrato" : lang === "ES" ? "6 meses de contrato" : "6-month contracts"}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ══ SERVICE EXPLORER ══ */}
       <section id="servicos" ref={exploreRef} style={{ padding: "112px 52px", background: "#F8F8F6" }}>

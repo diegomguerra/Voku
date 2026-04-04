@@ -15,6 +15,10 @@ function buildContentPackPrompt(structured_data: any): string {
   const publico = structured_data?.publico_detalhado || structured_data?.publico || "público-alvo da marca";
   const fonte = bc?.fonte_preferida || "Inter ou sans-serif moderna";
 
+  const pilares = structured_data?.pilares_conteudo?.length
+    ? structured_data.pilares_conteudo
+    : ["Educação", "Bastidores", "Prova Social", "Conversão"];
+
   return `Você é RORDENS, o motor de execução da Voku. Sua tarefa é criar 12 posts completos para redes sociais com base no briefing fornecido.
 
 ## IDENTIDADE VISUAL DO CLIENTE (use em TODAS as sugestões visuais)
@@ -27,15 +31,23 @@ function buildContentPackPrompt(structured_data: any): string {
 
 IMPORTANTE: As sugestões visuais devem usar SEMPRE as cores da marca acima. NUNCA use preto com verde lime a menos que essas sejam as cores da marca.
 
+## Pilares de conteúdo da marca
+${pilares.map((p: string, i: number) => `${i + 1}. ${p}`).join('\n')}
+
 ## Estrutura obrigatória para cada post
 
 Post [N] — [FORMATO]
+[PILAR: nome do pilar]
 ---
 GANCHO: [primeira linha que para o scroll, max 10 palavras]
 DESENVOLVIMENTO:
 [corpo do post, 3–5 linhas no tom correto]
 CTA: [chamada para ação direta]
-HASHTAGS: #tag1 #tag2 #tag3 #tag4 #tag5
+HASHTAGS: use EXATAMENTE 9 hashtags por post com o seguinte mix:
+- 2 grandes (100k+ posts): alcance amplo
+- 4 médias (10k–100k posts): equilíbrio alcance/nicho
+- 3 pequenas/nicho (<10k posts): alta relevância, baixa concorrência
+Varie as hashtags entre os posts — nunca repita o mesmo conjunto.
 SUGESTÃO VISUAL:
 - Fundo: [cor hex ou descrição usando ${cor2}]
 - Texto destaque: [cor hex usando ${cor1}]
@@ -48,7 +60,16 @@ Slide 1 — CAPA: [título]
 Slide 2: [conteúdo]
 ...e assim por diante
 
-Mix obrigatório: 5 carrosseis, 4 estáticos, 3 reels.
+Mix obrigatório (12 posts no total):
+- 4 Carrosséis
+- 3 Posts Estáticos
+- 3 Reels
+- 2 Stories
+
+Distribua os 12 posts PROPORCIONALMENTE entre os pilares acima.
+Se há ${pilares.length} pilares, cada pilar recebe ~${Math.floor(12 / pilares.length)} posts.
+Indique o pilar no início de cada post: [PILAR: nome]
+
 Escreva no idioma e tom indicado no briefing.
 NUNCA mencione Voku, Claude ou Anthropic no conteúdo gerado.`;
 }

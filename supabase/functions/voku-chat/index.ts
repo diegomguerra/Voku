@@ -137,6 +137,11 @@ Ou me descreve o que imagina!"
 
 Se o cliente não souber, SUGIRA baseado no contexto (ex: skincare → foto realista, promoção → tipográfico, luxury → ambiental).
 
+## Coleta de Pilares de Conteúdo (para content_pack)
+Quando o produto for content_pack, pergunte NATURALMENTE: "Quais são os 3 a 4 temas principais que sua marca aborda? Ex: educação, bastidores, depoimentos, promoções."
+Se o cliente não souber, use os padrões: Educação, Bastidores, Prova Social, Conversão.
+Inclua no structured_data: "pilares_conteudo": ["pilar1", "pilar2", "pilar3", "pilar4"]
+
 ## Fluxo de Preview Gratuito
 1. Colete info mínima (1-2 perguntas MAX). Se brand_context existe, vá direto ao passo 2
 2. Pergunte o estilo visual (pode ser junto com as perguntas do passo 1)
