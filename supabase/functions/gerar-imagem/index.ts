@@ -188,36 +188,16 @@ Deno.serve(async (req: Request) => {
       guidance_scale: b.guidance_scale || 3.2,
     };
 
-    const eng: Array<[string, () => Promise<string | null>]> = [
-      ["fal", () => falGen(pr, reel, falOpts)],
-      ["ideogram", () => idgGen(pr, reel)],
-      ["imagineart", () => imaGen(pr, reel)],
-    ];
-
     let iu: string | null = null;
     let eu = "none";
     const errs: Record<string, string> = {};
 
-    for (const [n, fn] of eng) {
-      if (eo && eo !== n) continue;
-      try {
-        iu = await fn();
-        if (iu) { eu = n; break; }
-      } catch (e: any) {
-        errs[n] = e.message;
-        // If specific engine requested and failed, try next
-        if (eo === n) continue;
-      }
-    }
-    // If requested engine failed, try remaining engines
-    if (!iu && eo) {
-      for (const [n, fn] of eng) {
-        if (n === eo) continue;
-        try {
-          iu = await fn();
-          if (iu) { eu = n; break; }
-        } catch (e: any) { errs[n] = e.message; }
-      }
+    // FAL only — no fallback to other engines
+    try {
+      iu = await falGen(pr, reel, falOpts);
+      if (iu) eu = "fal";
+    } catch (e: any) {
+      errs["fal"] = e.message;
     }
 
     if (!iu) {

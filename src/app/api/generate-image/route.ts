@@ -98,7 +98,7 @@ RULES:
           negative_prompt: NEGATIVE_PROMPT,
           storage_key: storageKey,
           upload: true,
-          engine: 'fal',
+          engine: 'fal_only',
           width: dims.width,
           height: dims.height,
           num_inference_steps: 32,
