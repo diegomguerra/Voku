@@ -425,8 +425,11 @@ export default function VokuLanding() {
             <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>{lang === "PT" ? "Do briefing à entrega. Garantido." : lang === "ES" ? "Del briefing a la entrega. Garantizado." : "From briefing to delivery. Guaranteed."}</div>
           </div>
           <div style={{ background: "#AAFF00", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#111", lineHeight: 1.4, maxWidth: 320, marginBottom: 28 }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#111", lineHeight: 1.4, maxWidth: 320, marginBottom: 16 }}>
               {lang === "PT" ? "Parece escrito por alguém que conhece sua marca há anos." : lang === "ES" ? "Parece escrito por alguien que conoce tu marca hace años." : "Looks like it was written by someone who's known your brand for years."}
+            </div>
+            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(0,0,0,0.5)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 20 }}>
+              {lang === "PT" ? "Sem reunião · Preço fixo · Revisão inclusa" : lang === "ES" ? "Sin reunión · Precio fijo · Revisión incluida" : "No meetings · Fixed price · Revision included"}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <a href="/cliente" onClick={handleCta} style={{ display: "inline-block", background: "#111", color: "#AAFF00", padding: "14px 28px", fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>{t.navCta} →</a>
@@ -448,16 +451,16 @@ export default function VokuLanding() {
       </div>
 
       {/* ══ PORTFOLIO ══ */}
-      <section id="s0" ref={portfolioRef} style={{ padding: "96px 48px" }}>
+      <section id="s0" ref={portfolioRef} style={{ padding: "56px 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ ...rv(portfolioVis), marginBottom: 12 }}>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.portfolio.label}</div>
             <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05 }}>{t.portfolio.title}</h2>
           </div>
-          <p style={{ ...rv(portfolioVis, 0.1), fontSize: 14, color: "#666", lineHeight: 1.75, marginBottom: 40 }}>{t.portfolio.sub}</p>
+          <p style={{ ...rv(portfolioVis, 0.1), fontSize: 14, color: "#666", lineHeight: 1.75, marginBottom: 24 }}>{t.portfolio.sub}</p>
 
           {/* Tabs */}
-          <div style={{ ...rv(portfolioVis, 0.15), display: "flex", gap: 32, marginBottom: 32, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+          <div style={{ ...rv(portfolioVis, 0.15), display: "flex", gap: 32, marginBottom: 16, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
             {t.portfolio.tabs.map((tab, i) => (
               <button key={i} onClick={() => setPortfolioTab(i)} style={{
                 fontFamily: FF, fontSize: 13, fontWeight: portfolioTab === i ? 700 : 500,
@@ -480,9 +483,9 @@ export default function VokuLanding() {
       </section>
 
       {/* ══ PRODUCTS ══ */}
-      <section id="s1" ref={productsRef} style={{ padding: "96px 48px" }}>
+      <section id="s1" ref={productsRef} style={{ padding: "56px 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ ...rv(productsVis), marginBottom: 48 }}>
+          <div style={{ ...rv(productsVis), marginBottom: 32 }}>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.products.label}</div>
             <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05 }}>{t.products.title}</h2>
           </div>
@@ -495,6 +498,7 @@ export default function VokuLanding() {
                   padding: "36px 32px",
                   borderLeft: i > 0 ? "1px solid rgba(0,0,0,0.12)" : "none",
                   position: "relative",
+                  display: "flex", flexDirection: "column",
                 }}>
                   {isDark && <div style={{ position: "absolute", top: 16, right: 16, background: "#AAFF00", color: "#111", fontSize: 8, fontWeight: 700, letterSpacing: 2, padding: "4px 10px", textTransform: "uppercase" }}>{t.products.badge}</div>}
                   <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 2, color: isDark ? "#555" : "#999", textTransform: "uppercase", marginBottom: 16 }}>{p.num}</div>
@@ -511,6 +515,11 @@ export default function VokuLanding() {
                     ))}
                   </div>
                   <a href="/cliente" onClick={handleCta} style={{ fontSize: 11, fontWeight: 700, color: isDark ? "#AAFF00" : "#111", textDecoration: "none" }}>{t.navCta} →</a>
+                  <div style={{ marginTop: "auto", paddingTop: 20 }}>
+                    <div style={{ background: isDark ? "#AAFF00" : "rgba(0,0,0,0.06)", color: isDark ? "#111" : "#666", padding: "12px 16px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
+                      {lang === "PT" ? `Entrega em ${p.time}` : lang === "ES" ? `Entrega en ${p.time}` : `Delivery in ${p.time}`}
+                    </div>
+                  </div>
                 </div>
               );
             })}
@@ -519,12 +528,24 @@ export default function VokuLanding() {
       </section>
 
       {/* ══ PROCESS ══ */}
-      <section id="s2" ref={processRef} style={{ background: "#111", padding: "96px 48px" }}>
+      <section id="s2" ref={processRef} style={{ background: "#111", padding: "56px 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80 }}>
           <div style={{ ...rv(processVis) }}>
             <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#555", marginBottom: 12, textTransform: "uppercase" }}>{t.process.label}</div>
             <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", color: "#fff", margin: 0, lineHeight: 1.05, marginBottom: 20 }}>{t.process.title}</h2>
-            <p style={{ fontSize: 14, color: "#888", lineHeight: 1.75 }}>{t.process.sub}</p>
+            <p style={{ fontSize: 14, color: "#888", lineHeight: 1.75, marginBottom: 32 }}>{t.process.sub}</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+              {[
+                { n: "24h", l: "Landing Page" },
+                { n: "48h", l: "Social Pack" },
+                { n: "100%", l: lang === "PT" ? "Aprovação inclusa" : lang === "ES" ? "Aprobación incluida" : "Approval included" },
+              ].map((m, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 32, fontWeight: 900, color: "#AAFF00", letterSpacing: -1 }}>{m.n}</div>
+                  <div style={{ fontSize: 10, color: "#444", marginTop: 4 }}>{m.l}</div>
+                </div>
+              ))}
+            </div>
           </div>
           <div>
             {t.process.steps.map((step, i) => (
@@ -539,7 +560,7 @@ export default function VokuLanding() {
       </section>
 
       {/* ══ GUARANTEE ══ */}
-      <section ref={guaranteeRef} style={{ background: "#AAFF00", padding: "80px 48px" }}>
+      <section ref={guaranteeRef} style={{ background: "#AAFF00", padding: "56px 48px" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
           <div style={{ ...rv(guaranteeVis), fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "rgba(0,0,0,0.4)", textTransform: "uppercase", marginBottom: 16 }}>{t.guarantee.label}</div>
           <h2 style={{ ...rv(guaranteeVis, 0.08), fontSize: "clamp(36px,5vw,64px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", color: "#111", margin: 0, lineHeight: 1.05, marginBottom: 20 }}>{t.guarantee.title}</h2>
@@ -573,6 +594,9 @@ export default function VokuLanding() {
               })}
             </div>
           </div>
+        </div>
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", padding: "16px 0", textAlign: "center", maxWidth: 1200, margin: "0 auto" }}>
+          <span style={{ fontSize: 10, color: "#888", letterSpacing: 2 }}>Estúdio de Mídia com IA · EN · PT · ES · voku.one</span>
         </div>
         <div style={{ borderTop: "1px solid rgba(0,0,0,0.1)", padding: "20px 48px", display: "flex", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
           <span style={{ fontSize: 11, color: "#888" }}>{t.footer.bottom1}</span>
