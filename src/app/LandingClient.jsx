@@ -433,7 +433,7 @@ export default function VokuLanding() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <a href="/cliente" onClick={handleCta} style={{ display: "inline-block", background: "#111", color: "#AAFF00", padding: "14px 28px", fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>{t.navCta} →</a>
-              <a href="#s0" style={{ fontSize: 11, color: "#111", opacity: 0.6, textDecoration: "none", textAlign: "center" }}>{lang === "PT" ? "Ver serviços ↓" : lang === "ES" ? "Ver servicios ↓" : "See services ↓"}</a>
+              <a href="#planos" style={{ fontSize: 11, color: "#111", opacity: 0.6, textDecoration: "none", textAlign: "center" }}>{lang === "PT" ? "Ver planos ↓" : lang === "ES" ? "Ver planes ↓" : "See plans ↓"}</a>
             </div>
           </div>
         </div>
@@ -482,47 +482,59 @@ export default function VokuLanding() {
         </div>
       </section>
 
-      {/* ══ PRODUCTS ══ */}
-      <section id="s1" ref={productsRef} style={{ padding: "56px 48px" }}>
+      {/* ══ PLANOS ══ */}
+      <section id="planos" ref={productsRef} style={{ padding: "56px 48px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div style={{ ...rv(productsVis), marginBottom: 32 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.products.label}</div>
-            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05 }}>{t.products.title}</h2>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 16 }}>PLANOS</div>
+            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05, marginBottom: 12 }}>Escolha. Comece. Crie.</h2>
+            <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, maxWidth: 560, margin: 0 }}>Créditos mensais para gerar copy, posts e e-mails com a identidade da sua marca. Sem contrato longo. Cancele quando quiser.</p>
           </div>
-          <div style={{ ...rv(productsVis, 0.1), display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
-            {t.products.items.map((p, i) => {
-              const isDark = p.highlight;
-              return (
-                <div key={i} style={{
-                  background: isDark ? "#111" : "#F5F0E8",
-                  padding: "36px 32px",
-                  borderLeft: i > 0 ? "1px solid rgba(0,0,0,0.12)" : "none",
-                  position: "relative",
-                  display: "flex", flexDirection: "column",
-                }}>
-                  {isDark && <div style={{ position: "absolute", top: 16, right: 16, background: "#AAFF00", color: "#111", fontSize: 8, fontWeight: 700, letterSpacing: 2, padding: "4px 10px", textTransform: "uppercase" }}>{t.products.badge}</div>}
-                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 2, color: isDark ? "#555" : "#999", textTransform: "uppercase", marginBottom: 16 }}>{p.num}</div>
-                  <div style={{ fontSize: 15, fontWeight: 900, color: isDark ? "#fff" : "#111", textTransform: "uppercase", letterSpacing: -0.5, marginBottom: 8 }}>{p.name}</div>
-                  <div style={{ fontSize: 12, color: isDark ? "#888" : "#666", marginBottom: 24 }}>{p.tagline}</div>
-                  <div style={{ fontSize: 40, fontWeight: 900, color: isDark ? "#AAFF00" : "#111", letterSpacing: -1, marginBottom: 4 }}>{p.price}</div>
-                  <div style={{ fontSize: 11, color: isDark ? "#555" : "#999", marginBottom: 24 }}>{p.time}</div>
-                  <div style={{ height: 1, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", marginBottom: 24 }} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
-                    {p.features.map((f, j) => (
-                      <div key={j} style={{ fontSize: 11, color: isDark ? "#888" : "#666", display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ color: isDark ? "#AAFF00" : "#111", fontWeight: 700 }}>→</span>{f}
-                      </div>
-                    ))}
-                  </div>
-                  <a href="/cliente" onClick={handleCta} style={{ fontSize: 11, fontWeight: 700, color: isDark ? "#AAFF00" : "#111", textDecoration: "none" }}>{t.navCta} →</a>
-                  <div style={{ marginTop: "auto", paddingTop: 20 }}>
-                    <div style={{ background: isDark ? "#AAFF00" : "rgba(0,0,0,0.06)", color: isDark ? "#111" : "#666", padding: "12px 16px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
-                      {lang === "PT" ? `Entrega em ${p.time}` : lang === "ES" ? `Entrega en ${p.time}` : `Delivery in ${p.time}`}
-                    </div>
-                  </div>
+
+          {/* Plans grid */}
+          <div style={{ ...rv(productsVis, 0.1), display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "rgba(0,0,0,0.1)" }}>
+            {[
+              { label: "STARTER", price: "R$149", credits: "100 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Entrega em 24–48h"], href: "https://buy.stripe.com/fZu7sE33MgDL7Zu1324gg06", dark: false },
+              { label: "PRO", price: "R$397", credits: "300 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Entrega em 24–48h", "Suporte prioritário por e-mail"], href: "https://buy.stripe.com/bJe14g47Q73bfrW6nm4gg0a", dark: false },
+              { label: "BUSINESS", price: "R$897", credits: "800 créditos/mês", badge: "Mais popular", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Volume para múltiplos projetos", "Histórico completo de entregas", "Suporte prioritário por e-mail"], href: "https://buy.stripe.com/6oUfZa7k20ENcfKcLK4gg07", dark: true },
+              { label: "ENTERPRISE", price: "R$1.997", credits: "2.000 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Volume para múltiplos projetos", "Histórico completo de entregas", "Suporte prioritário por e-mail", "Onboarding dedicado", "SLA garantido"], href: "https://buy.stripe.com/5kQcMY6fYdrz4Ni7rq4gg09", dark: false, ctaLabel: "Falar com a equipe →" },
+            ].map((plan, i) => (
+              <div key={i} style={{ background: plan.dark ? "#111" : "#F5F0E8", padding: "36px 32px", position: "relative", display: "flex", flexDirection: "column" }}>
+                {plan.badge && <div style={{ position: "absolute", top: 0, right: 0, background: "#AAFF00", color: "#111", fontSize: 7, fontWeight: 900, letterSpacing: 2, padding: "5px 14px", textTransform: "uppercase" }}>{plan.badge}</div>}
+                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: plan.dark ? "#AAFF00" : "#888", textTransform: "uppercase", marginBottom: 20 }}>{plan.label}</div>
+                <div style={{ fontSize: 40, fontWeight: 900, color: plan.dark ? "#fff" : "#111", letterSpacing: -1 }}>{plan.price}</div>
+                <div style={{ fontSize: 12, color: plan.dark ? "#555" : "#888", marginBottom: 6 }}>/mês</div>
+                <div style={{ fontSize: 11, color: plan.dark ? "#555" : "#666", marginBottom: 20 }}>{plan.credits}</div>
+                <div style={{ height: 1, background: plan.dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)", marginBottom: 16 }} />
+                <div style={{ display: "flex", flexDirection: "column", gap: 0, flex: 1 }}>
+                  {plan.items.map((item, j) => (
+                    <div key={j} style={{ fontSize: 11, color: plan.dark ? "#666" : "#666", padding: "7px 0", borderBottom: `1px solid ${plan.dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>{item}</div>
+                  ))}
                 </div>
-              );
-            })}
+                <a href={plan.href} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 28, fontSize: 11, fontWeight: 700, color: plan.dark ? "#AAFF00" : "#111", letterSpacing: "0.05em", textDecoration: "none" }}>{plan.ctaLabel || "Começar agora →"}</a>
+              </div>
+            ))}
+          </div>
+
+          {/* Credits add-on */}
+          <div style={{ ...rv(productsVis, 0.15), paddingTop: 48 }}>
+            <div style={{ fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: -0.5, color: "#111", marginBottom: 6 }}>Precisa de mais?</div>
+            <div style={{ fontSize: 12, color: "#666", marginBottom: 24 }}>Compre créditos avulsos sem alterar seu plano. Pagamento único.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "rgba(0,0,0,0.1)" }}>
+              {[
+                { n: "50", price: "R$49", href: "https://buy.stripe.com/eVq8wI33M87fcfKfXW4gg01" },
+                { n: "200", price: "R$149", href: "https://buy.stripe.com/8x200ceMugDLenSaDC4gg08" },
+                { n: "500", price: "R$297", href: "https://buy.stripe.com/6oU9AMdIq1IRgw02764gg02" },
+              ].map((c, i) => (
+                <div key={i} style={{ background: "#F5F0E8", padding: "28px 32px" }}>
+                  <div style={{ fontSize: 36, fontWeight: 900, color: "#111", letterSpacing: -1 }}>{c.n}</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, color: "#888", textTransform: "uppercase", marginBottom: 12 }}>créditos</div>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#111", marginBottom: 2 }}>{c.price}</div>
+                  <div style={{ fontSize: 10, color: "#888", marginBottom: 20 }}>pagamento único</div>
+                  <a href={c.href} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#111", letterSpacing: 1, textTransform: "uppercase", textDecoration: "none", borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 16, marginTop: 16 }}>Comprar →</a>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
