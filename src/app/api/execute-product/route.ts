@@ -6,9 +6,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60  // Texto + DB only — images are fire-and-forget
+export const maxDuration = 60
 
-/** Strip markdown code fences from a string (```json ... ```) */
 function stripFences(s: string): string {
   return s.replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim()
 }
@@ -158,7 +157,7 @@ const CREDIT_COST: Record<string, number> = {
   email_sequence: 25,
   post_instagram: 8,
   carrossel: 15,
-  reels_script: 10, // +25 if gerarVideo = true (handled dynamically)
+  reels_script: 10,
   ad_copy: 10,
   app: 20,
 }
@@ -191,11 +190,6 @@ const IMAGE_PRODUCTS: Record<string, string> = {
   app: 'screen-mockup',
 }
 
-/**
- * Dispara geração de imagem de forma NÃO BLOQUEANTE.
- * Usa fetch fire-and-forget — não aguarda resposta.
- * A rota /api/generate-image tem maxDuration=60 e cuida do timeout internamente.
- */
 function fireImageGeneration(params: {
   order_id: string
   choice_id: string
@@ -207,10 +201,9 @@ function fireImageGeneration(params: {
   reference_image_url?: string
   briefing_text: string
   product: string
+  visao_imagem?: string | null
 }) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-
-  // Fire-and-forget: não awaita, não bloqueia
   fetch(`${baseUrl}/api/generate-image`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -230,20 +223,11 @@ export async function POST(req: NextRequest) {
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
 
-    // ── Landing page: early return — handled by dedicated form + generate-landing ──
     if (product === 'landing_page_copy') {
-      await supabase.from('orders').update({
-        status: 'briefing',
-      }).eq('id', order_id);
-
-      return NextResponse.json({
-        ok: true,
-        product: 'landing_page_copy',
-        message: 'Landing page — aguardando formulário visual',
-      });
+      await supabase.from('orders').update({ status: 'briefing' }).eq('id', order_id)
+      return NextResponse.json({ ok: true, product: 'landing_page_copy', message: 'Landing page — aguardando formulário visual' })
     }
 
-    // ── Guard: prevent duplicate execution ──
     const { data: existingChoices } = await supabase
       .from('choices').select('id').eq('order_id', order_id).limit(1)
     if (existingChoices && existingChoices.length > 0) {
@@ -251,13 +235,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, order_id, skipped: true })
     }
 
-    // ── 1. Credit check (add 25 for reels video) ──
     const gerarVideo = product === 'reels_script' && structured_data?.gerarVideo === true
     const cost = (CREDIT_COST[product] || 0) + (gerarVideo ? 25 : 0)
     if (cost > 0) {
       const { data: creditRow, error: creditError } = await supabase
         .from('credits').select('balance').eq('user_id', user_id).single()
-
       if (creditError || !creditRow || creditRow.balance < cost) {
         await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
         return NextResponse.json({ error: 'Créditos insuficientes' }, { status: 402 })
@@ -266,24 +248,18 @@ export async function POST(req: NextRequest) {
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const resend = new Resend(process.env.RESEND_API_KEY)
-
     const baseSystem = SYSTEM_PROMPTS[product as ProductId]
     const briefingText = JSON.stringify(structured_data, null, 2)
 
-    // ── 2. Advance project phases (trigger already created them on order INSERT) ──
     const now = new Date().toISOString()
-    // Mark briefing phase (1) as done, research phase (2) as done, production phase (3) as active
     await Promise.all([
       supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('phase_number', 1),
       supabase.from('project_phases').update({ status: 'done', completed_at: now }).eq('order_id', order_id).eq('phase_number', 2),
       supabase.from('project_phases').update({ status: 'active', started_at: now }).eq('order_id', order_id).eq('phase_number', 3),
-      // Mark all briefing + research steps as done
       supabase.from('project_steps').update({ status: 'done', completed_at: now }).eq('order_id', order_id).in('step_number', [1, 2, 3, 4, 5]),
-      // Mark production step 6 (primeira entrega) as active
       supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 6),
     ])
 
-    // ── 3. Gerar variações via Anthropic ──
     const SIMPLE_PRODUCTS = ['post_instagram', 'ad_copy', 'reels_script']
     const maxTokens = SIMPLE_PRODUCTS.includes(product) ? 4000 : 6000
     const message = await anthropic.messages.create({
@@ -322,7 +298,6 @@ Each variation must be complete and production-ready. Only output the JSON array
 
     variations = variations.slice(0, 3)
 
-    // ── 4. Salvar preview + choices ──
     const previewText = (variations[0]?.text || '').slice(0, 300)
     await supabase.from('orders').update({ preview_text: previewText }).eq('id', order_id)
 
@@ -337,8 +312,6 @@ Each variation must be complete and production-ready. Only output the JSON array
       }))
     )
 
-    // ── Avançar steps de texto ──
-    // Mark "Primeira entrega gerada" (step 6) as done, "Variações e alternativas" (step 7) as active
     await Promise.all([
       supabase.from('project_steps').update({ status: 'done', completed_at: new Date().toISOString() }).eq('order_id', order_id).eq('step_number', 6),
       supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 7),
@@ -351,7 +324,6 @@ Each variation must be complete and production-ready. Only output the JSON array
       choices_sent_at: new Date().toISOString(),
     })
 
-    // ── 5. Deduzir créditos ──
     if (cost > 0) {
       const { data: creditRow } = await supabase.from('credits').select('balance').eq('user_id', user_id).single()
       if (creditRow) {
@@ -364,7 +336,9 @@ Each variation must be complete and production-ready. Only output the JSON array
       }
     }
 
-    // ── 6. Disparar imagens — FIRE AND FORGET ──
+    // ── Visão da imagem: cena descrita pelo usuário no formulário ──
+    const visaoImagem = structured_data?.visao_imagem || null
+
     const imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
     if (imageSlug) {
       const { data: insertedChoices } = await supabase
@@ -390,15 +364,13 @@ Each variation must be complete and production-ready. Only output the JSON array
             reference_image_url: reference_image_url || undefined,
             briefing_text: briefingText,
             product,
+            visao_imagem: visaoImagem,
           })
         }
-        console.log(`[execute-product] Fired ${insertedChoices.length} image jobs for order=${order_id}`)
+        console.log(`[execute-product] Fired ${insertedChoices.length} image jobs | visao="${visaoImagem?.slice(0, 60) || 'none'}"`)
 
-        // ── 6b. Fire video generation for Reels (if gerarVideo) ──
         if (gerarVideo && insertedChoices?.length) {
           for (const choice of insertedChoices) {
-            // Parse roteiro from the variation text (Claude generates structured content)
-            // Build a simple roteiro from the text sections
             const text = choice.content?.text || ''
             const hookMatch = text.match(/HOOK[^:]*:\s*([^\n]+)/i)
             const cenas: any[] = []
@@ -416,7 +388,6 @@ Each variation must be complete and production-ready. Only output the JSON array
                 })
               }
             }
-            // Fallback: if no scenes parsed, create 3 generic scenes
             if (cenas.length === 0) {
               const lines = text.split('\n').filter((l: string) => l.trim().length > 20)
               for (let i = 0; i < Math.min(lines.length, 5); i++) {
@@ -429,13 +400,7 @@ Each variation must be complete and production-ready. Only output the JSON array
                 })
               }
             }
-
-            const roteiro = {
-              hook: hookMatch?.[1] || '',
-              cenas: cenas.slice(0, 8), // Max 8 scenes
-              cta: '',
-            }
-
+            const roteiro = { hook: hookMatch?.[1] || '', cenas: cenas.slice(0, 8), cta: '' }
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
             fetch(`${baseUrl}/api/generate-video`, {
               method: 'POST',
@@ -449,12 +414,10 @@ Each variation must be complete and production-ready. Only output the JSON array
               }),
             }).catch(e => console.error('[fire-video] fetch error:', e))
           }
-          console.log(`[execute-product] Fired video generation for order=${order_id}`)
         }
       }
     }
 
-    // ── 7. Email (non-blocking) ──
     const { data: order } = await supabase.from('orders').select('order_number').eq('id', order_id).single()
     const productName = PRODUCT_NAMES[product as ProductId]
     const choicesUrl = `${process.env.NEXT_PUBLIC_APP_URL}/cliente/pedidos/${order_id}`
