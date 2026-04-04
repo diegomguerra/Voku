@@ -466,7 +466,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
           <div style={{ ...s.row1, background: '#fafde7', border: '1.5px solid #d9f99d', borderRadius: 12, padding: '16px 18px' }}>
             <label style={{ ...s.label, color: '#3f6212', marginBottom: 4 }}>📸 Que cena você imagina nas imagens?</label>
             <p style={{ fontSize: 12, color: '#4d7c0f', margin: '0 0 10px', lineHeight: 1.5 }}>Descreva de forma simples — Ex: mulher usando o produto em casa pela manhã.</p>
-            <textarea style={{ ...s.textarea, minHeight: 72, border: '1.5px solid #bbf451', background: '#fff' }} placeholder='Ex: mulher negra tomando café na sacada do prédio pela manhã...' value={briefing.visao_imagem} onChange={e => set('visao_imagem', e.target.value)} />
+            <textarea style={{ ...s.textarea, minHeight: 72, border: '1.5px solid #bbf451', background: '#fff' }} placeholder='Descreva a cena que você imagina para as imagens' value={briefing.visao_imagem} onChange={e => set('visao_imagem', e.target.value)} />
           </div>
 
           {/* Observações */}
