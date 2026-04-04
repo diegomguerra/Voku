@@ -173,7 +173,7 @@ const TABS_DATA = [
   {
     accent: "#ED1C24", accentBg: "#0A1628", dark: "#0A1628",
     row1: [
-      { type: "photo", src: IMG.agro, span: 2, pill: "Prova Social", pillBg: "#ED1C24", pillColor: "#fff", tag: "Post Estático · Instagram", copy: "Rebanho que produz mais. Investimento que retorna mais rápido." },
+      { type: "photo", src: IMG.agro, span: 2, pill: "Conversão", pillBg: "#ED1C24", pillColor: "#fff", tag: "Post Estático · Instagram", copy: "Rebanho que produz mais. Investimento que retorna mais rápido." },
       { type: "card", bg: "#0A1628", label: "02 — Dados", headline: "Genética de elite não é luxo.", accentWord: "É lucro.", accentColor: "#ED1C24", stats: [{ n: "+15%", l: "produção" }, { n: "-20%", l: "custo" }, { n: "1ª", l: "geração" }], statsColor: "#ED1C24" },
       { type: "photo", src: IMG.tech, span: 1, pill: "Educação", pillBg: "#fff", pillColor: "#111", tag: "Carrossel · 7 slides", copy: "Os 5 indicadores que todo pecuarista deveria acompanhar." },
     ],
