@@ -25,6 +25,7 @@ export interface PostsBriefing {
   cor_primaria:   string;
   cor_secundaria: string;
   logo_base64:    string;
+  visao_imagem:   string;
   observacoes:    string;
 }
 
@@ -134,6 +135,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
     cor_primaria:   prefill?.cor_primaria ?? '#CCEE33',
     cor_secundaria: prefill?.cor_secundaria ?? '#0a0a0a',
     logo_base64:    prefill?.logo_base64 ?? '',
+    visao_imagem:   prefill?.visao_imagem ?? '',
     observacoes:    prefill?.observacoes ?? '',
   });
 
@@ -460,6 +462,13 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
             </div>
           </div>
 
+          {/* Visão de imagem */}
+          <div style={{ ...s.row1, background: '#fafde7', border: '1.5px solid #d9f99d', borderRadius: 12, padding: '16px 18px' }}>
+            <label style={{ ...s.label, color: '#3f6212', marginBottom: 4 }}>📸 Que cena você imagina nas imagens?</label>
+            <p style={{ fontSize: 12, color: '#4d7c0f', margin: '0 0 10px', lineHeight: 1.5 }}>Descreva de forma simples — Ex: mulher usando o produto em casa pela manhã.</p>
+            <textarea style={{ ...s.textarea, minHeight: 72, border: '1.5px solid #bbf451', background: '#fff' }} placeholder='Ex: mulher negra tomando café na sacada do prédio pela manhã...' value={briefing.visao_imagem} onChange={e => set('visao_imagem', e.target.value)} />
+          </div>
+
           {/* Observações */}
           <div style={s.row1}>
             <label style={s.label}>Observações finais</label>
@@ -477,6 +486,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                 { label: 'Quantidade', value: `${briefing.quantidade} posts` },
                 { label: 'Pilares', value: briefing.pilares.join(', ') },
                 { label: 'Tom', value: TONS.find(t => t.id === briefing.tom)?.label || '' },
+                { label: 'Cena', value: briefing.visao_imagem },
               ].map(({ label, value }) => value ? (
                 <div key={label} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0, minWidth: 72 }}>{label}</span>
