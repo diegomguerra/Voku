@@ -57,23 +57,18 @@ export async function POST(req: NextRequest) {
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+      max_tokens: 200,
       messages: [{
         role: 'user',
-        content: `You are a photography director. Translate this brief into a candid photo scene description in English.
+        content: `Translate this scene into a SHORT English photo description. LITERAL translation only — do NOT embellish, do NOT add drama, do NOT improve lighting.
 
-${sceneInput ? `CLIENT VISION: "${sceneInput}"` : ''}
-PRODUCT TYPE: ${product || 'social media post'}
-${brandName ? `BRAND: ${brandName}${brandTom ? `, tone: ${brandTom}` : ''}` : ''}
-CONTEXT: ${context.slice(0, 500)}
+SCENE: "${sceneInput || context.slice(0, 400)}"
 
-RULES:
-- Describe a REAL candid moment, not a posed studio shot
-- Include: setting, person(s) appearance/ethnicity if mentioned, natural lighting, time of day
-- Natural imperfections: messy hair, wrinkled clothes, real skin
-- NO words like "cinematic", "4k", "professional", "sharp focus", "high quality", "stunning"
-- NO text/words/letters in the image
-- 60-100 words max. Return ONLY the scene description.`,
+FORBIDDEN WORDS (never use any of these): cinematic, 4k, professional, sharp focus, high quality, stunning, beautiful, elegant, dramatic, bokeh, golden hour, vibrant, perfect, flawless, gorgeous, masterpiece, award-winning, ultra, hyper, detailed
+
+REQUIRED TONE: mundane, ordinary, unremarkable — like describing a photo your neighbor took on their phone.
+
+40-60 words max. Return ONLY the description. No intro, no quotes.`,
       }],
     })
 
@@ -81,8 +76,8 @@ RULES:
       ? msg.content[0].text.trim()
       : `Person in a natural setting related to ${context.slice(0, 80)}`
 
-    // Final prompt = scene + anti-AI directives (never removed by Haiku)
-    const finalPrompt = sceneDesc + ANTI_AI_SUFFIX
+    // Final prompt = scene + anti-AI photography directives (appended AFTER Haiku, never filtered)
+    const finalPrompt = sceneDesc + `. ` + ANTI_AI_SUFFIX
 
     // Call edge function with fully constructed prompt
     const edgeRes = await fetch(
