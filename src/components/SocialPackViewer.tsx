@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 
 const FF = "'Inter', sans-serif";
@@ -65,8 +65,28 @@ function parsePosts(choice: Choice): Post[] {
     return raw.map((obj: any, i: number) => parsePostObj(obj, i));
   }
 
-  // Object with text field — split the big text into individual posts
-  const text: string = raw?.text || "";
+  // Object with text field
+  let text: string = raw?.text || "";
+
+  // Unescape literal \\n to real newlines
+  if (text.includes("\\n")) {
+    text = text.replace(/\\n/g, "\n");
+  }
+
+  // If text is itself a JSON array string (embedded variations), try parsing
+  if (text.trim().startsWith("[")) {
+    try {
+      const arr = JSON.parse(text);
+      if (Array.isArray(arr) && arr.length > 0 && arr[0].text) {
+        // Use the first variation's text to extract posts
+        const inner = arr[0].text.replace(/\\n/g, "\n");
+        return splitPostsFromText(inner);
+      }
+    } catch {
+      // fall through to text splitting
+    }
+  }
+
   return splitPostsFromText(text);
 }
 
@@ -84,15 +104,28 @@ function parsePostObj(obj: any, idx: number): Post {
 }
 
 function splitPostsFromText(text: string): Post[] {
+  // Strip leading title lines like "# SELECT SIRES - CONTENT PACK (12 POSTS)"
+  const cleaned = text.replace(/^#\s+[^\n]+\n+/, "").trim();
+
   // Try splitting by ## POST N or **POST N** or POST N (bold or header)
-  const markers = /(?=##\s*POST\s+\d+|(?:^|\n)\*\*\s*POST\s+\d+|(?:^|\n)Post\s+\d+\b)/gi;
-  const sections = text.split(markers).filter((s) => s.trim());
+  const markers = /(?=##\s*POST\s+\d+|(?:^|\n)\*\*\s*POST\s+\d+)/gi;
+  const sections = cleaned.split(markers).filter((s) => s.trim());
 
   if (sections.length > 1) {
-    return sections.map((s, i) => parseFieldsFromText(`POST ${i + 1}`, s));
+    // Remove --- separators between posts
+    return sections.map((s, i) =>
+      parseFieldsFromText(`POST ${i + 1}`, s.replace(/\n---\s*$/, "").trim())
+    );
   }
+
+  // Fallback: try splitting by --- separators
+  const bySep = cleaned.split(/\n---\n/).filter((s) => s.trim());
+  if (bySep.length > 1) {
+    return bySep.map((s, i) => parseFieldsFromText(`POST ${i + 1}`, s.trim()));
+  }
+
   // Fallback: single post
-  return [parseFieldsFromText("POST 1", text)];
+  return [parseFieldsFromText("POST 1", cleaned)];
 }
 
 function parseFieldsFromText(defaultLabel: string, text: string): Post {
@@ -137,9 +170,38 @@ function normalizeHashtags(val: any): string[] {
   return [];
 }
 
+/**
+ * Expand choices: if there's a single choice whose text is a JSON array
+ * of variations (fallback from execute-product), split into virtual choices.
+ */
+function expandChoices(choices: Choice[]): Choice[] {
+  if (choices.length !== 1) return choices;
+  const c = choices[0];
+  const text = typeof c.content === "string" ? c.content : c.content?.text;
+  if (typeof text !== "string" || !text.trim().startsWith("[")) return choices;
+
+  try {
+    const cleaned = text.replace(/^```json\n?/, "").replace(/\n?```$/, "").trim();
+    const arr = JSON.parse(cleaned);
+    if (!Array.isArray(arr) || arr.length <= 1) return choices;
+
+    return arr.map((v: any, i: number) => ({
+      ...c,
+      id: c.id, // keep real ID for DB operations
+      _virtualIndex: i,
+      label: v.label || `Option ${String.fromCharCode(65 + i)}`,
+      content: { text: typeof v.text === "string" ? v.text.replace(/\\n/g, "\n") : v.text || "" },
+      position: i,
+    })) as any[];
+  } catch {
+    return choices;
+  }
+}
+
 /* ─── Component ─── */
 
-export default function SocialPackViewer({ order, choices, iterationId }: Props) {
+export default function SocialPackViewer({ order, choices: rawChoices, iterationId }: Props) {
+  const choices = useMemo(() => expandChoices(rawChoices), [rawChoices]);
   const sorted = [...choices].sort((a, b) => a.position - b.position);
   const [activeTab, setActiveTab] = useState(0);
   const [currentPost, setCurrentPost] = useState(0);
@@ -178,8 +240,14 @@ export default function SocialPackViewer({ order, choices, iterationId }: Props)
         .eq("id", iterationId);
     }
 
-    // Save deliverable
-    const text = activeChoice.content?.text || JSON.stringify(activeChoice.content, null, 2);
+    // Save deliverable — use the parsed posts for clean output
+    const choicePosts = parsePosts(activeChoice);
+    const text = choicePosts.map((p) =>
+      [p.label, p.formato && `FORMATO: ${p.formato}`, p.gancho && `GANCHO: ${p.gancho}`,
+       p.desenvolvimento && `DESENVOLVIMENTO:\n${p.desenvolvimento}`, p.cta && `CTA: ${p.cta}`,
+       p.hashtags.length > 0 && `HASHTAGS: ${p.hashtags.join(" ")}`,
+       p.sugestaoVisual && `SUGESTÃO VISUAL: ${p.sugestaoVisual}`].filter(Boolean).join("\n")
+    ).join("\n\n---\n\n");
     const fileName = `${order.product}_${order.id}.txt`;
     const filePath = `choices/${fileName}`;
     await sb.storage
@@ -211,6 +279,9 @@ export default function SocialPackViewer({ order, choices, iterationId }: Props)
     setSubmitting(false);
   };
 
+  // Real choice ID for DB operations (virtual choices share same real ID)
+  const realChoiceId = rawChoices[0]?.id || activeChoice?.id;
+
   /* ─── Request adjustments ─── */
   const handleRequestAdjust = async () => {
     if (!adjustNotes.trim() || adjustSending) return;
@@ -224,8 +295,8 @@ export default function SocialPackViewer({ order, choices, iterationId }: Props)
         body: JSON.stringify({
           order_id: order.id,
           user_id: userData?.user?.id,
-          type: "revision",
-          choice_id: activeChoice.id,
+          type: "new_variations",
+          choice_id: realChoiceId,
           notes: adjustNotes.trim(),
         }),
       });
