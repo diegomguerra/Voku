@@ -10,8 +10,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Anti-AI photography directives — always appended to every prompt
-const ANTI_AI_SUFFIX = `, shot on Sony A7III 50mm f/1.8, natural lens distortion, slight focus softness on edges, visible pores, slight uneven skin tone, faint facial lines, minor blemish, hair flyaways, chromatic aberration, film grain, muted flat color palette, low contrast, photojournalism aesthetic`
-const NEGATIVE_PROMPT = `aiartstation, cgi, render, perfect skin, flawless face, airbrushed, studio lighting, dramatic lighting, overexposed glow, HDR, unnatural bokeh, plastic texture, magazine retouching, neon, vivid saturation`
+const ANTI_AI_SUFFIX = `shot on Sony A7III 50mm f/1.8, natural lens distortion, slight focus softness on edges, visible pores and skin texture, slight uneven skin tone, faint facial lines, minor blemish, hair flyaways, chromatic aberration, film grain ISO 800, muted flat color palette, low contrast, no bokeh, deep depth of field, everything in focus, photojournalism aesthetic, amateur photography, imperfect framing`
+const ANTI_AI_NEGATIVE = `NOT: perfect skin, NOT: airbrushed, NOT: studio lighting, NOT: dramatic lighting, NOT: bokeh, NOT: shallow depth of field, NOT: HDR, NOT: magazine retouching, NOT: neon colors, NOT: vivid saturation, NOT: flawless, NOT: glamour`
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
@@ -76,8 +76,8 @@ REQUIRED TONE: mundane, ordinary, unremarkable — like describing a photo your 
       ? msg.content[0].text.trim()
       : `Person in a natural setting related to ${context.slice(0, 80)}`
 
-    // Final prompt = scene + anti-AI photography directives (appended AFTER Haiku, never filtered)
-    const finalPrompt = sceneDesc + `. ` + ANTI_AI_SUFFIX
+    // Final prompt = scene + anti-AI directives + negative inline (FLUX ignores separate negative_prompt)
+    const finalPrompt = sceneDesc + `. ` + ANTI_AI_SUFFIX + `. ` + ANTI_AI_NEGATIVE
 
     // Call edge function with fully constructed prompt
     const edgeRes = await fetch(
@@ -90,7 +90,7 @@ REQUIRED TONE: mundane, ordinary, unremarkable — like describing a photo your 
         },
         body: JSON.stringify({
           prompt: finalPrompt,
-          negative_prompt: NEGATIVE_PROMPT,
+          negative_prompt: ANTI_AI_NEGATIVE,
           storage_key: storageKey,
           upload: true,
           engine: 'fal_only',
