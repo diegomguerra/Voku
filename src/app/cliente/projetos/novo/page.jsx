@@ -7,12 +7,8 @@ const TYPES = [
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="7" cy="6" r="1" fill="#C8F135"/><circle cx="10" cy="6" r="1" fill="#C8F135"/></svg> },
   { product: "content_pack", title: "Pack de Posts", desc: "Hook, legenda e hashtags prontos para publicar.", credits: "8 créditos/post", hasCalendar: true,
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> },
-  { product: "carrossel", title: "Carrossel", desc: "7 slides com copy completa.", credits: "15 créditos",
-    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="2" y="4" width="14" height="16" rx="2"/><rect x="8" y="2" width="14" height="16" rx="2" opacity="0.5"/></svg> },
   { product: "email_sequence", title: "Sequência de E-mails", desc: "5 e-mails do dia 0 ao dia 8.", credits: "25 créditos",
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> },
-  { product: "reels_script", title: "Roteiro Reels", desc: "30s, 60s ou 90s com cortes descritos.", credits: "10 créditos",
-    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="6" y="2" width="12" height="20" rx="3"/><polygon points="10,8 10,16 16,12" fill="#C8F135"/></svg> },
   { product: "ad_copy", title: "Copy Meta Ads", desc: "3 ângulos: dor, benefício, prova.", credits: "10 créditos",
     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><path d="M3 11l6-8v6h6l-6 8v-6H3z"/></svg> },
 ];
