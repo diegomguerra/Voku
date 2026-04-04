@@ -46,31 +46,48 @@ async function mkPrompt(post: any): Promise<string> {
   return d.content?.[0]?.text?.trim() ?? tit;
 }
 
-// ── Engine 1: fal.ai (FLUX Pro v1.1) ──────────────────────────────────
+// ── Engine 1: fal.ai ──────────────────────────────────────────────────
+// Supports flux-pro/v1.1 (general) and flux-realism (human photos)
 async function falGen(
   p: string,
   reel: boolean,
-  opts?: { width?: number; height?: number; num_inference_steps?: number; guidance_scale?: number }
+  opts?: { width?: number; height?: number; num_inference_steps?: number; guidance_scale?: number; model?: string }
 ): Promise<string | null> {
   if (!FAL_KEY) return null;
   const w = opts?.width || (reel ? 1080 : 1080);
   const h = opts?.height || (reel ? 1920 : 1350);
 
-  const r = await fetch("https://fal.run/fal-ai/flux-pro/v1.1", {
+  // flux-realism for human/people photos, flux-pro for everything else
+  const model = opts?.model || "flux-pro/v1.1";
+  const endpoint = model === "flux-realism"
+    ? "https://fal.run/fal-ai/flux-realism"
+    : "https://fal.run/fal-ai/flux-pro/v1.1";
+
+  const body: Record<string, any> = {
+    prompt: p,
+    image_size: { width: w, height: h },
+    num_images: 1,
+    enable_safety_checker: true,
+    sync_mode: true,
+  };
+
+  // flux-realism supports strength param (0-1, lower = more realistic)
+  if (model === "flux-realism") {
+    body.strength = 0.7;
+    body.num_inference_steps = opts?.num_inference_steps || 35;
+    body.guidance_scale = opts?.guidance_scale || 3.5;
+  } else {
+    body.num_inference_steps = opts?.num_inference_steps || 32;
+    body.guidance_scale = opts?.guidance_scale || 3.5;
+  }
+
+  const r = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Key ${FAL_KEY}`,
     },
-    body: JSON.stringify({
-      prompt: p,
-      image_size: { width: w, height: h },
-      num_images: 1,
-      num_inference_steps: opts?.num_inference_steps || 32,
-      guidance_scale: opts?.guidance_scale || 3.2,
-      enable_safety_checker: true,
-      sync_mode: true,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!r.ok) {
@@ -185,7 +202,8 @@ Deno.serve(async (req: Request) => {
       width: b.width || 1080,
       height: b.height || 1350,
       num_inference_steps: b.num_inference_steps || 32,
-      guidance_scale: b.guidance_scale || 3.2,
+      guidance_scale: b.guidance_scale || 3.5,
+      model: b.model || "flux-pro/v1.1",
     };
 
     let iu: string | null = null;

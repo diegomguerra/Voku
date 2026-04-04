@@ -9,9 +9,8 @@ export const maxDuration = 60
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// Anti-AI photography directives — always appended to every prompt
-const ANTI_AI_SUFFIX = `shot on Sony A7III 50mm f/1.8, natural lens distortion, slight focus softness on edges, visible pores and skin texture, slight uneven skin tone, faint facial lines, minor blemish, hair flyaways, chromatic aberration, film grain ISO 800, muted flat color palette, low contrast, no bokeh, deep depth of field, everything in focus, photojournalism aesthetic, amateur photography, imperfect framing`
-const ANTI_AI_NEGATIVE = `NOT: perfect skin, NOT: airbrushed, NOT: studio lighting, NOT: dramatic lighting, NOT: bokeh, NOT: shallow depth of field, NOT: HDR, NOT: magazine retouching, NOT: neon colors, NOT: vivid saturation, NOT: flawless, NOT: glamour`
+// Technical camera signature — anchored AFTER Sonnet, never filtered
+const CAMERA_SIG = `shot on Sony A7III with 50mm f/1.8 lens, natural lens distortion, subtle chromatic aberration on edges, visible skin pores and texture, slight uneven skin tone, faint expression lines, real hair with flyaways, film grain, natural available light only, no flash, no reflectors`
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
@@ -36,7 +35,6 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Use 4:5 Instagram ratio (1080x1350) for social posts, keep original for others
     const isReels = product === 'reels_script'
     const isSocial = ['post_instagram', 'carrossel', 'content_pack', 'ad_copy'].includes(product)
     const dims = isReels
@@ -47,39 +45,45 @@ export async function POST(req: NextRequest) {
 
     const storageKey = `generated/${order_id}/choice-${choice_position ?? 0}.png`
 
-    // Build prompt: use Haiku to translate visao_imagem/context into a scene description,
-    // then append anti-AI photography directives
     const context = briefing_text || choice_text || ''
     const brandName = brand?.nome_marca || ''
     const brandTom = brand?.tom || ''
     const sceneInput = visao_imagem || ''
 
+    // Sonnet builds the scene — it understands nuance better than Haiku
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const msg = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 200,
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 250,
       messages: [{
         role: 'user',
-        content: `Translate this scene into a SHORT English photo description. LITERAL translation only — do NOT embellish, do NOT add drama, do NOT improve lighting.
+        content: `You are a documentary photographer directing a shoot. Write an image generation prompt in English for this scene.
 
-SCENE: "${sceneInput || context.slice(0, 400)}"
+SCENE THE CLIENT DESCRIBED: "${sceneInput || context.slice(0, 500)}"
+${brandName ? `BRAND CONTEXT: ${brandName}${brandTom ? ` (${brandTom})` : ''}` : ''}
 
-FORBIDDEN WORDS (never use any of these): cinematic, 4k, professional, sharp focus, high quality, stunning, beautiful, elegant, dramatic, bokeh, golden hour, vibrant, perfect, flawless, gorgeous, masterpiece, award-winning, ultra, hyper, detailed
+YOUR STYLE: You shoot like a seasoned photojournalist — real moments, real people, real light. Think Steve McCurry meets everyday life. Your photos feel intimate and authentic. People in your photos look like they exist — with skin texture, messy hair, wrinkled clothes, natural posture.
 
-REQUIRED TONE: mundane, ordinary, unremarkable — like describing a photo your neighbor took on their phone.
+RULES:
+- Describe the EXACT scene: who, what they wear, what they hold, where they are, time of day, weather
+- Lighting must be NATURAL and AVAILABLE — overcast daylight, window light, open shade. Never studio.
+- Include at least 2 physical imperfections: uneven skin, flyaway hair, wrinkled fabric, chipped nail polish, faded clothes
+- The person should NOT be posing — they are caught in a real moment
+- NO text, words, or letters visible in the image
+- 80-120 words. Return ONLY the prompt text.
 
-40-60 words max. Return ONLY the description. No intro, no quotes.`,
+NEVER USE these words: cinematic, stunning, beautiful, elegant, glamorous, perfect, flawless, masterpiece, award-winning, hyper-realistic, ultra-detailed, 4k, 8k, HDR, bokeh, dreamy, ethereal, magical`,
       }],
     })
 
     const sceneDesc = msg.content[0].type === 'text'
       ? msg.content[0].text.trim()
-      : `Person in a natural setting related to ${context.slice(0, 80)}`
+      : `Person in a candid moment, natural light, real environment`
 
-    // Final prompt = scene + anti-AI directives + negative inline (FLUX ignores separate negative_prompt)
-    const finalPrompt = sceneDesc + `. ` + ANTI_AI_SUFFIX + `. ` + ANTI_AI_NEGATIVE
+    // Final prompt = Sonnet scene + camera signature (never passes through any LLM)
+    const finalPrompt = sceneDesc + `. ` + CAMERA_SIG
 
-    // Call edge function with fully constructed prompt
+    // Call edge function — uses flux-realism for human photos
     const edgeRes = await fetch(
       `${SUPABASE_URL}/functions/v1/gerar-imagem`,
       {
@@ -90,14 +94,14 @@ REQUIRED TONE: mundane, ordinary, unremarkable — like describing a photo your 
         },
         body: JSON.stringify({
           prompt: finalPrompt,
-          negative_prompt: ANTI_AI_NEGATIVE,
           storage_key: storageKey,
           upload: true,
-          engine: 'fal_only',
+          engine: 'fal',
+          model: 'flux-realism',
           width: dims.width,
           height: dims.height,
           num_inference_steps: 32,
-          guidance_scale: 3.2,
+          guidance_scale: 3.5,
         }),
       }
     )
