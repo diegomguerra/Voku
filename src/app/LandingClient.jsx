@@ -1,355 +1,370 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const FONTS = "https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&family=DM+Serif+Display:ital@0;1&display=swap";
-const FF = "'Plus Jakarta Sans', sans-serif";
-const FFS = "'DM Serif Display', serif";
+const FF = "'Inter', sans-serif";
 
-/* ─── SVG ICONS ──────────────────────────────────── */
-const S = { w: 24, h: 24, vb: "0 0 24 24", f: "none", s: "currentColor", sw: 1.5, lc: "round", lj: "round" };
-const Icon = ({ children }) => <svg width={S.w} height={S.h} viewBox={S.vb} fill={S.f} stroke={S.s} strokeWidth={S.sw} strokeLinecap={S.lc} strokeLinejoin={S.lj}>{children}</svg>;
-const ICONS = {
-  post: <Icon><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="12" cy="12" r="4"/></Icon>,
-  carrossel: <Icon><rect x="2" y="5" width="14" height="14" rx="2"/><rect x="6" y="3" width="14" height="14" rx="2" opacity=".5"/><path d="M20 10l2 2-2 2"/></Icon>,
-  reels: <Icon><rect x="6" y="3" width="12" height="18" rx="2"/><polygon points="10,9 10,15 15,12"/></Icon>,
-  ads: <Icon><path d="M3 12l6-8v5h6v6h-6v5z"/><path d="M17 8l2-1m0 4h2m-2 4l2 1" opacity=".6"/></Icon>,
-  email: <Icon><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 5l10 7 10-7"/><path d="M18 13l3 3" opacity=".6"/></Icon>,
-  pack: <Icon><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></Icon>,
-  lp: <Icon><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18"/><circle cx="5.5" cy="5.5" r=".8" fill="currentColor" stroke="none"/><circle cx="8" cy="5.5" r=".8" fill="currentColor" stroke="none"/><path d="M7 13h10"/></Icon>,
-  app: <Icon><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M13 8l-2 4h4l-2 4"/></Icon>,
-};
-
-/* ─── COPY (trilingual) ─────────────────────────── */
+/* ─── COPY (trilingual) ─── */
 const T = {
   PT: {
-    nav: ["Produtos", "Como funciona", "Preços", "Vitrine"],
-    navCta: "Começar grátis",
-    navLogin: "Minha conta",
-    eyebrow: "IA que cria marketing em minutos",
-    h1a: "Seu agente de",
-    h1b: "marketing",
-    h1italic: "com IA.",
-    sub: "Posts, landing pages, e-mails, copies de anúncios e apps — tudo gerado por IA em minutos. 20 créditos grátis para começar.",
-    cta: "Começar grátis →",
-    ctaSec: "Ver produtos",
-    trustBadges: ["20 créditos grátis", "Sem cartão de crédito", "3 variações por pedido"],
-    chatDemo: [
-      { role: "user", text: "Preciso de 5 posts sobre nutrição para Instagram" },
-      { role: "assistant", text: "Legal! Qual o tom da marca — mais técnico ou acessível? 🤔" },
-      { role: "user", text: "Acessível e próximo" },
-      { role: "assistant", text: "✦ Criando 3 variações de posts..." },
-    ],
-    productsLabel: "O QUE VOCÊ PODE CRIAR",
-    productsTitle: "8 produtos. Um agente.",
-    productsSub: "Descreva no chat e receba em minutos.",
-    products: [
-      { icon: "post", name: "Post Instagram", credits: 8, desc: "Legenda + hashtags + CTA" },
-      { icon: "carrossel", name: "Carrossel", credits: 15, desc: "7 slides com copy completa" },
-      { icon: "reels", name: "Roteiro Reels", credits: 10, desc: "30s, 60s ou 90s com cortes" },
-      { icon: "ads", name: "Copy Meta Ads", credits: 10, desc: "3 ângulos: dor, benefício, prova" },
-      { icon: "email", name: "Sequência E-mails", credits: 25, desc: "5 e-mails dia 0 a dia 8" },
-      { icon: "pack", name: "Pack Conteúdo", credits: 25, desc: "12 posts prontos para publicar" },
-      { icon: "lp", name: "Landing Page", credits: 40, desc: "HTML publicado com URL real" },
-      { icon: "app", name: "App Web", credits: 20, desc: "Calculadora, quiz, formulário" },
-    ],
-    howLabel: "COMO FUNCIONA",
-    howTitle: "3 passos. Sem reunião.",
-    steps: [
-      { n: "01", t: "Descreva no chat", d: "Conte o que precisa para o agente IA. Ele faz as perguntas certas." },
-      { n: "02", t: "Escolha sua favorita", d: "Receba 3 variações com tons diferentes. Selecione a melhor." },
-      { n: "03", t: "Publique ou baixe", d: "Download imediato ou publicação automática com URL." },
-    ],
-    gapTitle: "Ferramentas genéricas vs agentes com IA vs agências.",
-    gapSub: "A Voku é o agente que faltava.",
-    gapItems: [
-      { label: "Ferramentas genéricas", icon: "🤖", points: ["Templates prontos sem contexto", "Você faz tudo sozinho", "Sem estratégia, só execução", "Resultados medianos"], highlight: false },
-      { label: "VOKU", icon: "✦", points: ["Agente que entende seu negócio", "Faz as perguntas certas", "3 variações estratégicas", "Entrega em minutos, não dias"], highlight: true },
-      { label: "Agências tradicionais", icon: "🏢", points: ["R$3.000+/mês mínimo", "Reuniões semanais obrigatórias", "Entrega em semanas", "Contratos de 6 meses"], highlight: false },
-    ],
-    proofLabel: "QUEM JÁ USA",
-    proofQuote: "Pedi uma landing page pelo chat e em 2 minutos tinha uma LP publicada com URL real. Nunca mais voltei para agência.",
-    proofAuthor: "— Eduardo M., fundador de SaaS, São Paulo",
-    guaranteeTitle: "Não gostou? Refazemos.",
-    guaranteeBody: "Cada pedido gera 3 variações. Se nenhuma servir, o agente ajusta até você aprovar. Sem custo extra.",
-    pricingLabel: "PLANOS",
-    pricingTitle: "Simples. Sem surpresa.",
-    pricingSub: "Comece grátis. Faça upgrade quando precisar.",
-    plans: [
-      { id: "free", name: "Free", price: "R$0", period: "", credits: "20 créditos", desc: "Para testar a plataforma", items: ["20 créditos/mês", "Chat com agente IA", "1 projeto por vez", "Suporte por e-mail"], cta: "Começar grátis", highlight: false },
-      { id: "starter", name: "Starter", price: "R$149", period: "/mês", credits: "100 créditos", desc: "Para quem está começando", items: ["100 créditos/mês", "Projetos ilimitados", "Calendário editorial", "Suporte prioritário"], cta: "Assinar Starter", highlight: false },
-      { id: "pro", name: "Pro", price: "R$397", period: "/mês", credits: "300 créditos", desc: "Para negócios em crescimento", items: ["300 créditos/mês", "Landing pages com IA", "Geração em batch", "Brand voice personalizada", "Suporte prioritário"], cta: "Assinar Pro", highlight: true, badge: "Mais popular" },
-      { id: "business", name: "Business", price: "R$897", period: "/mês", credits: "800 créditos", desc: "Para times e agências", items: ["800 créditos/mês", "Tudo do Pro", "API de integração", "Múltiplos usuários", "Account manager"], cta: "Assinar Business", highlight: false },
-    ],
-    vitrineLabel: "VITRINE",
-    vitrineTitle: "Veja o que outros criaram.",
-    vitrineSub: "Inspire-se com projetos reais da comunidade Voku.",
-    vitrineCta: "Ver vitrine completa →",
-    faqLabel: "PERGUNTAS FREQUENTES",
-    faqTitle: "Dúvidas? Aqui estão as respostas.",
-    faqs: [
-      { q: "O que são créditos?", a: "Créditos são a moeda da Voku. Cada tipo de conteúdo consome uma quantidade: post (8), carrossel (15), reels (10), ads (10), e-mails (25), LP (40), app (20). Renovam todo mês." },
-      { q: "Posso mudar de plano a qualquer momento?", a: "Sim! Upgrade é imediato, downgrade vale no próximo ciclo. Sem multa." },
-      { q: "E se meus créditos acabarem?", a: "Compre pacotes avulsos de 50, 200 ou 500 créditos sem mudar de plano. Créditos avulsos não expiram." },
-      { q: "Como funciona o cancelamento?", a: "Cancele pelo painel a qualquer momento. Sem burocracia, sem multa. Acesso até o fim do período pago." },
-      { q: "A IA é boa mesmo?", a: "Usamos Claude, a IA mais avançada da Anthropic. Cada pedido gera 3 variações com tons diferentes. Se nenhuma servir, refazemos." },
-      { q: "Posso testar antes de pagar?", a: "Sim! O plano Free dá 20 créditos/mês — suficiente para testar posts, copies e ver a qualidade." },
-    ],
-    finalTitle: "Pronto para criar",
-    finalHighlight: "conteúdo que converte?",
-    finalSub: "20 créditos grátis. Sem cartão de crédito. Comece agora.",
-    finalCta: "Começar grátis →",
-    footer: "IA para marketing. Simples assim.",
+    nav: ["Serviços", "Processo", "Sobre"],
+    navCta: "Começar projeto",
+    hero: { eyebrow: "Estúdio de Mídia · IA", sub: "Pacotes fixos. Preço visível. Entrega em até 48h. Sem reunião, sem proposta, sem surpresa." },
+    ticker: "Landing Page Copy · $100 · 24h · Social Media Pack · $140 · 48h · Email Nurture · $195 · 48h · Sem reunião · Revisão inclusa",
+    portfolio: {
+      label: "PORTFÓLIO",
+      title: "Você já viu esse tipo de conteúdo por aí.",
+      sub: "Posts, copy e e-mails com identidade visual real da sua marca.",
+      tabs: ["Wellness & Beleza", "Agronegócio", "Tech & Serviços"],
+      caption1: "Wellness & Beleza · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption1b: "Entrega completa em 48h",
+      caption2: "Agronegócio · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption2b: "Entrega completa em 48h",
+      caption3: "Tech & Serviços · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption3b: "Entrega completa em 48h",
+    },
+    products: {
+      label: "PRODUTOS",
+      title: "O que entregamos.",
+      badge: "Mais pedido",
+      items: [
+        { num: "01", name: "Landing Page Copy", tagline: "Do briefing à URL publicada.", price: "$100", time: "24h", features: ["Headline + subheadline", "Seção de dor + benefícios", "Prova social estruturada", "CTA principal + secundário", "1 revisão inclusa"] },
+        { num: "02", name: "Social Media Pack", tagline: "12 posts prontos para publicar.", price: "$140", time: "48h", features: ["12 posts (carrossel + estático + reels)", "Gancho + desenvolvimento + CTA", "Hashtags estratégicas (9/post)", "Sugestão visual por post", "3 opções de tom", "1 revisão inclusa"], highlight: true },
+        { num: "03", name: "Email Nurture", tagline: "5 e-mails do dia 0 ao dia 8.", price: "$195", time: "48h", features: ["5 e-mails completos", "Assunto + pré-header + corpo", "Sequência lógica de nutrição", "CTAs otimizados", "1 revisão inclusa"] },
+      ],
+    },
+    process: {
+      label: "PROCESSO",
+      title: "Do zero ao pronto.",
+      sub: "Sem formulário longo. Sem reunião. Conversa direta com IA que já conhece sua marca.",
+      steps: [
+        { n: "01", t: "Cole o @ ou o link", d: "Nossa IA já conhece sua marca antes de começar." },
+        { n: "02", t: "2 perguntas. Briefing feito.", d: "Nada de formulário longo. Conversa direta, contexto completo." },
+        { n: "03", t: "Receba as opções", d: "Você escolhe, tica e aprova — não recebe arquivo final sem ver antes." },
+        { n: "04", t: "Aprovado. Entregue.", d: "Download do arquivo final. Pronto para publicar." },
+      ],
+    },
+    guarantee: { label: "GARANTIA", title: "Não gostou? Refazemos.", body: "Cada projeto inclui revisão por padrão. Se o resultado não atende, refazemos sem custo extra e sem questionamento.", cta: "Começar projeto →" },
+    footer: {
+      desc: "Estúdio de mídia com IA. Conteúdo profissional para marcas que não podem esperar.",
+      col2label: "PRODUTOS", col2: ["Landing Page Copy", "Social Media Pack", "Email Nurture"],
+      col3label: "ESTÚDIO", col3: ["Como funciona", "Área do Cliente", "Workana · Fiverr"],
+      bottom1: "Voku LLC · Wyoming, USA", bottom2: "voku.one · © 2026",
+    },
   },
   EN: {
-    nav: ["Products", "How it works", "Pricing", "Showcase"],
-    navCta: "Start free",
-    navLogin: "My account",
-    eyebrow: "AI that creates marketing in minutes",
-    h1a: "Your AI",
-    h1b: "marketing",
-    h1italic: "agent.",
-    sub: "Posts, landing pages, emails, ad copy and apps — all AI-generated in minutes. 20 free credits to start.",
-    cta: "Start free →",
-    ctaSec: "See products",
-    trustBadges: ["20 free credits", "No credit card", "3 variations per order"],
-    chatDemo: [
-      { role: "user", text: "I need 5 posts about nutrition for Instagram" },
-      { role: "assistant", text: "Nice! What's the brand tone — more technical or friendly? 🤔" },
-      { role: "user", text: "Friendly and approachable" },
-      { role: "assistant", text: "✦ Creating 3 post variations..." },
-    ],
-    productsLabel: "WHAT YOU CAN CREATE",
-    productsTitle: "8 products. One agent.",
-    productsSub: "Describe it in the chat and receive in minutes.",
-    products: [
-      { icon: "post", name: "Instagram Post", credits: 8, desc: "Caption + hashtags + CTA" },
-      { icon: "carrossel", name: "Carousel", credits: 15, desc: "7 slides with full copy" },
-      { icon: "reels", name: "Reels Script", credits: 10, desc: "30s, 60s or 90s with cuts" },
-      { icon: "ads", name: "Meta Ad Copy", credits: 10, desc: "3 angles: pain, benefit, proof" },
-      { icon: "email", name: "Email Sequence", credits: 25, desc: "5 emails day 0 to day 8" },
-      { icon: "pack", name: "Content Pack", credits: 25, desc: "12 posts ready to publish" },
-      { icon: "lp", name: "Landing Page", credits: 40, desc: "Published HTML with real URL" },
-      { icon: "app", name: "Web App", credits: 20, desc: "Calculator, quiz, form" },
-    ],
-    howLabel: "HOW IT WORKS",
-    howTitle: "3 steps. No meetings.",
-    steps: [
-      { n: "01", t: "Describe in chat", d: "Tell the AI agent what you need. It asks the right questions." },
-      { n: "02", t: "Pick your favorite", d: "Get 3 variations with different tones. Select the best one." },
-      { n: "03", t: "Publish or download", d: "Instant download or auto-publish with URL." },
-    ],
-    gapTitle: "Generic tools vs AI agents vs agencies.",
-    gapSub: "Voku is the agent you were missing.",
-    gapItems: [
-      { label: "Generic tools", icon: "🤖", points: ["Templates without context", "You do everything alone", "No strategy, just execution", "Mediocre results"], highlight: false },
-      { label: "VOKU", icon: "✦", points: ["Agent that understands your business", "Asks the right questions", "3 strategic variations", "Delivery in minutes, not days"], highlight: true },
-      { label: "Traditional agencies", icon: "🏢", points: ["R$3.000+/mo minimum", "Weekly mandatory meetings", "Delivery in weeks", "6-month contracts"], highlight: false },
-    ],
-    proofLabel: "WHO ALREADY USES IT",
-    proofQuote: "I asked for a landing page via chat and in 2 minutes had a published LP with a real URL. Never going back to agencies.",
-    proofAuthor: "— Eduardo M., SaaS founder, São Paulo",
-    guaranteeTitle: "Don't like it? We redo it.",
-    guaranteeBody: "Each order generates 3 variations. If none works, the agent adjusts until you approve. No extra cost.",
-    pricingLabel: "PRICING",
-    pricingTitle: "Simple. No surprises.",
-    pricingSub: "Start free. Upgrade when you need to.",
-    plans: [
-      { id: "free", name: "Free", price: "R$0", period: "", credits: "20 credits", desc: "To test the platform", items: ["20 credits/month", "AI agent chat", "1 project at a time", "Email support"], cta: "Start free", highlight: false },
-      { id: "starter", name: "Starter", price: "R$149", period: "/mo", credits: "100 credits", desc: "For getting started", items: ["100 credits/month", "Unlimited projects", "Editorial calendar", "Priority support"], cta: "Subscribe Starter", highlight: false },
-      { id: "pro", name: "Pro", price: "R$397", period: "/mo", credits: "300 credits", desc: "For growing businesses", items: ["300 credits/month", "AI landing pages", "Batch generation", "Custom brand voice", "Priority support"], cta: "Subscribe Pro", highlight: true, badge: "Most popular" },
-      { id: "business", name: "Business", price: "R$897", period: "/mo", credits: "800 credits", desc: "For teams and agencies", items: ["800 credits/month", "Everything in Pro", "API integration", "Multiple users", "Account manager"], cta: "Subscribe Business", highlight: false },
-    ],
-    vitrineLabel: "SHOWCASE",
-    vitrineTitle: "See what others created.",
-    vitrineSub: "Get inspired by real projects from the Voku community.",
-    vitrineCta: "See full showcase →",
-    faqLabel: "FAQ",
-    faqTitle: "Questions? Here are the answers.",
-    faqs: [
-      { q: "What are credits?", a: "Credits are Voku's currency. Each content type uses different amounts: post (8), carousel (15), reels (10), ads (10), emails (25), LP (40), app (20). They renew monthly." },
-      { q: "Can I change plans anytime?", a: "Yes! Upgrades are instant, downgrades apply next cycle. No penalties." },
-      { q: "What if I run out of credits?", a: "Buy add-on packs of 50, 200, or 500 credits without changing your plan. Add-on credits don't expire." },
-      { q: "How does cancellation work?", a: "Cancel from your dashboard anytime. No bureaucracy, no penalties. Access until the end of the paid period." },
-      { q: "Is the AI actually good?", a: "We use Claude, Anthropic's most advanced AI. Each order generates 3 variations with different tones. If none works, we redo it." },
-      { q: "Can I try before paying?", a: "Yes! The Free plan gives 20 credits/month — enough to test posts, copies and see the quality." },
-    ],
-    finalTitle: "Ready to create",
-    finalHighlight: "content that converts?",
-    finalSub: "20 free credits. No credit card. Start now.",
-    finalCta: "Start free →",
-    footer: "AI for marketing. Simple as that.",
+    nav: ["Services", "Process", "About"],
+    navCta: "Start project",
+    hero: { eyebrow: "Media Studio · AI", sub: "Fixed packages. Visible pricing. Delivery in 48h. No meetings, no proposals, no surprises." },
+    ticker: "Landing Page Copy · $100 · 24h · Social Media Pack · $140 · 48h · Email Nurture · $195 · 48h · No meetings · Revision included",
+    portfolio: {
+      label: "PORTFOLIO",
+      title: "You've seen this kind of content before.",
+      sub: "Posts, copy and emails with your brand's real visual identity.",
+      tabs: ["Wellness & Beauty", "Agribusiness", "Tech & Services"],
+      caption1: "Wellness & Beauty · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption1b: "Full delivery in 48h",
+      caption2: "Agribusiness · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption2b: "Full delivery in 48h",
+      caption3: "Tech & Services · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption3b: "Full delivery in 48h",
+    },
+    products: {
+      label: "PRODUCTS",
+      title: "What we deliver.",
+      badge: "Most requested",
+      items: [
+        { num: "01", name: "Landing Page Copy", tagline: "From briefing to published URL.", price: "$100", time: "24h", features: ["Headline + subheadline", "Pain + benefits section", "Structured social proof", "Primary + secondary CTA", "1 revision included"] },
+        { num: "02", name: "Social Media Pack", tagline: "12 posts ready to publish.", price: "$140", time: "48h", features: ["12 posts (carousel + static + reels)", "Hook + body + CTA", "Strategic hashtags (9/post)", "Visual suggestion per post", "3 tone options", "1 revision included"], highlight: true },
+        { num: "03", name: "Email Nurture", tagline: "5 emails from day 0 to day 8.", price: "$195", time: "48h", features: ["5 complete emails", "Subject + pre-header + body", "Logical nurture sequence", "Optimized CTAs", "1 revision included"] },
+      ],
+    },
+    process: {
+      label: "PROCESS",
+      title: "From zero to done.",
+      sub: "No long forms. No meetings. Direct conversation with AI that already knows your brand.",
+      steps: [
+        { n: "01", t: "Paste your @ or link", d: "Our AI already knows your brand before you start." },
+        { n: "02", t: "2 questions. Brief done.", d: "No long forms. Direct conversation, complete context." },
+        { n: "03", t: "Receive the options", d: "You choose, check and approve — no final file without your review." },
+        { n: "04", t: "Approved. Delivered.", d: "Download the final file. Ready to publish." },
+      ],
+    },
+    guarantee: { label: "GUARANTEE", title: "Don't like it? We redo it.", body: "Every project includes revision by default. If the result doesn't meet expectations, we redo it at no extra cost.", cta: "Start project →" },
+    footer: {
+      desc: "AI-powered media studio. Professional content for brands that can't wait.",
+      col2label: "PRODUCTS", col2: ["Landing Page Copy", "Social Media Pack", "Email Nurture"],
+      col3label: "STUDIO", col3: ["How it works", "Client Area", "Workana · Fiverr"],
+      bottom1: "Voku LLC · Wyoming, USA", bottom2: "voku.one · © 2026",
+    },
   },
   ES: {
-    nav: ["Productos", "Cómo funciona", "Precios", "Vitrina"],
-    navCta: "Empezar gratis",
-    navLogin: "Mi cuenta",
-    eyebrow: "IA que crea marketing en minutos",
-    h1a: "Tu agente de",
-    h1b: "marketing",
-    h1italic: "con IA.",
-    sub: "Posts, landing pages, emails, copies de anuncios y apps — todo generado por IA en minutos. 20 créditos gratis para empezar.",
-    cta: "Empezar gratis →",
-    ctaSec: "Ver productos",
-    trustBadges: ["20 créditos gratis", "Sin tarjeta de crédito", "3 variaciones por pedido"],
-    chatDemo: [
-      { role: "user", text: "Necesito 5 posts sobre nutrición para Instagram" },
-      { role: "assistant", text: "¡Genial! ¿Cuál es el tono de la marca — más técnico o cercano? 🤔" },
-      { role: "user", text: "Cercano y amigable" },
-      { role: "assistant", text: "✦ Creando 3 variaciones de posts..." },
-    ],
-    productsLabel: "QUÉ PUEDES CREAR",
-    productsTitle: "8 productos. Un agente.",
-    productsSub: "Describe en el chat y recibe en minutos.",
-    products: [
-      { icon: "post", name: "Post Instagram", credits: 8, desc: "Leyenda + hashtags + CTA" },
-      { icon: "carrossel", name: "Carrusel", credits: 15, desc: "7 slides con copy completo" },
-      { icon: "reels", name: "Guión Reels", credits: 10, desc: "30s, 60s o 90s con cortes" },
-      { icon: "ads", name: "Copy Meta Ads", credits: 10, desc: "3 ángulos: dolor, beneficio, prueba" },
-      { icon: "email", name: "Secuencia Emails", credits: 25, desc: "5 emails día 0 a día 8" },
-      { icon: "pack", name: "Pack Contenido", credits: 25, desc: "12 posts listos para publicar" },
-      { icon: "lp", name: "Landing Page", credits: 40, desc: "HTML publicado con URL real" },
-      { icon: "app", name: "App Web", credits: 20, desc: "Calculadora, quiz, formulario" },
-    ],
-    howLabel: "CÓMO FUNCIONA",
-    howTitle: "3 pasos. Sin reuniones.",
-    steps: [
-      { n: "01", t: "Describe en el chat", d: "Cuéntale al agente IA lo que necesitas. Hace las preguntas correctas." },
-      { n: "02", t: "Elige tu favorita", d: "Recibe 3 variaciones con tonos diferentes. Selecciona la mejor." },
-      { n: "03", t: "Publica o descarga", d: "Descarga inmediata o publicación automática con URL." },
-    ],
-    gapTitle: "Herramientas genéricas vs agentes IA vs agencias.",
-    gapSub: "Voku es el agente que faltaba.",
-    gapItems: [
-      { label: "Herramientas genéricas", icon: "🤖", points: ["Templates sin contexto", "Haces todo solo", "Sin estrategia, solo ejecución", "Resultados medianos"], highlight: false },
-      { label: "VOKU", icon: "✦", points: ["Agente que entiende tu negocio", "Hace las preguntas correctas", "3 variaciones estratégicas", "Entrega en minutos, no días"], highlight: true },
-      { label: "Agencias tradicionales", icon: "🏢", points: ["R$3.000+/mes mínimo", "Reuniones semanales obligatorias", "Entrega en semanas", "Contratos de 6 meses"], highlight: false },
-    ],
-    proofLabel: "QUIÉNES YA LO USAN",
-    proofQuote: "Pedí una landing page por el chat y en 2 minutos tenía una LP publicada con URL real. Nunca más volví a una agencia.",
-    proofAuthor: "— Eduardo M., fundador de SaaS, São Paulo",
-    guaranteeTitle: "¿No te gusta? Lo rehacemos.",
-    guaranteeBody: "Cada pedido genera 3 variaciones. Si ninguna sirve, el agente ajusta hasta que apruebes. Sin costo extra.",
-    pricingLabel: "PRECIOS",
-    pricingTitle: "Simple. Sin sorpresas.",
-    pricingSub: "Empieza gratis. Mejora cuando necesites.",
-    plans: [
-      { id: "free", name: "Free", price: "R$0", period: "", credits: "20 créditos", desc: "Para probar la plataforma", items: ["20 créditos/mes", "Chat con agente IA", "1 proyecto a la vez", "Soporte por email"], cta: "Empezar gratis", highlight: false },
-      { id: "starter", name: "Starter", price: "R$149", period: "/mes", credits: "100 créditos", desc: "Para empezar", items: ["100 créditos/mes", "Proyectos ilimitados", "Calendario editorial", "Soporte prioritario"], cta: "Suscribir Starter", highlight: false },
-      { id: "pro", name: "Pro", price: "R$397", period: "/mes", credits: "300 créditos", desc: "Para negocios en crecimiento", items: ["300 créditos/mes", "Landing pages con IA", "Generación en batch", "Voz de marca personalizada", "Soporte prioritario"], cta: "Suscribir Pro", highlight: true, badge: "Más popular" },
-      { id: "business", name: "Business", price: "R$897", period: "/mes", credits: "800 créditos", desc: "Para equipos y agencias", items: ["800 créditos/mes", "Todo del Pro", "API de integración", "Múltiples usuarios", "Account manager"], cta: "Suscribir Business", highlight: false },
-    ],
-    vitrineLabel: "VITRINA",
-    vitrineTitle: "Mira lo que otros crearon.",
-    vitrineSub: "Inspírate con proyectos reales de la comunidad Voku.",
-    vitrineCta: "Ver vitrina completa →",
-    faqLabel: "PREGUNTAS FRECUENTES",
-    faqTitle: "¿Dudas? Aquí están las respuestas.",
-    faqs: [
-      { q: "¿Qué son los créditos?", a: "Los créditos son la moneda de Voku. Cada tipo de contenido consume una cantidad distinta: post (8), carrusel (15), reels (10), ads (10), emails (25), LP (40), app (20). Se renuevan cada mes." },
-      { q: "¿Puedo cambiar de plan?", a: "¡Sí! Los upgrades son inmediatos, los downgrades aplican en el próximo ciclo. Sin penalidades." },
-      { q: "¿Y si se me acaban los créditos?", a: "Compra paquetes adicionales de 50, 200 o 500 créditos sin cambiar de plan. Los créditos adicionales no expiran." },
-      { q: "¿Cómo funciona la cancelación?", a: "Cancela desde tu panel en cualquier momento. Sin burocracia, sin multas. Acceso hasta el fin del período pagado." },
-      { q: "¿La IA es buena de verdad?", a: "Usamos Claude, la IA más avanzada de Anthropic. Cada pedido genera 3 variaciones con tonos diferentes. Si ninguna sirve, la rehacemos." },
-      { q: "¿Puedo probar antes de pagar?", a: "¡Sí! El plan Free da 20 créditos/mes — suficiente para probar posts, copies y ver la calidad." },
-    ],
-    finalTitle: "¿Listo para crear",
-    finalHighlight: "contenido que convierte?",
-    finalSub: "20 créditos gratis. Sin tarjeta. Empieza ahora.",
-    finalCta: "Empezar gratis →",
-    footer: "IA para marketing. Así de simple.",
+    nav: ["Servicios", "Proceso", "Acerca"],
+    navCta: "Empezar proyecto",
+    hero: { eyebrow: "Estudio de Medios · IA", sub: "Paquetes fijos. Precio visible. Entrega en 48h. Sin reuniones, sin propuestas, sin sorpresas." },
+    ticker: "Landing Page Copy · $100 · 24h · Social Media Pack · $140 · 48h · Email Nurture · $195 · 48h · Sin reuniones · Revisión incluida",
+    portfolio: {
+      label: "PORTAFOLIO",
+      title: "Ya viste este tipo de contenido por ahí.",
+      sub: "Posts, copy y emails con la identidad visual real de tu marca.",
+      tabs: ["Wellness & Belleza", "Agronegocio", "Tech & Servicios"],
+      caption1: "Wellness & Belleza · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption1b: "Entrega completa en 48h",
+      caption2: "Agronegocio · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption2b: "Entrega completa en 48h",
+      caption3: "Tech & Servicios · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
+      caption3b: "Entrega completa en 48h",
+    },
+    products: {
+      label: "PRODUCTOS",
+      title: "Lo que entregamos.",
+      badge: "Más pedido",
+      items: [
+        { num: "01", name: "Landing Page Copy", tagline: "Del briefing a la URL publicada.", price: "$100", time: "24h", features: ["Headline + subheadline", "Sección de dolor + beneficios", "Prueba social estructurada", "CTA principal + secundario", "1 revisión incluida"] },
+        { num: "02", name: "Social Media Pack", tagline: "12 posts listos para publicar.", price: "$140", time: "48h", features: ["12 posts (carrusel + estático + reels)", "Gancho + desarrollo + CTA", "Hashtags estratégicos (9/post)", "Sugerencia visual por post", "3 opciones de tono", "1 revisión incluida"], highlight: true },
+        { num: "03", name: "Email Nurture", tagline: "5 emails del día 0 al día 8.", price: "$195", time: "48h", features: ["5 emails completos", "Asunto + pre-header + cuerpo", "Secuencia lógica de nutrición", "CTAs optimizados", "1 revisión incluida"] },
+      ],
+    },
+    process: {
+      label: "PROCESO",
+      title: "De cero a listo.",
+      sub: "Sin formularios largos. Sin reuniones. Conversación directa con IA que ya conoce tu marca.",
+      steps: [
+        { n: "01", t: "Pega tu @ o link", d: "Nuestra IA ya conoce tu marca antes de empezar." },
+        { n: "02", t: "2 preguntas. Brief listo.", d: "Nada de formularios largos. Conversación directa, contexto completo." },
+        { n: "03", t: "Recibe las opciones", d: "Eliges, revisas y apruebas — no recibes archivo final sin verlo antes." },
+        { n: "04", t: "Aprobado. Entregado.", d: "Descarga del archivo final. Listo para publicar." },
+      ],
+    },
+    guarantee: { label: "GARANTÍA", title: "¿No te gustó? Lo rehacemos.", body: "Cada proyecto incluye revisión por defecto. Si el resultado no cumple, lo rehacemos sin costo extra.", cta: "Empezar proyecto →" },
+    footer: {
+      desc: "Estudio de medios con IA. Contenido profesional para marcas que no pueden esperar.",
+      col2label: "PRODUCTOS", col2: ["Landing Page Copy", "Social Media Pack", "Email Nurture"],
+      col3label: "ESTUDIO", col3: ["Cómo funciona", "Área del Cliente", "Workana · Fiverr"],
+      bottom1: "Voku LLC · Wyoming, USA", bottom2: "voku.one · © 2026",
+    },
   },
 };
 
-/* ─── HOOKS ─────────────────────────────────────── */
+/* ─── Portfolio data ─── */
+const STORAGE = "https://movfynswogmookzcjijt.supabase.co/storage/v1/object/public/imagens/portfolio";
+const IMG = {
+  skincare: `${STORAGE}/skincare-01.png`,
+  wellness: `${STORAGE}/wellness-02.png`,
+  drink: `${STORAGE}/drink-03.png`,
+  agro: `${STORAGE}/agro-04.png`,
+  tech: `${STORAGE}/tech-05.png`,
+  product: `${STORAGE}/product-06.png`,
+};
+
+const TABS_DATA = [
+  {
+    accent: "#B06080", accentBg: "#3D1A24", dark: "#3D1A24",
+    row1: [
+      { type: "photo", src: IMG.skincare, span: 2, pill: "Conversão", pillBg: "#AAFF00", pillColor: "#111", tag: "Post Estático · Instagram", copy: "Sua pele merece ingredientes reais." },
+      { type: "card", bg: "#3D1A24", label: "02 — Carrossel", headline: "5 erros que você comete na sua rotina de beleza.", accentWord: "Slide 1 →", accentColor: "#FFB3C6", progress: 5, progressColor: "#FFB3C6", tags: ["#skincare", "#beautycare", "#dicas"], tagColor: "#2a1018" },
+      { type: "photo", src: IMG.drink, span: 1, pill: "Educação", pillBg: "#fff", pillColor: "#111", tag: "Reel · 30s", copy: "O que eu tomo toda manhã pra ter essa energia." },
+    ],
+    row2: [
+      { type: "lp", bg: "#F5F0E8", label: "Landing Page Copy · 24h", hook: "Sua pele merece ingredientes que você consegue pronunciar.", body: "Fórmulas limpas, aprovadas por dermatologistas, com resultados visíveis em 14 dias.", bullets: ["Ingredientes 100% naturais", "Resultados em 14 dias", "Frete grátis acima de R$99"], accent: "#B06080", ctaText: "Quero pele saudável →" },
+      { type: "photo", src: IMG.wellness, span: 1, pill: "Bastidores", pillBg: "#fff", pillColor: "#111", tag: "Story · Série", copy: "Como nasce cada fórmula." },
+      { type: "email", bg: "#fff", label: "E-mail 1 · Dia 0 · Email Nurture", subject: "Você se inscreveu por um motivo. Vamos cuidar disso juntos.", body: "Bem-vinda à comunidade de quem cuida da pele de verdade.", bullets: ["Rotina personalizada em 3 passos", "Desconto de boas-vindas: 15%", "Acesso ao grupo exclusivo"], accent: "#B06080", ctaText: "Começar minha rotina →", footer: "Studio Marca · Cancelar inscrição" },
+    ],
+  },
+  {
+    accent: "#ED1C24", accentBg: "#0A1628", dark: "#0A1628",
+    row1: [
+      { type: "photo", src: IMG.agro, span: 2, pill: "Prova Social", pillBg: "#ED1C24", pillColor: "#fff", tag: "Post Estático · Instagram", copy: "Rebanho que produz mais. Investimento que retorna mais rápido." },
+      { type: "card", bg: "#0A1628", label: "02 — Dados", headline: "Genética de elite não é luxo.", accentWord: "É lucro.", accentColor: "#ED1C24", stats: [{ n: "+15%", l: "produção" }, { n: "-20%", l: "custo" }, { n: "1ª", l: "geração" }], statsColor: "#ED1C24" },
+      { type: "photo", src: IMG.tech, span: 1, pill: "Educação", pillBg: "#fff", pillColor: "#111", tag: "Carrossel · 7 slides", copy: "Os 5 indicadores que todo pecuarista deveria acompanhar." },
+    ],
+    row2: [
+      { type: "lp", bg: "#0A1628", color: "#fff", label: "Landing Page Copy · 24h", labelColor: "#345", hook: "Genética comprovada. Resultados mensuráveis desde a primeira geração.", hookColor: "#fff", body: "Touros testados, dados reais, suporte técnico dedicado.", bodyColor: "#789", bullets: ["Genealogias 100% rastreáveis", "ROI comprovado: +R$8-12 mil/vaca/ano", "Consultoria personalizada inclusa"], accent: "#ED1C24", ctaText: "Conhecer touros →", ctaBg: "#ED1C24", ctaColor: "#fff" },
+      { type: "photo", src: IMG.product, span: 1, pill: "Bastidores", pillBg: "#fff", pillColor: "#111", tag: "Story · Bastidores", copy: "Por dentro da certificação." },
+      { type: "email", bg: "#0d1f38", color: "#fff", label: "E-mail 1 · Dia 0 · Email Nurture", labelColor: "#345", subject: "Você pediu. A genética que transforma rebanhos está aqui.", subjectColor: "#fff", body: "Bem-vindo ao programa de genética de elite.", bodyColor: "#678", bullets: ["Catálogo completo de touros", "Consultoria gratuita agendada", "Cases de produtores parceiros"], accent: "#ED1C24", ctaText: "Ver catálogo →", ctaBg: "#ED1C24", ctaColor: "#fff", footer: "Select Sires · Cancelar inscrição", footerColor: "#234" },
+    ],
+    captionBg: "#060E1A", captionColor: "#345",
+  },
+  {
+    accent: "#4FC3F7", accentBg: "#0F1B2D", dark: "#0F1B2D",
+    row1: [
+      { type: "photo", src: IMG.tech, span: 2, pill: "Educação", pillBg: "#4FC3F7", pillColor: "#0F1B2D", tag: "Post Estático · LinkedIn", copy: "Como a sua equipe pode entregar 3x mais sem trabalhar mais horas." },
+      { type: "card", bg: "#0F1B2D", label: "02 — Insight", headline: "Seu time é bom.", accentWord: "A comunicação é o gargalo.", accentColor: "#4FC3F7" },
+      { type: "photo", src: IMG.skincare, span: 1, pill: "Prova Social", pillBg: "#fff", pillColor: "#111", tag: "Reel · 60s", copy: "3 ferramentas que mudaram nossa produtividade." },
+    ],
+    row2: [
+      { type: "lp", bg: "#0F1B2D", color: "#fff", label: "Landing Page Copy · 24h", labelColor: "#345", hook: "Sua equipe merece ferramentas que funcionam juntas.", hookColor: "#fff", body: "Integrações inteligentes, automação sem código, resultados em semanas.", bodyColor: "#789", bullets: ["Setup em 5 dias úteis", "Integração com 50+ ferramentas", "Suporte dedicado por 30 dias"], accent: "#4FC3F7", ctaText: "Agendar demo →", ctaBg: "#4FC3F7", ctaColor: "#0F1B2D" },
+      { type: "photo", src: IMG.wellness, span: 1, pill: "Bastidores", pillBg: "#fff", pillColor: "#111", tag: "Story · Série", copy: "Um dia na nossa sprint." },
+      { type: "email", bg: "#0A1221", color: "#fff", label: "E-mail 1 · Dia 0 · Email Nurture", labelColor: "#234", subject: "Você pediu. A automação que liberta sua equipe começa aqui.", subjectColor: "#fff", body: "Bem-vindo ao programa de produtividade inteligente.", bodyColor: "#567", bullets: ["Diagnóstico gratuito de processos", "Roadmap personalizado", "Acesso antecipado a features"], accent: "#4FC3F7", ctaText: "Ver diagnóstico →", ctaBg: "#4FC3F7", ctaColor: "#0F1B2D", footer: "TechCorp · Cancelar inscrição", footerColor: "#234" },
+    ],
+    captionBg: "#060E1A", captionColor: "#345",
+  },
+];
+
+/* ─── Hooks ─── */
 function useReveal(delay = 0) {
   const ref = useRef(null);
-  const [visible, setVisible] = useState(false);
+  const [vis, setVis] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setTimeout(() => setVisible(true), delay); obs.disconnect(); }
-    }, { threshold: 0.1 });
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setTimeout(() => setVis(true), delay); obs.disconnect(); } }, { threshold: 0.1 });
     obs.observe(el);
     return () => obs.disconnect();
   }, [delay]);
-  return [ref, visible];
+  return [ref, vis];
 }
 
-const rv = (vis, delay = 0) => ({
-  opacity: vis ? 1 : 0,
-  transform: vis ? "translateY(0)" : "translateY(24px)",
-  transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
-});
+/* ─── Sub-components ─── */
 
-/* ─── CHAT DEMO (animated loop) ──────────────────── */
-function ChatDemo() {
-  const [step, setStep] = useState(-1);
-  useEffect(() => {
-    const delays = [0, 800, 1600, 2600, 4000, 4900, 6600, 8400, 11000];
-    const timers = [];
-    function run() {
-      delays.forEach((d, i) => { timers.push(setTimeout(() => setStep(i), d)); });
-      timers.push(setTimeout(() => { setStep(-1); setTimeout(run, 400); }, 11000));
-    }
-    const init = setTimeout(run, 300);
-    timers.push(init);
-    return () => timers.forEach(clearTimeout);
-  }, []);
-  const show = (n) => ({ opacity: step >= n ? 1 : 0, transform: step >= n ? "translateY(0)" : "translateY(8px)", transition: "opacity 0.4s ease, transform 0.4s ease" });
-  const VA = { width: 26, height: 26, borderRadius: "50%", background: "#111", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#C8F135", flexShrink: 0 };
-  const MB = (isUser) => ({ padding: "9px 13px", borderRadius: isUser ? "14px 14px 4px 14px" : "14px 14px 14px 4px", fontSize: 12.5, lineHeight: 1.55, maxWidth: "75%", ...(isUser ? { background: "#111", color: "#fff" } : { background: "#fff", border: "1px solid #E8E5DE", color: "#111" }) });
-
+function PhotoCell({ item, height }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #E8E5DE", borderRadius: 20, width: 340, overflow: "hidden", fontFamily: FF, boxShadow: "0 8px 40px rgba(0,0,0,0.08)" }}>
-      <div style={{ background: "#111", padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
-        <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 12, color: "#111", flexShrink: 0 }}>V</div>
-        <div>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 13, letterSpacing: "-0.5px", color: "#fff", textTransform: "uppercase" }}>VOKU</span>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 3 }}>
-            <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#C8F135" }} />
-            <span style={{ color: "#888", fontSize: 11 }}>online</span>
-          </div>
-        </div>
-      </div>
-      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10, minHeight: 280, background: "#FAFAF8" }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", ...show(0) }}><div style={VA}>V</div><div style={MB(false)}>Oi! O que você precisa criar hoje?</div></div>
-        <div style={{ display: "flex", justifyContent: "flex-end", ...show(1) }}><div style={MB(true)}>Preciso de 5 posts sobre nutrição para Instagram</div></div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", opacity: step === 2 ? 1 : 0, transition: "opacity 0.3s" }}><div style={VA}>V</div><div style={{ ...MB(false), display: "flex", gap: 4, padding: "10px 13px" }}>{[0,1,2].map(i=><div key={i} style={{ width: 5, height: 5, borderRadius: "50%", background: "#bbb", animation: `bounce 1.2s ease-in-out ${i*0.2}s infinite` }}/>)}</div></div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", ...show(3) }}><div style={VA}>V</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: "80%" }}>
-            <div style={MB(false)}>Legal! Qual o tom da marca?</div>
-            {step >= 3 && step < 5 && <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>{["Técnico","Acessível e próximo","Inspiracional"].map(c=><span key={c} style={{ padding: "5px 12px", borderRadius: 20, background: "#f0f0e8", border: "1px solid #e0e0d8", fontSize: 11.5, fontWeight: 600, color: "#444" }}>{c}</span>)}</div>}
-          </div>
-        </div>
-        <div style={{ display: "flex", justifyContent: "flex-end", ...show(4) }}><div style={MB(true)}>Acessível e próximo</div></div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 13px", background: "#f8f8f0", border: "1px solid #d8e8a0", borderRadius: 12, fontSize: 12, color: "#556", fontWeight: 500, opacity: step >= 5 && step < 7 ? 1 : 0, transition: "opacity 0.3s" }}><span style={{ color: "#C8F135", fontSize: 14 }}>✦</span>Criando 3 variações...</div>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end", ...show(6) }}><div style={VA}>V</div><div style={MB(false)}>Pronto! 3 variações geradas. Escolha a que mais combina.</div></div>
-      </div>
-      <div style={{ padding: "10px 12px", borderTop: "1px solid #E8E5DE", display: "flex", gap: 8, alignItems: "center", background: "#fff" }}>
-        <div style={{ flex: 1, padding: "9px 13px", background: "#f5f5f0", borderRadius: 20, fontSize: 12, color: "#aaa", fontFamily: FF }}>O que você precisa criar hoje?</div>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
+    <div style={{ position: "relative", gridColumn: item.span === 2 ? "span 2" : "span 1", height, overflow: "hidden", borderRadius: 2 }}>
+      <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }} />
+      {item.pill && <div style={{ position: "absolute", top: 12, left: 12, background: item.pillBg, color: item.pillColor, fontSize: 8, fontWeight: 700, letterSpacing: 2, padding: "4px 10px", textTransform: "uppercase" }}>{item.pill}</div>}
+      <div style={{ position: "absolute", bottom: 16, left: 16, right: 16 }}>
+        <div style={{ fontSize: 7, fontWeight: 600, letterSpacing: 2, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 6 }}>{item.tag}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4 }}>{item.copy}</div>
       </div>
     </div>
   );
 }
 
-const BETA_MODE = true;
-const IF = "'Inter', sans-serif";
+function CardCell({ item }) {
+  return (
+    <div style={{ background: item.bg, padding: 28, display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: 2 }}>
+      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 2, color: "#444", textTransform: "uppercase", marginBottom: 16 }}>{item.label}</div>
+      <div>
+        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 16 }}>
+          {item.headline}
+          {item.accentWord && <><br /><span style={{ color: item.accentColor }}>{item.accentWord}</span></>}
+        </div>
+        {item.progress && (
+          <div style={{ display: "flex", gap: 3, marginBottom: 12 }}>
+            {Array.from({ length: item.progress }, (_, i) => (
+              <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i === 0 ? item.progressColor : "rgba(255,255,255,0.1)" }} />
+            ))}
+          </div>
+        )}
+        {item.stats && (
+          <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
+            {item.stats.map((s, i) => (
+              <div key={i} style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 20, fontWeight: 900, color: item.statsColor }}>{s.n}</div>
+                <div style={{ fontSize: 9, color: "#888" }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        )}
+        {item.tags && (
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {item.tags.map((tag, i) => <span key={i} style={{ fontSize: 9, color: item.tagColor, fontWeight: 600 }}>{tag}</span>)}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-/* ─── MAIN ──────────────────────────────────────── */
+function LPCell({ item }) {
+  return (
+    <div style={{ background: item.bg, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: 2 }}>
+      <div>
+        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: 2, color: item.labelColor || "#BBB", textTransform: "uppercase", marginBottom: 12 }}>{item.label}</div>
+        <div style={{ fontSize: 16, fontWeight: 900, color: item.hookColor || "#111", lineHeight: 1.3, marginBottom: 12 }}>{item.hook}</div>
+        <div style={{ fontSize: 12, color: item.bodyColor || "#666", lineHeight: 1.7, marginBottom: 16 }}>{item.body}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+          {item.bullets.map((b, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: item.bodyColor || "#666" }}>
+              <span style={{ color: item.accent, fontWeight: 700 }}>→</span>{b}
+            </div>
+          ))}
+        </div>
+      </div>
+      <button style={{ background: item.ctaBg || item.accent, color: item.ctaColor || "#fff", border: "none", padding: "10px 20px", fontSize: 11, fontWeight: 700, fontFamily: FF, cursor: "pointer" }}>{item.ctaText}</button>
+    </div>
+  );
+}
+
+function EmailCell({ item }) {
+  return (
+    <div style={{ background: item.bg, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: 2 }}>
+      <div>
+        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: 2, color: item.labelColor || "#CCC", textTransform: "uppercase", marginBottom: 12 }}>{item.label}</div>
+        <div style={{ fontSize: 15, fontWeight: 900, color: item.subjectColor || "#111", lineHeight: 1.3, marginBottom: 12 }}>{item.subject}</div>
+        <div style={{ fontSize: 11, color: item.bodyColor || "#888", lineHeight: 1.7, marginBottom: 16 }}>{item.body}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
+          {item.bullets.map((b, i) => (
+            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: item.bodyColor || "#888" }}>
+              <span style={{ color: item.accent, fontWeight: 700 }}>→</span>{b}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <button style={{ background: item.ctaBg || item.accent, color: item.ctaColor || "#fff", border: "none", padding: "10px 20px", fontSize: 11, fontWeight: 700, fontFamily: FF, cursor: "pointer", marginBottom: 12, width: "100%" }}>{item.ctaText}</button>
+        {item.footer && <div style={{ fontSize: 9, color: item.footerColor || "#aaa", textAlign: "center", paddingTop: 8, borderTop: `1px solid ${item.footerColor || "rgba(0,0,0,0.1)"}` }}>{item.footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+function PortfolioGrid({ tab, caption, captionB }) {
+  const data = TABS_DATA[tab];
+  if (!data) return null;
+  return (
+    <div>
+      {/* Row 1 */}
+      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 2, marginBottom: 2 }}>
+        {data.row1.map((item, i) => {
+          if (item.type === "photo") return <PhotoCell key={i} item={item} height={420} />;
+          if (item.type === "card") return <CardCell key={i} item={item} />;
+          return null;
+        })}
+      </div>
+      {/* Row 2 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, marginBottom: 2 }}>
+        {data.row2.map((item, i) => {
+          if (item.type === "photo") return <PhotoCell key={i} item={item} height={340} />;
+          if (item.type === "lp") return <LPCell key={i} item={item} />;
+          if (item.type === "email") return <EmailCell key={i} item={item} />;
+          return null;
+        })}
+      </div>
+      {/* Caption */}
+      <div style={{ background: data.captionBg || "#F5F0E8", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: data.captionColor || "#888" }}>{caption}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: data.captionColor || "#888" }}>{captionB}</span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Logo SVG ─── */
+function LogoIcon({ size = 20 }) {
+  const s = size / 4;
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+      <rect x="1" y="1" width="7.5" height="7.5" rx="1" fill="#AAFF00" />
+      <rect x="11.5" y="1" width="7.5" height="7.5" rx="1" fill="#AAFF00" />
+      <rect x="1" y="11.5" width="7.5" height="7.5" rx="1" fill="#AAFF00" />
+      <rect x="11.5" y="11.5" width="7.5" height="7.5" rx="1" fill="#AAFF00" />
+    </svg>
+  );
+}
+
+/* ═══════════════════════════════════════════════════ */
+/*  MAIN                                               */
+/* ═══════════════════════════════════════════════════ */
+
+const BETA_MODE = true;
+
 export default function VokuLanding() {
   const [lang, setLang] = useState("PT");
-  const [navSolid, setNavSolid] = useState(false);
-  const [heroVisible, setHeroVisible] = useState(false);
-  const [openFaq, setOpenFaq] = useState(null);
+  const [portfolioTab, setPortfolioTab] = useState(0);
   const [betaModal, setBetaModal] = useState(false);
 
-  const handleCta = (e) => {
-    if (BETA_MODE) { e.preventDefault(); setBetaModal(true); }
-  };
+  const handleCta = (e) => { if (BETA_MODE) { e.preventDefault(); setBetaModal(true); } };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -359,359 +374,243 @@ export default function VokuLanding() {
   }, []);
 
   const t = T[lang];
+  const [portfolioRef, portfolioVis] = useReveal(0);
   const [productsRef, productsVis] = useReveal(0);
-  const [howRef, howVis] = useReveal(0);
-  const [gapRef, gapVis] = useReveal(0);
-  const [proofRef, proofVis] = useReveal(0);
-  const [pricingRef, pricingVis] = useReveal(0);
-  const [faqRef, faqVis] = useReveal(0);
-  const [ctaRef, ctaVis] = useReveal(0);
+  const [processRef, processVis] = useReveal(0);
+  const [guaranteeRef, guaranteeVis] = useReveal(0);
 
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.href = FONTS; link.rel = "stylesheet";
-    document.head.appendChild(link);
-    setTimeout(() => setHeroVisible(true), 120);
-  }, []);
-
-  useEffect(() => {
-    const fn = () => setNavSolid(window.scrollY > 40);
-    window.addEventListener("scroll", fn);
-    return () => window.removeEventListener("scroll", fn);
-  }, []);
+  const rv = (vis, d = 0) => ({ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(16px)", transition: `opacity 0.5s ease ${d}s, transform 0.5s ease ${d}s` });
 
   return (
-    <div style={{ background: "#0d0d0d", color: "#FAF8F3", overflowX: "hidden" }}>
+    <div style={{ fontFamily: FF, background: "#F5F0E8", color: "#111" }}>
 
       {/* ══ NAV ══ */}
-      <nav style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 500, height: 64, background: navSolid ? "rgba(10,10,10,0.96)" : "transparent", backdropFilter: navSolid ? "blur(18px)" : "none", borderBottom: navSolid ? "1px solid rgba(255,255,255,0.06)" : "1px solid transparent", padding: "0 52px", display: "flex", alignItems: "center", justifyContent: "space-between", transition: "all 0.4s ease" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
-          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 20, letterSpacing: "-0.5px", color: "#ffffff", textTransform: "uppercase" }}>VOKU</span>
-          <div style={{ display: "flex", gap: 24 }}>
-            {t.nav.map((item, i) => (
-              <a key={i} href={["#produtos", "#como-funciona", "#precos", "/vitrine"][i]} style={{ fontFamily: FF, fontSize: 13, fontWeight: 500, color: "#888", textDecoration: "none", transition: "color 0.2s" }} onMouseEnter={e => e.target.style.color = "#FAF8F3"} onMouseLeave={e => e.target.style.color = "#888"}>{item}</a>
-            ))}
-          </div>
+      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "#F5F0E8", borderBottom: "1px solid rgba(0,0,0,0.08)", padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <LogoIcon size={18} />
+          <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: -1 }}>VOKU</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div style={{ display: "flex", gap: 2 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+          {t.nav.map((n, i) => <a key={i} href={`#s${i}`} style={{ fontSize: 11, color: "#888", textDecoration: "none", fontWeight: 500 }}>{n}</a>)}
+          <div style={{ display: "flex", gap: 0, border: "1px solid rgba(0,0,0,0.12)" }}>
             {["PT", "EN", "ES"].map(l => (
-              <button key={l} onClick={() => setLang(l)} style={{ background: lang === l ? "#C8F135" : "transparent", color: lang === l ? "#111" : "#555", border: "none", borderRadius: 5, padding: "4px 8px", fontFamily: FF, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>{l}</button>
+              <button key={l} onClick={() => setLang(l)} style={{ fontFamily: FF, fontSize: 10, fontWeight: 700, padding: "6px 12px", border: "none", cursor: "pointer", background: lang === l ? "#111" : "transparent", color: lang === l ? "#AAFF00" : "#888" }}>{l}</button>
             ))}
           </div>
-          <a href="/cliente" style={{ fontFamily: FF, fontSize: 13, fontWeight: 600, color: "#888", textDecoration: "none" }}>{t.navLogin}</a>
-          <a href="/cliente" onClick={handleCta} style={{ background: "#C8F135", color: "#111", borderRadius: 8, padding: "10px 20px", fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{t.navCta}</a>
+          <a href="/cliente" onClick={handleCta} style={{ background: "#111", color: "#AAFF00", padding: "9px 20px", fontSize: 11, fontWeight: 700, textDecoration: "none", letterSpacing: 0.5 }}>{t.navCta}</a>
         </div>
       </nav>
 
       {/* ══ HERO ══ */}
-      <section style={{ minHeight: "100vh", display: "flex", alignItems: "center", padding: "100px 52px 60px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.05, backgroundImage: "linear-gradient(rgba(255,255,255,0.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.12) 1px,transparent 1px)", backgroundSize: "60px 60px", pointerEvents: "none" }} />
-        <div className="hero-grid" style={{ width: "100%", maxWidth: 1300, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 60, alignItems: "center", position: "relative", zIndex: 2 }}>
-
-          {/* LEFT — copy */}
-          <div>
-            <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s ease 0.05s", display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(200,241,53,0.08)", border: "1px solid rgba(200,241,53,0.2)", borderRadius: 20, padding: "6px 14px", marginBottom: 28 }}>
-              <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#C8F135", animation: "ping 2s ease-in-out infinite" }} />
-              <span style={{ fontFamily: FF, fontSize: 11, fontWeight: 700, color: "#C8F135", letterSpacing: 1.5 }}>{t.eyebrow.toUpperCase()}</span>
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "calc(100vh - 56px)" }}>
+        {/* Left */}
+        <div style={{ padding: "64px 48px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
+            <div style={{ width: 32, height: 1, background: "#111" }} />
+            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: 3, color: "#888", textTransform: "uppercase" }}>{t.hero.eyebrow}</span>
+          </div>
+          <h1 style={{ fontSize: "clamp(52px,6vw,84px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: -3, textTransform: "uppercase", margin: 0 }}>
+            <span style={{ WebkitTextStroke: "1.5px #111", color: "transparent", display: "block" }}>SEU</span>
+            <span style={{ WebkitTextStroke: "1.5px #111", color: "transparent", display: "block" }}>CONTEÚDO.</span>
+            <span style={{ color: "#111", display: "block" }}>PRONTO.</span>
+          </h1>
+          <div style={{ width: "100%", height: 1, background: "rgba(0,0,0,0.12)", margin: "32px 0" }} />
+          <p style={{ fontSize: 13, color: "#555", lineHeight: 1.75, maxWidth: 340, margin: 0 }}>{t.hero.sub}</p>
+        </div>
+        {/* Right — 2 stacked cells */}
+        <div style={{ display: "grid", gridTemplateRows: "1fr 1fr" }}>
+          <div style={{ background: "#111", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 3, color: "#444", textTransform: "uppercase", marginBottom: 8 }}>{lang === "PT" ? "Tempo de entrega" : lang === "ES" ? "Tiempo de entrega" : "Delivery time"}</div>
+            <div style={{ fontSize: 72, fontWeight: 900, color: "#AAFF00", letterSpacing: -3, lineHeight: 1 }}>48h</div>
+            <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>{lang === "PT" ? "Do briefing à entrega. Garantido." : lang === "ES" ? "Del briefing a la entrega. Garantizado." : "From briefing to delivery. Guaranteed."}</div>
+          </div>
+          <div style={{ background: "#AAFF00", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#111", lineHeight: 1.4, maxWidth: 320, marginBottom: 28 }}>
+              {lang === "PT" ? "Parece escrito por alguém que conhece sua marca há anos." : lang === "ES" ? "Parece escrito por alguien que conoce tu marca hace años." : "Looks like it was written by someone who's known your brand for years."}
             </div>
-
-            <h1 style={{ fontFamily: FFS, fontSize: "clamp(44px,5vw,80px)", fontWeight: 400, lineHeight: 0.98, letterSpacing: -2, margin: "0 0 28px", color: "#FAF8F3" }}>
-              <span style={{ display: "block", opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(28px)", transition: "all 0.7s ease 0.1s" }}>{t.h1a}</span>
-              <span style={{ display: "block", opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(28px)", transition: "all 0.7s ease 0.18s" }}>{t.h1b}</span>
-              <span style={{ display: "block", fontStyle: "italic", color: "#C8F135", opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(28px)", transition: "all 0.7s ease 0.26s" }}>{t.h1italic}</span>
-            </h1>
-
-            <p style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(20px)", transition: "all 0.65s ease 0.34s", fontFamily: FF, fontSize: "clamp(15px,1.2vw,17px)", color: "#AAA", lineHeight: 1.7, marginBottom: 32, maxWidth: 460 }}>{t.sub}</p>
-
-            <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(16px)", transition: "all 0.6s ease 0.38s", display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 36 }}>
-              {t.trustBadges.map((badge, i) => (
-                <div key={i} style={{ fontFamily: FF, fontSize: 11, fontWeight: 600, color: "#AAA", background: "#161616", border: "1px solid #222", borderRadius: 20, padding: "5px 12px" }}>{badge}</div>
-              ))}
-            </div>
-
-            <div style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(20px)", transition: "all 0.65s ease 0.44s", display: "flex", gap: 14, flexWrap: "wrap" }}>
-              <a href="/cliente" onClick={handleCta} style={{ display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 10, padding: "18px 40px", fontFamily: FF, fontSize: 15, fontWeight: 700, textDecoration: "none", transition: "all 0.3s", cursor: "pointer" }}>{t.cta}</a>
-              <a href="#produtos" style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "18px 28px", borderRadius: 10, border: "1.5px solid #2a2a2a", fontFamily: FF, fontSize: 15, fontWeight: 600, color: "#888", textDecoration: "none", transition: "all 0.2s" }}>{t.ctaSec} ↓</a>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <a href="/cliente" onClick={handleCta} style={{ display: "inline-block", background: "#111", color: "#AAFF00", padding: "14px 28px", fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>{t.navCta} →</a>
+              <a href="#s0" style={{ fontSize: 11, color: "#111", opacity: 0.6, textDecoration: "none", textAlign: "center" }}>{lang === "PT" ? "Ver serviços ↓" : lang === "ES" ? "Ver servicios ↓" : "See services ↓"}</a>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* RIGHT — chat demo */}
-          <div className="hero-right-panel" style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "translateY(0)" : "translateY(32px)", transition: "all 0.9s ease 0.3s" }}>
-            <ChatDemo />
+      {/* ══ TICKER ══ */}
+      <div style={{ background: "#111", padding: "12px 0", overflow: "hidden", whiteSpace: "nowrap" }}>
+        <div style={{ display: "inline-block", animation: "ticker 30s linear infinite" }}>
+          {[0, 1].map(i => (
+            <span key={i} style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#AAFF00", textTransform: "uppercase", paddingRight: 48 }}>
+              {t.ticker} &nbsp;&nbsp;·&nbsp;&nbsp; {t.ticker} &nbsp;&nbsp;·&nbsp;&nbsp;
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ PORTFOLIO ══ */}
+      <section id="s0" ref={portfolioRef} style={{ padding: "96px 48px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ ...rv(portfolioVis), marginBottom: 12 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.portfolio.label}</div>
+            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05 }}>{t.portfolio.title}</h2>
+          </div>
+          <p style={{ ...rv(portfolioVis, 0.1), fontSize: 14, color: "#666", lineHeight: 1.75, marginBottom: 40 }}>{t.portfolio.sub}</p>
+
+          {/* Tabs */}
+          <div style={{ ...rv(portfolioVis, 0.15), display: "flex", gap: 32, marginBottom: 32, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
+            {t.portfolio.tabs.map((tab, i) => (
+              <button key={i} onClick={() => setPortfolioTab(i)} style={{
+                fontFamily: FF, fontSize: 13, fontWeight: portfolioTab === i ? 700 : 500,
+                color: portfolioTab === i ? "#111" : "#888", background: "none", border: "none",
+                borderBottom: portfolioTab === i ? "2px solid #111" : "2px solid transparent",
+                padding: "12px 0", cursor: "pointer", marginBottom: -1,
+              }}>{tab}</button>
+            ))}
+          </div>
+
+          {/* Grid */}
+          <div style={{ ...rv(portfolioVis, 0.2) }}>
+            <PortfolioGrid
+              tab={portfolioTab}
+              caption={t.portfolio[`caption${portfolioTab + 1}`]}
+              captionB={t.portfolio[`caption${portfolioTab + 1}b`]}
+            />
           </div>
         </div>
       </section>
 
       {/* ══ PRODUCTS ══ */}
-      <section id="produtos" ref={productsRef} style={{ padding: "112px 52px", background: "#0a0a0a" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div style={{ ...rv(productsVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.productsLabel}</div>
-            <h2 style={{ ...rv(productsVis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,4vw,48px)", color: "#FAF8F3", margin: "0 0 12px", letterSpacing: -0.5 }}>{t.productsTitle}</h2>
-            <p style={{ ...rv(productsVis, 0.14), fontFamily: FF, fontSize: 14, color: "#888", fontStyle: "italic" }}>{t.productsSub}</p>
+      <section id="s1" ref={productsRef} style={{ padding: "96px 48px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ ...rv(productsVis), marginBottom: 48 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.products.label}</div>
+            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05 }}>{t.products.title}</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-            {t.products.map((p, i) => (
-              <a key={i} href="/cliente" style={{
-                ...rv(productsVis, 0.1 + i * 0.05),
-                background: "#141414", border: "1px solid #1e1e1e", borderRadius: 16,
-                padding: "28px 22px", textDecoration: "none", transition: "all 0.25s",
-                display: "block", cursor: "pointer",
-              }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.transform = "translateY(-4px)"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "#1e1e1e"; e.currentTarget.style.transform = "translateY(0)"; }}
-              >
-                <div style={{ marginBottom: 14, color: "#C8F135" }}>{ICONS[p.icon] || p.icon}</div>
-                <div style={{ fontFamily: FF, fontSize: 15, fontWeight: 700, color: "#FAF8F3", marginBottom: 4 }}>{p.name}</div>
-                <div style={{ fontFamily: FF, fontSize: 12, color: "#888", lineHeight: 1.5, marginBottom: 12 }}>{p.desc}</div>
-                <div style={{ display: "inline-block", background: "rgba(200,241,53,0.1)", border: "1px solid rgba(200,241,53,0.2)", borderRadius: 20, padding: "3px 10px" }}>
-                  <span style={{ fontFamily: FF, fontSize: 11, fontWeight: 700, color: "#C8F135" }}>{p.credits} cr</span>
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ HOW IT WORKS ══ */}
-      <section id="como-funciona" ref={howRef} style={{ padding: "112px 52px", background: "#111", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(200,241,53,0.04) 0%, transparent 65%)", pointerEvents: "none" }} />
-        <div style={{ maxWidth: 1000, margin: "0 auto", position: "relative", zIndex: 1 }}>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <div style={{ ...rv(howVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.howLabel}</div>
-            <h2 style={{ ...rv(howVis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,4vw,48px)", color: "#FAF8F3", margin: 0, letterSpacing: -0.5 }}>{t.howTitle}</h2>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 2 }}>
-            {t.steps.map((s, i) => (
-              <div key={i} style={{ ...rv(howVis, 0.1 + i * 0.12), padding: "40px 28px", borderLeft: `1px solid ${i === 0 ? "#C8F135" : "#1C1C1C"}`, position: "relative" }}>
-                {i === 0 && <div style={{ position: "absolute", left: -1, top: 0, bottom: 0, width: 2, background: "linear-gradient(to bottom, #C8F135, transparent)" }} />}
-                <div style={{ fontFamily: FF, fontWeight: 800, fontSize: 11, color: "#C8F135", letterSpacing: 2.5, marginBottom: 20 }}>{s.n}</div>
-                <div style={{ fontFamily: FF, fontWeight: 700, fontSize: 18, color: "#FAF8F3", marginBottom: 10, lineHeight: 1.3 }}>{s.t}</div>
-                <div style={{ fontFamily: FF, fontWeight: 300, fontSize: 13, color: "#888", lineHeight: 1.75 }}>{s.d}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ GAP ══ */}
-      <section ref={gapRef} style={{ padding: "100px 52px", background: "#0D0D0D", position: "relative", overflow: "hidden" }}>
-        <div style={{ maxWidth: 1040, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <h2 style={{ ...rv(gapVis), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(26px,3.5vw,42px)", color: "#FAF8F3", margin: "0 0 12px" }}>{t.gapTitle}</h2>
-            <p style={{ ...rv(gapVis, 0.1), fontFamily: FF, fontSize: 15, color: "#888" }}>{t.gapSub}</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 3 }}>
-            {t.gapItems.map((col, i) => (
-              <div key={i} style={{
-                ...rv(gapVis, 0.1 + i * 0.1),
-                background: col.highlight ? "#C8F135" : "#141414",
-                borderRadius: 16, padding: "36px 32px",
-                border: col.highlight ? "none" : "1px solid #1C1C1C",
-                transform: col.highlight ? "scaleY(1.04)" : "none",
-                position: "relative",
-              }}>
-                {col.highlight && <div style={{ position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#fff", fontFamily: "'Inter', sans-serif", fontSize: 10, fontWeight: 900, letterSpacing: "-0.3px", padding: "4px 14px", borderRadius: 20 }}>VOKU</div>}
-                <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: col.highlight ? "#111" : "#555", marginBottom: 20 }}>{col.label}</div>
-                {col.points.map((p, j) => (
-                  <div key={j} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                    <div style={{ width: 5, height: 5, borderRadius: "50%", background: col.highlight ? "#2A3D00" : "#2A2A2A", flexShrink: 0 }} />
-                    <span style={{ fontFamily: FF, fontSize: 12, color: col.highlight ? "#2A3D00" : "#555", lineHeight: 1.5 }}>{p}</span>
+          <div style={{ ...rv(productsVis, 0.1), display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 0 }}>
+            {t.products.items.map((p, i) => {
+              const isDark = p.highlight;
+              return (
+                <div key={i} style={{
+                  background: isDark ? "#111" : "#F5F0E8",
+                  padding: "36px 32px",
+                  borderLeft: i > 0 ? "1px solid rgba(0,0,0,0.12)" : "none",
+                  position: "relative",
+                }}>
+                  {isDark && <div style={{ position: "absolute", top: 16, right: 16, background: "#AAFF00", color: "#111", fontSize: 8, fontWeight: 700, letterSpacing: 2, padding: "4px 10px", textTransform: "uppercase" }}>{t.products.badge}</div>}
+                  <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 2, color: isDark ? "#555" : "#999", textTransform: "uppercase", marginBottom: 16 }}>{p.num}</div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: isDark ? "#fff" : "#111", textTransform: "uppercase", letterSpacing: -0.5, marginBottom: 8 }}>{p.name}</div>
+                  <div style={{ fontSize: 12, color: isDark ? "#888" : "#666", marginBottom: 24 }}>{p.tagline}</div>
+                  <div style={{ fontSize: 40, fontWeight: 900, color: isDark ? "#AAFF00" : "#111", letterSpacing: -1, marginBottom: 4 }}>{p.price}</div>
+                  <div style={{ fontSize: 11, color: isDark ? "#555" : "#999", marginBottom: 24 }}>{p.time}</div>
+                  <div style={{ height: 1, background: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)", marginBottom: 24 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
+                    {p.features.map((f, j) => (
+                      <div key={j} style={{ fontSize: 11, color: isDark ? "#888" : "#666", display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ color: isDark ? "#AAFF00" : "#111", fontWeight: 700 }}>→</span>{f}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ SOCIAL PROOF ══ */}
-      <section ref={proofRef} style={{ padding: "80px 52px", background: "#0a0a0a" }}>
-        <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center" }}>
-          <div style={{ ...rv(proofVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 28 }}>{t.proofLabel}</div>
-          <blockquote style={{ ...rv(proofVis, 0.1), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(18px,2.5vw,26px)", color: "#FAF8F3", lineHeight: 1.5, margin: "0 0 20px", position: "relative" }}>
-            <span style={{ position: "absolute", top: -20, left: -10, fontSize: 60, color: "#C8F135", lineHeight: 1, fontFamily: "serif" }}>"</span>
-            {t.proofQuote}
-          </blockquote>
-          <div style={{ ...rv(proofVis, 0.18), fontFamily: FF, fontSize: 12, color: "#888" }}>{t.proofAuthor}</div>
-          <div style={{ ...rv(proofVis, 0.24), marginTop: 48, padding: "28px 32px", background: "#141414", borderRadius: 16, border: "1px solid #222", textAlign: "left", display: "flex", gap: 20, alignItems: "flex-start" }}>
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#C8F135", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>✓</div>
-            <div>
-              <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: "#FAF8F3", marginBottom: 6 }}>{t.guaranteeTitle}</div>
-              <div style={{ fontFamily: FF, fontSize: 13, color: "#888", lineHeight: 1.65 }}>{t.guaranteeBody}</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ PRICING ══ */}
-      <section id="precos" ref={pricingRef} style={{ padding: "112px 52px", background: "#0d0d0d" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div style={{ ...rv(pricingVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.pricingLabel}</div>
-            <h2 style={{ ...rv(pricingVis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(28px,4vw,48px)", color: "#FAF8F3", margin: "0 0 12px" }}>{t.pricingTitle}</h2>
-            <p style={{ ...rv(pricingVis, 0.14), fontFamily: FF, fontSize: 14, color: "#888", fontStyle: "italic" }}>{t.pricingSub}</p>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, alignItems: "start" }}>
-            {t.plans.map((plan, i) => (
-              <div key={plan.id} style={{
-                ...rv(pricingVis, 0.1 + i * 0.08),
-                background: plan.highlight ? "#141414" : "#0f0f0f",
-                border: plan.highlight ? "2px solid #C8F135" : "1px solid #1e1e1e",
-                borderRadius: 20, padding: "36px 28px", position: "relative",
-                boxShadow: plan.highlight ? "0 20px 60px rgba(200,241,53,0.08)" : "none",
-                transform: plan.highlight ? "translateY(-8px)" : "none",
-              }}>
-                {plan.badge && (
-                  <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: "#C8F135", color: "#111", fontFamily: FF, fontSize: 10, fontWeight: 700, letterSpacing: 1.5, padding: "4px 16px", borderRadius: 20, whiteSpace: "nowrap" }}>{plan.badge.toUpperCase()}</div>
-                )}
-                <div style={{ fontFamily: FF, fontSize: 12, fontWeight: 700, color: "#777", letterSpacing: 1, marginBottom: 16 }}>{plan.name.toUpperCase()}</div>
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-                  <span style={{ fontFamily: FF, fontSize: 36, fontWeight: 800, color: "#FAF8F3" }}>{plan.price}</span>
-                  <span style={{ fontFamily: FF, fontSize: 14, color: "#777" }}>{plan.period}</span>
+                  <a href="/cliente" onClick={handleCta} style={{ fontSize: 11, fontWeight: 700, color: isDark ? "#AAFF00" : "#111", textDecoration: "none" }}>{t.navCta} →</a>
                 </div>
-                <div style={{ fontFamily: FF, fontSize: 13, fontWeight: 700, color: "#C8F135", marginBottom: 8 }}>{plan.credits}</div>
-                <p style={{ fontFamily: FF, fontSize: 12, color: "#888", lineHeight: 1.6, marginBottom: 24 }}>{plan.desc}</p>
-                <div style={{ marginBottom: 28 }}>
-                  {plan.items.map((item, j) => (
-                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                      <span style={{ color: "#C8F135", fontSize: 12, flexShrink: 0 }}>✓</span>
-                      <span style={{ fontFamily: FF, fontSize: 12, color: "#AAA", lineHeight: 1.5 }}>{item}</span>
-                    </div>
-                  ))}
-                </div>
-                <a href={plan.id === "free" ? "/cliente" : `/api/checkout?plan=${plan.id}&billing=monthly`} onClick={handleCta} style={{
-                  display: "block", textAlign: "center", padding: "14px 24px", borderRadius: 10,
-                  background: plan.highlight ? "#C8F135" : "#1e1e1e",
-                  color: plan.highlight ? "#111" : "#FAF8F3",
-                  fontFamily: FF, fontSize: 13, fontWeight: 700, textDecoration: "none", transition: "all 0.2s", cursor: "pointer",
-                }}>{plan.cta}</a>
-              </div>
-            ))}
-          </div>
-          {/* Credit pack callout */}
-          <div style={{ ...rv(pricingVis, 0.5), marginTop: 32, background: "#141414", border: "1px solid #1e1e1e", borderRadius: 16, padding: "24px 32px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
-            <div>
-              <div style={{ fontFamily: FF, fontSize: 14, fontWeight: 700, color: "#FAF8F3", marginBottom: 4 }}>
-                {lang === "PT" ? "Precisa de mais créditos sem mudar de plano?" : lang === "EN" ? "Need more credits without changing plans?" : "Necesitas más créditos sin cambiar de plan?"}
-              </div>
-              <div style={{ fontFamily: FF, fontSize: 12, color: "#888" }}>
-                {lang === "PT" ? "Pacotes avulsos: 50 créditos por R$49 · 200 por R$149 · 500 por R$297" : lang === "EN" ? "Add-on packs: 50 credits for R$49 · 200 for R$149 · 500 for R$297" : "Paquetes adicionales: 50 créditos por R$49 · 200 por R$149 · 500 por R$297"}
-              </div>
-            </div>
-            <a href="/precos" style={{ background: "#1e1e1e", color: "#FAF8F3", border: "1px solid #333", borderRadius: 10, padding: "10px 20px", fontFamily: FF, fontSize: 12, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap" }}>
-              {lang === "PT" ? "Ver pacotes →" : lang === "EN" ? "See packs →" : "Ver paquetes →"}
-            </a>
-          </div>
-          <div style={{ textAlign: "center", marginTop: 20 }}>
-            <a href="/precos" style={{ fontFamily: FF, fontSize: 13, color: "#888", textDecoration: "none" }}>
-              {lang === "PT" ? "Ver todos os planos e pacotes avulsos →" : lang === "EN" ? "See all plans and add-on packs →" : "Ver todos los planes y paquetes →"}
-            </a>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ══ FAQ ══ */}
-      <section ref={faqRef} style={{ padding: "100px 52px", background: "#0a0a0a" }}>
-        <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ ...rv(faqVis), fontFamily: FF, fontSize: 11, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.faqLabel}</div>
-            <h2 style={{ ...rv(faqVis, 0.08), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(26px,3.5vw,40px)", color: "#FAF8F3", margin: 0 }}>{t.faqTitle}</h2>
+      {/* ══ PROCESS ══ */}
+      <section id="s2" ref={processRef} style={{ background: "#111", padding: "96px 48px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80 }}>
+          <div style={{ ...rv(processVis) }}>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#555", marginBottom: 12, textTransform: "uppercase" }}>{t.process.label}</div>
+            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", color: "#fff", margin: 0, lineHeight: 1.05, marginBottom: 20 }}>{t.process.title}</h2>
+            <p style={{ fontSize: 14, color: "#888", lineHeight: 1.75 }}>{t.process.sub}</p>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {t.faqs.map((item, i) => (
-              <div key={i} style={{ ...rv(faqVis, 0.1 + i * 0.05), background: "#141414", border: "1px solid #1e1e1e", borderRadius: 14, overflow: "hidden" }}>
-                <button onClick={() => setOpenFaq(openFaq === i ? null : i)} style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 24px", background: "transparent", border: "none", cursor: "pointer", fontFamily: FF, textAlign: "left" }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: "#FAF8F3" }}>{item.q}</span>
-                  <span style={{ fontSize: 18, color: "#777", transform: openFaq === i ? "rotate(45deg)" : "none", transition: "transform 0.2s", flexShrink: 0, marginLeft: 16 }}>+</span>
-                </button>
-                {openFaq === i && (
-                  <div style={{ padding: "0 24px 18px" }}>
-                    <p style={{ fontFamily: FF, fontSize: 13, color: "#888", lineHeight: 1.7, margin: 0 }}>{item.a}</p>
-                  </div>
-                )}
+          <div>
+            {t.process.steps.map((step, i) => (
+              <div key={i} style={{ ...rv(processVis, 0.1 + i * 0.08), borderTop: "1px solid #1e1e1e", padding: "28px 0" }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#AAFF00", marginBottom: 8 }}>{step.n}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 8 }}>{step.t}</div>
+                <div style={{ fontSize: 13, color: "#999", lineHeight: 1.6 }}>{step.d}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══ FINAL CTA ══ */}
-      <section ref={ctaRef} style={{ padding: "140px 52px", background: "#0d0d0d", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", bottom: "-20%", left: "50%", transform: "translateX(-50%)", width: 900, height: 500, background: "radial-gradient(ellipse, rgba(200,241,53,0.25) 0%, transparent 60%)", pointerEvents: "none" }} />
-        <div style={{ maxWidth: 680, margin: "0 auto", textAlign: "center", position: "relative", zIndex: 1 }}>
-          <h2 style={{ ...rv(ctaVis), fontFamily: FFS, fontStyle: "italic", fontWeight: 400, fontSize: "clamp(36px,5.5vw,68px)", lineHeight: 1.05, letterSpacing: -1.5, color: "#FAF8F3", marginBottom: 20 }}>
-            {t.finalTitle}{" "}
-            <span style={{ textDecoration: "underline", textDecorationColor: "#C8F135", textDecorationThickness: 4, textUnderlineOffset: 6 }}>{t.finalHighlight}</span>
-          </h2>
-          <p style={{ ...rv(ctaVis, 0.1), fontFamily: FF, fontSize: 16, color: "#888", lineHeight: 1.7, marginBottom: 40 }}>{t.finalSub}</p>
-          <a href="/cliente" onClick={handleCta} style={{ ...rv(ctaVis, 0.18), display: "inline-block", background: "#C8F135", color: "#111", borderRadius: 12, padding: "20px 52px", fontFamily: FF, fontSize: 16, fontWeight: 700, textDecoration: "none", boxShadow: "0 8px 48px rgba(200,241,53,0.15)", transition: "all 0.3s", cursor: "pointer" }}>{t.finalCta}</a>
+      {/* ══ GUARANTEE ══ */}
+      <section ref={guaranteeRef} style={{ background: "#AAFF00", padding: "80px 48px" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <div style={{ ...rv(guaranteeVis), fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "rgba(0,0,0,0.4)", textTransform: "uppercase", marginBottom: 16 }}>{t.guarantee.label}</div>
+          <h2 style={{ ...rv(guaranteeVis, 0.08), fontSize: "clamp(36px,5vw,64px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", color: "#111", margin: 0, lineHeight: 1.05, marginBottom: 20 }}>{t.guarantee.title}</h2>
+          <p style={{ ...rv(guaranteeVis, 0.14), fontSize: 14, color: "rgba(0,0,0,0.6)", lineHeight: 1.75, maxWidth: 480, marginBottom: 32 }}>{t.guarantee.body}</p>
+          <a href="/cliente" onClick={handleCta} style={{ ...rv(guaranteeVis, 0.2), display: "inline-block", background: "#111", color: "#AAFF00", padding: "15px 36px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{t.guarantee.cta}</a>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer style={{ background: "#0A0A0A", padding: "28px 52px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, borderTop: "1px solid #161616" }}>
-        <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 18, letterSpacing: "-0.5px", color: "#ffffff", textTransform: "uppercase" }}>VOKU</span>
-        <div style={{ display: "flex", gap: 24 }}>
-          {[
-            { label: lang === "PT" ? "Vitrine" : "Showcase", href: "/vitrine" },
-            { label: "Marketplace", href: "/vitrine/marketplace" },
-            { label: lang === "PT" ? "Preços" : "Pricing", href: "/precos" },
-            { label: lang === "PT" ? "Afiliados" : "Affiliates", href: "/cliente/afiliados" },
-          ].map(l => (
-            <a key={l.label} href={l.href} style={{ fontFamily: FF, fontSize: 12, color: "#777", textDecoration: "none" }}>{l.label}</a>
-          ))}
+      <footer style={{ background: "#E8E3D8", borderTop: "1px solid rgba(0,0,0,0.1)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 40, padding: "56px 48px", maxWidth: 1200, margin: "0 auto" }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <LogoIcon size={16} />
+              <span style={{ fontWeight: 900, fontSize: 14, letterSpacing: -0.5 }}>VOKU</span>
+            </div>
+            <p style={{ fontSize: 12, color: "#666", lineHeight: 1.7, maxWidth: 280, margin: 0 }}>{t.footer.desc}</p>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 16, textTransform: "uppercase" }}>{t.footer.col2label}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {t.footer.col2.map((l, i) => <span key={i} style={{ fontSize: 13, color: "#333" }}>{l}</span>)}
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 16, textTransform: "uppercase" }}>{t.footer.col3label}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {t.footer.col3.map((l, i) => {
+                const href = i === 1 ? "/cliente" : i === 0 ? "#s2" : null;
+                return href ? <a key={i} href={href} style={{ fontSize: 13, color: "#333", textDecoration: "none" }}>{l}</a> : <span key={i} style={{ fontSize: 13, color: "#333" }}>{l}</span>;
+              })}
+            </div>
+          </div>
         </div>
-        <div style={{ fontFamily: FF, fontSize: 10, color: "#777" }}>Voku LLC · Wyoming, USA · voku.one · © 2025</div>
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.1)", padding: "20px 48px", display: "flex", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
+          <span style={{ fontSize: 11, color: "#888" }}>{t.footer.bottom1}</span>
+          <span style={{ fontSize: 11, color: "#888" }}>{t.footer.bottom2}</span>
+        </div>
       </footer>
 
       {/* Beta Modal */}
       {betaModal && (
         <div onClick={(e) => { if (e.target === e.currentTarget) setBetaModal(false); }} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "#111111", border: "1.5px solid #C8F135", borderRadius: 20, padding: "48px 40px", maxWidth: 440, width: "100%", textAlign: "center", position: "relative", animation: "modalIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards" }}>
+          <div style={{ background: "#111", border: "1.5px solid #AAFF00", borderRadius: 4, padding: "48px 40px", maxWidth: 440, width: "100%", textAlign: "center", position: "relative", animation: "modalIn 0.35s ease forwards" }}>
             <button onClick={() => setBetaModal(false)} style={{ position: "absolute", top: 16, right: 20, background: "none", border: "none", color: "#444", fontSize: 22, cursor: "pointer" }}>×</button>
-            <div style={{ fontSize: 40, color: "#C8F135", marginBottom: 16, animation: "betaPulse 2s ease-in-out infinite" }}>✦</div>
-            <span style={{ display: "inline-block", background: "#C8F135", color: "#111", fontFamily: IF, fontWeight: 800, fontSize: 10, letterSpacing: 3, padding: "6px 16px", borderRadius: 20, marginBottom: 24 }}>ACESSO BETA LIBERADO</span>
-            <div style={{ fontFamily: IF, fontWeight: 900, fontSize: 32, color: "#ffffff", lineHeight: 1.1, marginBottom: 12 }}>Você ganhou 7 dias grátis.</div>
-            <div style={{ fontFamily: IF, fontWeight: 400, fontSize: 14, color: "#888", lineHeight: 1.7, marginBottom: 32 }}>Acesso completo à plataforma, sem cartão, sem compromisso.<br/>Explore tudo antes de escolher seu plano.</div>
-            <div style={{ height: 1, background: "#222", marginBottom: 28 }} />
-            <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10 }}>
-              {["Créditos ilimitados por 7 dias", "Todos os produtos desbloqueados", "Chat com agente IA", "Landing pages, posts, e-mails, apps", "Sem limite de projetos"].map(item => (
+            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#AAFF00", marginBottom: 24 }}>ACESSO BETA LIBERADO</div>
+            <div style={{ fontWeight: 900, fontSize: 28, color: "#fff", lineHeight: 1.1, marginBottom: 12, letterSpacing: -1 }}>7 dias grátis.</div>
+            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7, marginBottom: 32 }}>Acesso completo. Sem cartão. Sem compromisso.</div>
+            <div style={{ height: 1, background: "#222", marginBottom: 24 }} />
+            <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
+              {[
+                lang === "PT" ? "Todos os produtos desbloqueados" : "All products unlocked",
+                lang === "PT" ? "Chat com agente IA" : "AI agent chat",
+                lang === "PT" ? "Landing pages, posts, e-mails" : "Landing pages, posts, emails",
+                lang === "PT" ? "Sem limite de projetos" : "Unlimited projects",
+              ].map(item => (
                 <div key={item} style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <span style={{ color: "#C8F135", fontFamily: IF, fontWeight: 700, fontSize: 14 }}>→</span>
-                  <span style={{ color: "#ffffff", fontFamily: IF, fontWeight: 400, fontSize: 14 }}>{item}</span>
+                  <span style={{ color: "#AAFF00", fontWeight: 700, fontSize: 13 }}>→</span>
+                  <span style={{ color: "#fff", fontSize: 13 }}>{item}</span>
                 </div>
               ))}
             </div>
-            <a href="/cliente" style={{ display: "block", marginTop: 36, width: "100%", background: "#C8F135", color: "#111", fontFamily: IF, fontWeight: 800, fontSize: 16, padding: 18, borderRadius: 10, border: "none", textDecoration: "none", textAlign: "center", boxSizing: "border-box" }}>Ativar agora →</a>
-            <div style={{ fontFamily: IF, fontWeight: 400, fontSize: 11, color: "#444", marginTop: 14 }}>Sem cartão de crédito. Cancele quando quiser.</div>
+            <a href="/cliente" style={{ display: "block", background: "#AAFF00", color: "#111", fontWeight: 800, fontSize: 14, padding: 16, border: "none", textDecoration: "none", textAlign: "center" }}>Ativar agora →</a>
+            <div style={{ fontSize: 11, color: "#444", marginTop: 14 }}>{lang === "PT" ? "Sem cartão de crédito. Cancele quando quiser." : "No credit card. Cancel anytime."}</div>
           </div>
         </div>
       )}
 
       <style>{`
-        @keyframes ping { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.6); opacity: 0.3; } }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @keyframes bounce { 0%,80%,100% { transform: translateY(0); } 40% { transform: translateY(-5px); } }
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-        @keyframes betaPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-        * { box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        ::selection { background: #C8F135; color: #111; }
-        @media (max-width: 768px) {
-          nav > div:first-child > div:last-child { display: none !important; }
-          nav > div:last-child > a:first-child { display: none !important; }
-          .hero-grid { grid-template-columns: 1fr !important; gap: 40px !important; }
-          .hero-right-panel { max-width: 100% !important; }
-          div[style*="repeat(4, 1fr)"] { grid-template-columns: 1fr 1fr !important; }
-          div[style*="repeat(3, 1fr)"] { grid-template-columns: 1fr !important; }
-          div[style*="1fr auto 1fr"] { grid-template-columns: 1fr !important; }
-          section { padding-left: 24px !important; padding-right: 24px !important; }
-          nav { padding: 0 20px !important; }
-          footer { padding: 20px 24px !important; }
-        }
+        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
       `}</style>
     </div>
   );
