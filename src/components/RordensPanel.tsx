@@ -172,20 +172,30 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     setStreaming(true);
 
     try {
-      // Detect URL in user text — scrape site for brand context (persists across messages)
+      // Detect URL — scrape site content AND colors in parallel
       const urlMatch = text.match(/https?:\/\/[^\s]+/i);
       if (urlMatch) {
         try {
-          const scrapeRes = await fetch("/api/extract-colors-url", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: urlMatch[0] }),
-          });
-          const scrapeData = await scrapeRes.json();
-          if (scrapeData.cores?.length > 0) {
-            const colorList = scrapeData.cores.map((c: any) => `${c.hex} (${c.nome})`).join(", ");
-            setBrandContext(prev => prev + `\nSite analisado: ${urlMatch[0]}\nCores: ${colorList}`);
+          const [colorRes, contentRes] = await Promise.all([
+            fetch("/api/extract-colors-url", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlMatch[0] }) }).catch(() => null),
+            fetch("/api/scrape-site", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: urlMatch[0] }) }).catch(() => null),
+          ]);
+          let ctx = `\nSite: ${urlMatch[0]}`;
+          if (contentRes) {
+            const content = await contentRes.json();
+            if (content.title) ctx += `\nTítulo: ${content.title}`;
+            if (content.description) ctx += `\nDescrição: ${content.description}`;
+            if (content.headings?.length) ctx += `\nSeções: ${content.headings.join(" | ")}`;
+            if (content.paragraphs?.length) ctx += `\nConteúdo: ${content.paragraphs.join(" ")}`;
+            if (content.keywords) ctx += `\nPalavras-chave: ${content.keywords}`;
           }
+          if (colorRes) {
+            const colors = await colorRes.json();
+            if (colors.cores?.length > 0) {
+              ctx += `\nCores: ${colors.cores.map((c: any) => `${c.hex} (${c.nome})`).join(", ")}`;
+            }
+          }
+          setBrandContext(prev => prev + ctx);
         } catch {}
       }
 
