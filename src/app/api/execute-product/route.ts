@@ -260,60 +260,36 @@ export async function POST(req: NextRequest) {
       supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 6),
     ])
 
+    // Generate 3 variations in PARALLEL — one call per tone (avoids JSON parse hell)
     const SIMPLE_PRODUCTS = ['post_instagram', 'ad_copy', 'reels_script']
     const maxTokens = SIMPLE_PRODUCTS.includes(product) ? 4000 : 6000
-    const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: maxTokens,
-      system: `${baseSystem}
 
-IMPORTANT: You must generate EXACTLY 3 variations of the deliverable, each with a different tone.
-Return your response as a JSON array with exactly 3 objects:
-[
-  { "label": "Option A — Direct & bold tone", "text": "...full content here..." },
-  { "label": "Option B — Consultive & empathetic tone", "text": "...full content here..." },
-  { "label": "Option C — Creative & provocative tone", "text": "...full content here..." }
-]
-
-Each variation must be complete and production-ready. Only output the JSON array, no other text.`,
-      messages: [{
-        role: 'user',
-        content: `BRIEFING DO CLIENTE:\n${briefingText}\n\nGenerate 3 complete variations now.`,
-      }],
-    })
-
-    const rawOutput = message.content[0].type === 'text' ? message.content[0].text : '[]'
-
-    let variations: { label: string; text: string }[]
-    try {
-      // Strip markdown fences
-      let cleaned = rawOutput.replace(/```(?:json|JSON)?\s*\n?/g, '').replace(/```\s*$/g, '').trim()
-      // Find the JSON array — try multiple approaches
-      let parsed: any = null
-      // Attempt 1: direct parse
-      try { parsed = JSON.parse(cleaned) } catch {}
-      // Attempt 2: extract array with regex
-      if (!parsed) {
-        const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
-        if (jsonMatch) try { parsed = JSON.parse(jsonMatch[0]) } catch {}
-      }
-      // Attempt 3: find first [ and last ] manually
-      if (!parsed) {
-        const firstBracket = cleaned.indexOf('[')
-        const lastBracket = cleaned.lastIndexOf(']')
-        if (firstBracket !== -1 && lastBracket > firstBracket) {
-          try { parsed = JSON.parse(cleaned.slice(firstBracket, lastBracket + 1)) } catch {}
+    const toneResults = await Promise.all(
+      TONE_INSTRUCTIONS.map(async (tone) => {
+        try {
+          const msg = await anthropic.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: maxTokens,
+            system: `${baseSystem}\n\nTone for this variation: ${tone.label}. Generate ONE complete variation. Output ONLY the content text — no JSON, no wrapper, no label prefix.`,
+            messages: [{
+              role: 'user',
+              content: `BRIEFING DO CLIENTE:\n${briefingText}\n\nGenerate the complete deliverable in ${tone.label} tone now.`,
+            }],
+          })
+          const text = msg.content[0].type === 'text' ? msg.content[0].text : ''
+          return { label: tone.label, text: stripFences(text) }
+        } catch (err) {
+          console.error(`[execute-product] Tone ${tone.label} failed:`, (err as Error).message)
+          return null
         }
-      }
-      if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Could not parse JSON array')
-      variations = parsed
-    } catch (parseErr) {
-      console.error(`[execute-product] JSON parse failed:`, (parseErr as Error).message, `rawOutput first 200 chars:`, rawOutput.slice(0, 200))
-      // Fallback: save as single variation but strip fences from text
-      variations = [{ label: 'Option A', text: stripFences(rawOutput) }]
-    }
+      })
+    )
 
-    variations = variations.slice(0, 3)
+    const variations = toneResults.filter((v): v is { label: string; text: string } => v !== null && v.text.length > 50)
+    if (variations.length === 0) {
+      throw new Error('All 3 tone generations failed')
+    }
+    console.log(`[execute-product] Generated ${variations.length} variations for order=${order_id}`)
 
     const previewText = (variations[0]?.text || '').slice(0, 300)
     await supabase.from('orders').update({ preview_text: previewText }).eq('id', order_id)
