@@ -1,19 +1,19 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 
-const FF = "'Inter', sans-serif";
-
 /* ─── COPY (trilingual) ─── */
 const T = {
   PT: {
     nav: ["Serviços", "Processo", "Sobre"],
     navCta: "Começar projeto",
-    hero: { eyebrow: "Estúdio de Mídia · IA", sub: "Pacotes fixos. Preço visível. Entrega em até 48h. Sem reunião, sem proposta, sem surpresa." },
-    ticker: "Landing Page Copy · Social Media Pack · Email Nurture · Sem Reunião · Revisão Inclusa · Preço Fixo em BRL · Entrega Garantida · Área do Cliente · Briefing em minutos · Estúdio de Mídia · IA",
+    hero: { eyebrow: "ESTÚDIO DE MÍDIA · IA", sub: "Pacotes fixos. Preço visível. Entrega em até 48h. Sem reunião, sem proposta, sem surpresa." },
+    heroRight: { label: "BRIEFING PRONTO EM", big: "minutos", sub: "Nossa IA organiza tudo. Você responde 2 perguntas." },
+    heroCta: { title: "Parece escrito por alguém que conhece sua marca há anos.", badges: "SEM REUNIÃO · PREÇO FIXO · REVISÃO INCLUSA", cta: "Começar projeto →", plans: "Ver planos ↓" },
+    ticker: "REVISÃO INCLUSA · PREÇO FIXO EM BRL · ENTREGA GARANTIDA · ÁREA DO CLIENTE · BRIEFING EM MINUTOS · ESTÚDIO DE MÍDIA · IA · LANDING PAGE COPY · SOCIAL MEDIA PACK · EMAIL NURTURE · SEM REUNIÃO",
     portfolio: {
-      label: "PORTFÓLIO",
-      title: "Você já viu esse tipo de conteúdo por aí.",
-      sub: "Posts, copy e e-mails com identidade visual real da sua marca.",
+      label: "O QUE CRIAMOS",
+      title: "CONTEÚDO QUE VENDE. PARA QUALQUER SEGMENTO.",
+      sub: "Da ideia ao post pronto. Criamos peças visuais com IA — revisadas por humanos — que funcionam em qualquer plataforma e nicho.",
       tabs: ["Wellness & Beleza", "Agronegócio", "Tech & Serviços"],
       caption1: "Wellness & Beleza · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
       caption1b: "Entrega completa em 48h",
@@ -21,6 +21,9 @@ const T = {
       caption2b: "Entrega completa em 48h",
       caption3: "Tech & Serviços · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
       caption3b: "Entrega completa em 48h",
+      bottom1: "Gerado com Fal.ai + Ideogram · Revisado pela equipe VOKU",
+      bottom2: "Isto é apenas uma amostra. Criamos conteúdo sob medida para qualquer segmento.",
+      cta: "Quero conteúdo assim",
     },
     products: {
       label: "PRODUTOS",
@@ -34,7 +37,7 @@ const T = {
     },
     process: {
       label: "PROCESSO",
-      title: "Do zero ao pronto.",
+      title: "DO ZERO AO PRONTO.",
       sub: "Sem formulário longo. Sem reunião. Conversa direta com IA que já conhece sua marca.",
       steps: [
         { n: "01", t: "Cole o @ ou o link", d: "Nossa IA já conhece sua marca antes de começar." },
@@ -43,7 +46,14 @@ const T = {
         { n: "04", t: "Aprovado. Entregue.", d: "Download do arquivo final. Pronto para publicar." },
       ],
     },
-    guarantee: { label: "GARANTIA", title: "Não gostou? Refazemos.", body: "Cada projeto inclui revisão por padrão. Se o resultado não atende, refazemos sem custo extra e sem questionamento.", cta: "Começar projeto →" },
+    pricing: {
+      label: "PLANOS",
+      title: "ESCOLHA. COMECE. CRIE.",
+      sub: "Créditos mensais para gerar copy, posts e e-mails com a identidade da sua marca. Sem contrato longo. Cancele quando quiser.",
+      more: "PRECISA DE MAIS?",
+      moreSub: "Compre créditos avulsos sem alterar seu plano. Pagamento único.",
+    },
+    guarantee: { label: "GARANTIA", title: "NÃO GOSTOU? REFAZEMOS.", body: "Cada projeto inclui revisão por padrão. Se o resultado não atende, refazemos sem custo extra e sem questionamento.", cta: "Começar projeto →" },
     footer: {
       desc: "Estúdio de mídia com IA. Conteúdo profissional para marcas que não podem esperar.",
       col2label: "PRODUTOS", col2: ["Landing Page Copy", "Social Media Pack", "Email Nurture"],
@@ -54,12 +64,14 @@ const T = {
   EN: {
     nav: ["Services", "Process", "About"],
     navCta: "Start project",
-    hero: { eyebrow: "Media Studio · AI", sub: "Fixed packages. Visible pricing. Delivery in 48h. No meetings, no proposals, no surprises." },
-    ticker: "Landing Page Copy · Social Media Pack · Email Nurture · No Meetings · Revision Included · Fixed Price · Guaranteed Delivery · Client Dashboard · Briefing in minutes · AI Media Studio",
+    hero: { eyebrow: "MEDIA STUDIO · AI", sub: "Fixed packages. Visible pricing. Delivery in 48h. No meetings, no proposals, no surprises." },
+    heroRight: { label: "BRIEF READY IN", big: "minutes", sub: "Our AI organizes everything. You answer 2 questions." },
+    heroCta: { title: "Looks like it was written by someone who's known your brand for years.", badges: "NO MEETINGS · FIXED PRICE · REVISION INCLUDED", cta: "Start project →", plans: "See plans ↓" },
+    ticker: "REVISION INCLUDED · FIXED PRICE · GUARANTEED DELIVERY · CLIENT DASHBOARD · BRIEFING IN MINUTES · AI MEDIA STUDIO · LANDING PAGE COPY · SOCIAL MEDIA PACK · EMAIL NURTURE · NO MEETINGS",
     portfolio: {
-      label: "PORTFOLIO",
-      title: "You've seen this kind of content before.",
-      sub: "Posts, copy and emails with your brand's real visual identity.",
+      label: "WHAT WE CREATE",
+      title: "CONTENT THAT SELLS. FOR ANY SEGMENT.",
+      sub: "From idea to finished post. We create visual content with AI — reviewed by humans — that works on any platform and niche.",
       tabs: ["Wellness & Beauty", "Agribusiness", "Tech & Services"],
       caption1: "Wellness & Beauty · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
       caption1b: "Full delivery in 48h",
@@ -67,6 +79,9 @@ const T = {
       caption2b: "Full delivery in 48h",
       caption3: "Tech & Services · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
       caption3b: "Full delivery in 48h",
+      bottom1: "Generated with Fal.ai + Ideogram · Reviewed by VOKU team",
+      bottom2: "This is just a sample. We create custom content for any segment.",
+      cta: "I want content like this",
     },
     products: {
       label: "PRODUCTS",
@@ -80,7 +95,7 @@ const T = {
     },
     process: {
       label: "PROCESS",
-      title: "From zero to done.",
+      title: "FROM ZERO TO DONE.",
       sub: "No long forms. No meetings. Direct conversation with AI that already knows your brand.",
       steps: [
         { n: "01", t: "Paste your @ or link", d: "Our AI already knows your brand before you start." },
@@ -89,7 +104,14 @@ const T = {
         { n: "04", t: "Approved. Delivered.", d: "Download the final file. Ready to publish." },
       ],
     },
-    guarantee: { label: "GUARANTEE", title: "Don't like it? We redo it.", body: "Every project includes revision by default. If the result doesn't meet expectations, we redo it at no extra cost.", cta: "Start project →" },
+    pricing: {
+      label: "PLANS",
+      title: "CHOOSE. START. CREATE.",
+      sub: "Monthly credits to generate copy, posts and emails with your brand's identity. No long contracts. Cancel anytime.",
+      more: "NEED MORE?",
+      moreSub: "Buy extra credits without changing your plan. One-time payment.",
+    },
+    guarantee: { label: "GUARANTEE", title: "DON'T LIKE IT? WE REDO IT.", body: "Every project includes revision by default. If the result doesn't meet expectations, we redo it at no extra cost.", cta: "Start project →" },
     footer: {
       desc: "AI-powered media studio. Professional content for brands that can't wait.",
       col2label: "PRODUCTS", col2: ["Landing Page Copy", "Social Media Pack", "Email Nurture"],
@@ -100,12 +122,14 @@ const T = {
   ES: {
     nav: ["Servicios", "Proceso", "Acerca"],
     navCta: "Empezar proyecto",
-    hero: { eyebrow: "Estudio de Medios · IA", sub: "Paquetes fijos. Precio visible. Entrega en 48h. Sin reuniones, sin propuestas, sin sorpresas." },
-    ticker: "Landing Page Copy · Social Media Pack · Email Nurture · Sin Reuniones · Revisión Incluida · Precio Fijo · Entrega Garantizada · Área del Cliente · Briefing en minutos · Estudio de Medios · IA",
+    hero: { eyebrow: "ESTUDIO DE MEDIOS · IA", sub: "Paquetes fijos. Precio visible. Entrega en 48h. Sin reuniones, sin propuestas, sin sorpresas." },
+    heroRight: { label: "BRIEFING LISTO EN", big: "minutos", sub: "Nuestra IA organiza todo. Respondes 2 preguntas." },
+    heroCta: { title: "Parece escrito por alguien que conoce tu marca hace años.", badges: "SIN REUNIÓN · PRECIO FIJO · REVISIÓN INCLUIDA", cta: "Empezar proyecto →", plans: "Ver planes ↓" },
+    ticker: "REVISIÓN INCLUIDA · PRECIO FIJO · ENTREGA GARANTIZADA · ÁREA DEL CLIENTE · BRIEFING EN MINUTOS · ESTUDIO DE MEDIOS · IA · LANDING PAGE COPY · SOCIAL MEDIA PACK · EMAIL NURTURE · SIN REUNIONES",
     portfolio: {
-      label: "PORTAFOLIO",
-      title: "Ya viste este tipo de contenido por ahí.",
-      sub: "Posts, copy y emails con la identidad visual real de tu marca.",
+      label: "LO QUE CREAMOS",
+      title: "CONTENIDO QUE VENDE. PARA CUALQUIER SEGMENTO.",
+      sub: "De la idea al post listo. Creamos piezas visuales con IA — revisadas por humanos — que funcionan en cualquier plataforma y nicho.",
       tabs: ["Wellness & Belleza", "Agronegocio", "Tech & Servicios"],
       caption1: "Wellness & Belleza · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
       caption1b: "Entrega completa en 48h",
@@ -113,6 +137,9 @@ const T = {
       caption2b: "Entrega completa en 48h",
       caption3: "Tech & Servicios · Social Media Pack (12 posts) + Landing Page Copy + Email Nurture",
       caption3b: "Entrega completa en 48h",
+      bottom1: "Generado con Fal.ai + Ideogram · Revisado por el equipo VOKU",
+      bottom2: "Esto es solo una muestra. Creamos contenido a medida para cualquier segmento.",
+      cta: "Quiero contenido así",
     },
     products: {
       label: "PRODUCTOS",
@@ -126,7 +153,7 @@ const T = {
     },
     process: {
       label: "PROCESO",
-      title: "De cero a listo.",
+      title: "DE CERO A LISTO.",
       sub: "Sin formularios largos. Sin reuniones. Conversación directa con IA que ya conoce tu marca.",
       steps: [
         { n: "01", t: "Pega tu @ o link", d: "Nuestra IA ya conoce tu marca antes de empezar." },
@@ -135,7 +162,14 @@ const T = {
         { n: "04", t: "Aprobado. Entregado.", d: "Descarga del archivo final. Listo para publicar." },
       ],
     },
-    guarantee: { label: "GARANTÍA", title: "¿No te gustó? Lo rehacemos.", body: "Cada proyecto incluye revisión por defecto. Si el resultado no cumple, lo rehacemos sin costo extra.", cta: "Empezar proyecto →" },
+    pricing: {
+      label: "PLANES",
+      title: "ELIGE. EMPIEZA. CREA.",
+      sub: "Créditos mensuales para generar copy, posts y emails con la identidad de tu marca. Sin contrato largo. Cancela cuando quieras.",
+      more: "¿NECESITAS MÁS?",
+      moreSub: "Compra créditos sueltos sin cambiar tu plan. Pago único.",
+    },
+    guarantee: { label: "GARANTÍA", title: "¿NO TE GUSTÓ? LO REHACEMOS.", body: "Cada proyecto incluye revisión por defecto. Si el resultado no cumple, lo rehacemos sin costo extra.", cta: "Empezar proyecto →" },
     footer: {
       desc: "Estudio de medios con IA. Contenido profesional para marcas que no pueden esperar.",
       col2label: "PRODUCTOS", col2: ["Landing Page Copy", "Social Media Pack", "Email Nurture"],
@@ -145,7 +179,7 @@ const T = {
   },
 };
 
-/* ─── Portfolio data ─── */
+/* ─── Portfolio images (Supabase) ─── */
 const STORAGE = "https://movfynswogmookzcjijt.supabase.co/storage/v1/object/public/imagens/portfolio";
 const IMG = {
   skincare: `${STORAGE}/skincare-01.png`,
@@ -156,48 +190,31 @@ const IMG = {
   product: `${STORAGE}/product-06.png`,
 };
 
-const TABS_DATA = [
-  {
-    accent: "#B06080", accentBg: "#3D1A24", dark: "#3D1A24",
-    row1: [
-      { type: "photo", src: IMG.skincare, span: 2, pill: "Conversão", pillBg: "#AAFF00", pillColor: "#111", tag: "Post Estático · Instagram", copy: "Sua pele merece ingredientes reais." },
-      { type: "card", bg: "#3D1A24", label: "02 — Carrossel", headline: "5 erros que você comete na sua rotina de beleza.", accentWord: "Slide 1 →", accentColor: "#FFB3C6", progress: 5, progressColor: "#FFB3C6", tags: ["#skincare", "#beautycare", "#dicas"], tagColor: "#2a1018" },
-      { type: "photo", src: IMG.drink, span: 1, pill: "Educação", pillBg: "#fff", pillColor: "#111", tag: "Reel · 30s", copy: "O que eu tomo toda manhã pra ter essa energia." },
-    ],
-    row2: [
-      { type: "lp", bg: "#F5F0E8", label: "Landing Page Copy · 24h", hook: "Sua pele merece ingredientes que você consegue pronunciar.", body: "Fórmulas limpas, aprovadas por dermatologistas, com resultados visíveis em 14 dias.", bullets: ["Ingredientes 100% naturais", "Resultados em 14 dias", "Frete grátis acima de R$99"], accent: "#B06080", ctaText: "Quero pele saudável →" },
-      { type: "photo", src: IMG.wellness, span: 1, pill: "Bastidores", pillBg: "#fff", pillColor: "#111", tag: "Story · Série", copy: "Como nasce cada fórmula." },
-      { type: "email", bg: "#fff", label: "E-mail 1 · Dia 0 · Email Nurture", subject: "Você se inscreveu por um motivo. Vamos cuidar disso juntos.", body: "Bem-vinda à comunidade de quem cuida da pele de verdade.", bullets: ["Rotina personalizada em 3 passos", "Desconto de boas-vindas: 15%", "Acesso ao grupo exclusivo"], accent: "#B06080", ctaText: "Começar minha rotina →", footer: "Studio Marca · Cancelar inscrição" },
-    ],
-  },
-  {
-    accent: "#ED1C24", accentBg: "#0A1628", dark: "#0A1628",
-    row1: [
-      { type: "photo", src: IMG.agro, span: 2, pill: "Conversão", pillBg: "#ED1C24", pillColor: "#fff", tag: "Post Estático · Instagram", copy: "Rebanho que produz mais. Investimento que retorna mais rápido." },
-      { type: "card", bg: "#0A1628", label: "02 — Dados", headline: "Genética de elite não é luxo.", accentWord: "É lucro.", accentColor: "#ED1C24", stats: [{ n: "+15%", l: "produção" }, { n: "-20%", l: "custo" }, { n: "1ª", l: "geração" }], statsColor: "#ED1C24" },
-      { type: "photo", src: IMG.tech, span: 1, pill: "Educação", pillBg: "#fff", pillColor: "#111", tag: "Carrossel · 7 slides", copy: "Os 5 indicadores que todo pecuarista deveria acompanhar." },
-    ],
-    row2: [
-      { type: "lp", bg: "#0A1628", color: "#fff", label: "Landing Page Copy · 24h", labelColor: "#345", hook: "Genética comprovada. Resultados mensuráveis desde a primeira geração.", hookColor: "#fff", body: "Touros testados, dados reais, suporte técnico dedicado.", bodyColor: "#789", bullets: ["Genealogias 100% rastreáveis", "ROI comprovado: +R$8-12 mil/vaca/ano", "Consultoria personalizada inclusa"], accent: "#ED1C24", ctaText: "Conhecer touros →", ctaBg: "#ED1C24", ctaColor: "#fff" },
-      { type: "photo", src: IMG.product, span: 1, pill: "Bastidores", pillBg: "#fff", pillColor: "#111", tag: "Story · Bastidores", copy: "Por dentro da certificação." },
-      { type: "email", bg: "#0d1f38", color: "#fff", label: "E-mail 1 · Dia 0 · Email Nurture", labelColor: "#345", subject: "Você pediu. A genética que transforma rebanhos está aqui.", subjectColor: "#fff", body: "Bem-vindo ao programa de genética de elite.", bodyColor: "#678", bullets: ["Catálogo completo de touros", "Consultoria gratuita agendada", "Cases de produtores parceiros"], accent: "#ED1C24", ctaText: "Ver catálogo →", ctaBg: "#ED1C24", ctaColor: "#fff", footer: "Select Sires · Cancelar inscrição", footerColor: "#234" },
-    ],
-    captionBg: "#060E1A", captionColor: "#345",
-  },
-  {
-    accent: "#4FC3F7", accentBg: "#0F1B2D", dark: "#0F1B2D",
-    row1: [
-      { type: "photo", src: IMG.tech, span: 2, pill: "Educação", pillBg: "#4FC3F7", pillColor: "#0F1B2D", tag: "Post Estático · LinkedIn", copy: "Como a sua equipe pode entregar 3x mais sem trabalhar mais horas." },
-      { type: "card", bg: "#0F1B2D", label: "02 — Insight", headline: "Seu time é bom.", accentWord: "A comunicação é o gargalo.", accentColor: "#4FC3F7" },
-      { type: "photo", src: IMG.skincare, span: 1, pill: "Prova Social", pillBg: "#fff", pillColor: "#111", tag: "Reel · 60s", copy: "3 ferramentas que mudaram nossa produtividade." },
-    ],
-    row2: [
-      { type: "lp", bg: "#0F1B2D", color: "#fff", label: "Landing Page Copy · 24h", labelColor: "#345", hook: "Sua equipe merece ferramentas que funcionam juntas.", hookColor: "#fff", body: "Integrações inteligentes, automação sem código, resultados em semanas.", bodyColor: "#789", bullets: ["Setup em 5 dias úteis", "Integração com 50+ ferramentas", "Suporte dedicado por 30 dias"], accent: "#4FC3F7", ctaText: "Agendar demo →", ctaBg: "#4FC3F7", ctaColor: "#0F1B2D" },
-      { type: "photo", src: IMG.wellness, span: 1, pill: "Bastidores", pillBg: "#fff", pillColor: "#111", tag: "Story · Série", copy: "Um dia na nossa sprint." },
-      { type: "email", bg: "#0A1221", color: "#fff", label: "E-mail 1 · Dia 0 · Email Nurture", labelColor: "#234", subject: "Você pediu. A automação que liberta sua equipe começa aqui.", subjectColor: "#fff", body: "Bem-vindo ao programa de produtividade inteligente.", bodyColor: "#567", bullets: ["Diagnóstico gratuito de processos", "Roadmap personalizado", "Acesso antecipado a features"], accent: "#4FC3F7", ctaText: "Ver diagnóstico →", ctaBg: "#4FC3F7", ctaColor: "#0F1B2D", footer: "TechCorp · Cancelar inscrição", footerColor: "#234" },
-    ],
-    captionBg: "#060E1A", captionColor: "#345",
-  },
+const SHOWCASE = [
+  { type: "REELS", niche: "SKINCARE", title: "Reels de produto com sérum anti-aging para marca de beleza.", image: IMG.skincare, span: "md:col-span-1 md:row-span-2" },
+  { type: "POST INSTAGRAM", niche: "GASTRONOMIA", title: "Post de feed para restaurante gourmet com fotografia de produto.", image: IMG.drink, span: "md:col-span-1 md:row-span-1" },
+  { type: "LANDING PAGE", niche: "MODA", title: "Landing page e-commerce para marca de streetwear.", image: IMG.agro, span: "md:col-span-2 md:row-span-1" },
+  { type: "CARROSSEL", niche: "FITNESS", title: "Carrossel educativo com dicas de treino para personal trainer.", image: IMG.wellness, span: "md:col-span-1 md:row-span-1" },
+  { type: "STORIES", niche: "IMOBILIÁRIO", title: "Stories de lançamento imobiliário com CTA de swipe up.", image: IMG.tech, span: "md:col-span-1 md:row-span-2" },
+  { type: "EMAIL MARKETING", niche: "BELEZA", title: "Newsletter de lançamento para marca premium de skincare.", image: IMG.product, span: "md:col-span-1 md:row-span-1" },
+  { type: "POST INSTAGRAM", niche: "ARQUITETURA", title: "Post para estúdio de design de interiores corporativo.", image: IMG.skincare, span: "md:col-span-1 md:row-span-1" },
+  { type: "LANDING PAGE", niche: "INTERIORES", title: "Landing page para captação de leads no segmento corporativo.", image: IMG.agro, span: "md:col-span-2 md:row-span-1" },
+];
+
+const CONTENT_TYPES = ["Posts", "Reels", "Stories", "Carrosséis", "Landing Pages", "E-mails"];
+
+/* ─── Plans + Stripe links ─── */
+const PLANS = [
+  { label: "STARTER", price: "R$149", credits: "100 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Entrega em 24–48h"], href: "https://buy.stripe.com/fZu7sE33MgDL7Zu1324gg06", highlighted: false },
+  { label: "PRO", price: "R$397", credits: "300 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Entrega em 24–48h", "Suporte prioritário por e-mail"], href: "https://buy.stripe.com/bJe14g47Q73bfrW6nm4gg0a", highlighted: false },
+  { label: "BUSINESS", price: "R$897", credits: "800 créditos/mês", badge: "Mais popular", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Volume para múltiplos projetos", "Histórico completo de entregas", "Suporte prioritário por e-mail"], href: "https://buy.stripe.com/6oUfZa7k20ENcfKcLK4gg07", highlighted: true },
+  { label: "ENTERPRISE", price: "R$1.997", credits: "2.000 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Volume para múltiplos projetos", "Histórico completo de entregas", "Suporte prioritário por e-mail", "Onboarding dedicado", "SLA garantido"], href: "https://buy.stripe.com/5kQcMY6fYdrz4Ni7rq4gg09", highlighted: false, ctaLabel: "Falar com a equipe →" },
+];
+
+const CREDIT_PACKS = [
+  { n: "50", price: "R$49", href: "https://buy.stripe.com/eVq8wI33M87fcfKfXW4gg01" },
+  { n: "200", price: "R$149", href: "https://buy.stripe.com/8x200ceMugDLenSaDC4gg08" },
+  { n: "500", price: "R$297", href: "https://buy.stripe.com/6oU9AMdIq1IRgw02764gg02" },
 ];
 
 /* ─── Hooks ─── */
@@ -214,135 +231,8 @@ function useReveal(delay = 0) {
   return [ref, vis];
 }
 
-/* ─── Sub-components ─── */
-
-function PhotoCell({ item, height }) {
-  return (
-    <div style={{ position: "relative", gridColumn: item.span === 2 ? "span 2" : "span 1", height, overflow: "hidden", borderRadius: 2 }}>
-      <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)" }} />
-      {item.pill && <div style={{ position: "absolute", top: 12, left: 12, background: item.pillBg, color: item.pillColor, fontSize: 8, fontWeight: 700, letterSpacing: 2, padding: "4px 10px", textTransform: "uppercase" }}>{item.pill}</div>}
-      <div style={{ position: "absolute", bottom: 16, left: 16, right: 16 }}>
-        <div style={{ fontSize: 7, fontWeight: 600, letterSpacing: 2, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", marginBottom: 6 }}>{item.tag}</div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", lineHeight: 1.4 }}>{item.copy}</div>
-      </div>
-    </div>
-  );
-}
-
-function CardCell({ item }) {
-  return (
-    <div style={{ background: item.bg, padding: 28, display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: 2 }}>
-      <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 2, color: "#444", textTransform: "uppercase", marginBottom: 16 }}>{item.label}</div>
-      <div>
-        <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 16 }}>
-          {item.headline}
-          {item.accentWord && <><br /><span style={{ color: item.accentColor }}>{item.accentWord}</span></>}
-        </div>
-        {item.progress && (
-          <div style={{ display: "flex", gap: 3, marginBottom: 12 }}>
-            {Array.from({ length: item.progress }, (_, i) => (
-              <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i === 0 ? item.progressColor : "rgba(255,255,255,0.1)" }} />
-            ))}
-          </div>
-        )}
-        {item.stats && (
-          <div style={{ display: "flex", gap: 16, marginBottom: 12 }}>
-            {item.stats.map((s, i) => (
-              <div key={i} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: item.statsColor }}>{s.n}</div>
-                <div style={{ fontSize: 9, color: "#888" }}>{s.l}</div>
-              </div>
-            ))}
-          </div>
-        )}
-        {item.tags && (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {item.tags.map((tag, i) => <span key={i} style={{ fontSize: 9, color: item.tagColor, fontWeight: 600 }}>{tag}</span>)}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function LPCell({ item }) {
-  return (
-    <div style={{ background: item.bg, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: 2 }}>
-      <div>
-        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: 2, color: item.labelColor || "#BBB", textTransform: "uppercase", marginBottom: 12 }}>{item.label}</div>
-        <div style={{ fontSize: 16, fontWeight: 900, color: item.hookColor || "#111", lineHeight: 1.3, marginBottom: 12 }}>{item.hook}</div>
-        <div style={{ fontSize: 12, color: item.bodyColor || "#666", lineHeight: 1.7, marginBottom: 16 }}>{item.body}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
-          {item.bullets.map((b, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: item.bodyColor || "#666" }}>
-              <span style={{ color: item.accent, fontWeight: 700 }}>→</span>{b}
-            </div>
-          ))}
-        </div>
-      </div>
-      <button style={{ background: item.ctaBg || item.accent, color: item.ctaColor || "#fff", border: "none", padding: "10px 20px", fontSize: 11, fontWeight: 700, fontFamily: FF, cursor: "pointer" }}>{item.ctaText}</button>
-    </div>
-  );
-}
-
-function EmailCell({ item }) {
-  return (
-    <div style={{ background: item.bg, padding: 24, display: "flex", flexDirection: "column", justifyContent: "space-between", borderRadius: 2 }}>
-      <div>
-        <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: 2, color: item.labelColor || "#CCC", textTransform: "uppercase", marginBottom: 12 }}>{item.label}</div>
-        <div style={{ fontSize: 15, fontWeight: 900, color: item.subjectColor || "#111", lineHeight: 1.3, marginBottom: 12 }}>{item.subject}</div>
-        <div style={{ fontSize: 11, color: item.bodyColor || "#888", lineHeight: 1.7, marginBottom: 16 }}>{item.body}</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20 }}>
-          {item.bullets.map((b, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, alignItems: "center", fontSize: 11, color: item.bodyColor || "#888" }}>
-              <span style={{ color: item.accent, fontWeight: 700 }}>→</span>{b}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div>
-        <button style={{ background: item.ctaBg || item.accent, color: item.ctaColor || "#fff", border: "none", padding: "10px 20px", fontSize: 11, fontWeight: 700, fontFamily: FF, cursor: "pointer", marginBottom: 12, width: "100%" }}>{item.ctaText}</button>
-        {item.footer && <div style={{ fontSize: 9, color: item.footerColor || "#aaa", textAlign: "center", paddingTop: 8, borderTop: `1px solid ${item.footerColor || "rgba(0,0,0,0.1)"}` }}>{item.footer}</div>}
-      </div>
-    </div>
-  );
-}
-
-function PortfolioGrid({ tab, caption, captionB }) {
-  const data = TABS_DATA[tab];
-  if (!data) return null;
-  return (
-    <div>
-      {/* Row 1 */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 2, marginBottom: 2 }}>
-        {data.row1.map((item, i) => {
-          if (item.type === "photo") return <PhotoCell key={i} item={item} height={420} />;
-          if (item.type === "card") return <CardCell key={i} item={item} />;
-          return null;
-        })}
-      </div>
-      {/* Row 2 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 2, marginBottom: 2 }}>
-        {data.row2.map((item, i) => {
-          if (item.type === "photo") return <PhotoCell key={i} item={item} height={340} />;
-          if (item.type === "lp") return <LPCell key={i} item={item} />;
-          if (item.type === "email") return <EmailCell key={i} item={item} />;
-          return null;
-        })}
-      </div>
-      {/* Caption */}
-      <div style={{ background: data.captionBg || "#F5F0E8", padding: "14px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: data.captionColor || "#888" }}>{caption}</span>
-        <span style={{ fontSize: 11, fontWeight: 700, color: data.captionColor || "#888" }}>{captionB}</span>
-      </div>
-    </div>
-  );
-}
-
-/* ─── Logo SVG ─── */
+/* ─── Logo ─── */
 function LogoIcon({ size = 20 }) {
-  const s = size / 4;
   return (
     <svg width={size} height={size} viewBox="0 0 20 20" fill="none">
       <rect x="1" y="1" width="7.5" height="7.5" rx="1" fill="#AAFF00" />
@@ -361,7 +251,7 @@ const BETA_MODE = true;
 
 export default function VokuLanding() {
   const [lang, setLang] = useState("PT");
-  const [portfolioTab, setPortfolioTab] = useState(0);
+  const [mobileMenu, setMobileMenu] = useState(false);
   const [betaModal, setBetaModal] = useState(false);
 
   const handleCta = (e) => { if (BETA_MODE) { e.preventDefault(); setBetaModal(true); } };
@@ -375,279 +265,362 @@ export default function VokuLanding() {
 
   const t = T[lang];
   const [portfolioRef, portfolioVis] = useReveal(0);
-  const [productsRef, productsVis] = useReveal(0);
+  const [pricingRef, pricingVis] = useReveal(0);
   const [processRef, processVis] = useReveal(0);
   const [guaranteeRef, guaranteeVis] = useReveal(0);
 
   const rv = (vis, d = 0) => ({ opacity: vis ? 1 : 0, transform: vis ? "translateY(0)" : "translateY(16px)", transition: `opacity 0.5s ease ${d}s, transform 0.5s ease ${d}s` });
 
   return (
-    <div style={{ fontFamily: FF, background: "#F5F0E8", color: "#111" }}>
+    <div className="voku-landing min-h-screen">
 
-      {/* ══ NAV ══ */}
-      <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "#F5F0E8", borderBottom: "1px solid rgba(0,0,0,0.08)", padding: "0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <LogoIcon size={18} />
-          <span style={{ fontWeight: 900, fontSize: 16, letterSpacing: -1 }}>VOKU</span>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          {t.nav.map((n, i) => <a key={i} href={`#s${i}`} style={{ fontSize: 11, color: "#888", textDecoration: "none", fontWeight: 500 }}>{n}</a>)}
-          <div style={{ display: "flex", gap: 0, border: "1px solid rgba(0,0,0,0.12)" }}>
-            {["PT", "EN", "ES"].map(l => (
-              <button key={l} onClick={() => setLang(l)} style={{ fontFamily: FF, fontSize: 10, fontWeight: 700, padding: "6px 12px", border: "none", cursor: "pointer", background: lang === l ? "#111" : "transparent", color: lang === l ? "#AAFF00" : "#888" }}>{l}</button>
-            ))}
+      {/* ══ NAVBAR ══ */}
+      <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b" style={{ background: "hsl(40 23% 95% / 0.9)", borderColor: "hsl(40 10% 85%)" }}>
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2">
+            <LogoIcon size={18} />
+            <span className="text-lg font-bold tracking-tight">VOKU</span>
+          </a>
+
+          <div className="voku-nav-desktop hidden md:flex items-center gap-8">
+            <a href="#servicos" className="text-sm hover:opacity-100 transition-colors" style={{ color: "hsl(0 0% 40%)" }}>
+              {t.nav[0]}
+            </a>
+            <a href="#processo" className="text-sm hover:opacity-100 transition-colors" style={{ color: "hsl(0 0% 40%)" }}>
+              {t.nav[1]}
+            </a>
+            <a href="#sobre" className="text-sm hover:opacity-100 transition-colors" style={{ color: "hsl(0 0% 40%)" }}>
+              {t.nav[2]}
+            </a>
+
+            {/* Language switcher */}
+            <div className="flex items-center gap-0 border rounded-full overflow-hidden text-xs" style={{ borderColor: "hsl(40 10% 85%)" }}>
+              {["PT", "EN", "ES"].map(l => (
+                <button key={l} onClick={() => setLang(l)}
+                  className="px-3 py-1.5 font-medium transition-colors"
+                  style={{ background: lang === l ? "hsl(0 0% 10%)" : "transparent", color: lang === l ? "hsl(40 23% 95%)" : "hsl(0 0% 40%)", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "0.75rem" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            <a href="/cliente" onClick={handleCta} className="voku-btn-outline text-xs py-2.5 px-5">
+              {t.navCta}
+            </a>
           </div>
-          <a href="/cliente" onClick={handleCta} style={{ background: "#111", color: "#AAFF00", padding: "9px 20px", fontSize: 11, fontWeight: 700, textDecoration: "none", letterSpacing: 0.5 }}>{t.navCta}</a>
+
+          {/* Mobile menu button */}
+          <button className="voku-nav-mobile-btn md:hidden" style={{ display: "none", background: "none", border: "none", cursor: "pointer" }} onClick={() => setMobileMenu(!mobileMenu)}>
+            <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2"><path d={mobileMenu ? "M6 6l12 12M6 18L18 6" : "M3 12h18M3 6h18M3 18h18"} /></svg>
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenu && (
+          <div className="md:hidden px-6 py-6 flex flex-col gap-4 border-t" style={{ background: "hsl(40 23% 95%)", borderColor: "hsl(40 10% 85%)" }}>
+            <a href="#servicos" className="text-sm" onClick={() => setMobileMenu(false)}>{t.nav[0]}</a>
+            <a href="#processo" className="text-sm" onClick={() => setMobileMenu(false)}>{t.nav[1]}</a>
+            <a href="#sobre" className="text-sm" onClick={() => setMobileMenu(false)}>{t.nav[2]}</a>
+            <div className="flex gap-0 border rounded-full overflow-hidden text-xs w-fit" style={{ borderColor: "hsl(40 10% 85%)" }}>
+              {["PT", "EN", "ES"].map(l => (
+                <button key={l} onClick={() => setLang(l)} className="px-3 py-1.5 font-medium"
+                  style={{ background: lang === l ? "hsl(0 0% 10%)" : "transparent", color: lang === l ? "hsl(40 23% 95%)" : "hsl(0 0% 40%)", border: "none", cursor: "pointer", fontFamily: "inherit", fontSize: "0.75rem" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+            <a href="/cliente" onClick={handleCta} className="voku-btn-primary text-center text-xs" style={{ padding: "12px 20px" }}>
+              {t.navCta}
+            </a>
+          </div>
+        )}
       </nav>
 
-      {/* ══ HERO ══ */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", minHeight: "calc(100vh - 56px)" }}>
+      {/* ══ HERO — Split Screen ══ */}
+      <section className="min-h-screen pt-20 grid grid-cols-1 lg:grid-cols-2 voku-hero-grid">
         {/* Left */}
-        <div style={{ padding: "64px 48px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40 }}>
-            <div style={{ width: 32, height: 1, background: "#111" }} />
-            <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: 3, color: "#888", textTransform: "uppercase" }}>{t.hero.eyebrow}</span>
-          </div>
-          <h1 style={{ fontSize: "clamp(52px,6vw,84px)", fontWeight: 900, lineHeight: 0.95, letterSpacing: -3, textTransform: "uppercase", margin: 0 }}>
-            <span style={{ WebkitTextStroke: "1.5px #111", color: "transparent", display: "block" }}>SEU</span>
-            <span style={{ WebkitTextStroke: "1.5px #111", color: "transparent", display: "block" }}>CONTEÚDO.</span>
-            <span style={{ color: "#111", display: "block" }}>PRONTO.</span>
+        <div className="flex flex-col justify-center px-8 md:px-16 lg:px-20 py-20">
+          <p className="voku-text-subheading mb-8 flex items-center gap-3">
+            <span className="w-8 h-px" style={{ background: "hsl(0 0% 40%)" }} />
+            {t.hero.eyebrow}
+          </p>
+          <h1 className="voku-text-display">
+            SEU<br />
+            <span style={{ opacity: 0.3 }}>CONTEÚDO.</span><br />
+            <span className="font-black">PRONTO.</span>
           </h1>
-          <div style={{ width: "100%", height: 1, background: "rgba(0,0,0,0.12)", margin: "32px 0" }} />
-          <p style={{ fontSize: 13, color: "#555", lineHeight: 1.75, maxWidth: 340, margin: 0 }}>{t.hero.sub}</p>
-        </div>
-        {/* Right — 2 stacked cells */}
-        <div style={{ display: "grid", gridTemplateRows: "1fr 1fr" }}>
-          <div style={{ background: "#111", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: 3, color: "#444", textTransform: "uppercase", marginBottom: 8 }}>{lang === "PT" ? "Briefing pronto em" : lang === "ES" ? "Briefing listo en" : "Brief ready in"}</div>
-            <div style={{ fontSize: 72, fontWeight: 900, color: "#AAFF00", letterSpacing: -3, lineHeight: 1 }}>{lang === "PT" ? "minutos" : lang === "ES" ? "minutos" : "minutes"}</div>
-            <div style={{ fontSize: 11, color: "#555", marginTop: 8 }}>{lang === "PT" ? "Nossa IA organiza tudo. Você responde 2 perguntas." : lang === "ES" ? "Nuestra IA organiza todo. Respondes 2 preguntas." : "Our AI organizes everything. You answer 2 questions."}</div>
+          <div className="mt-12">
+            <div className="w-full h-px mb-8" style={{ background: "hsl(40 10% 85%)" }} />
+            <p className="text-sm leading-relaxed max-w-sm" style={{ color: "hsl(0 0% 40%)" }}>
+              {t.hero.sub}
+            </p>
           </div>
-          <div style={{ background: "#AAFF00", padding: 48, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-            <div style={{ fontSize: 16, fontWeight: 900, color: "#111", lineHeight: 1.4, maxWidth: 320, marginBottom: 16 }}>
-              {lang === "PT" ? "Parece escrito por alguém que conhece sua marca há anos." : lang === "ES" ? "Parece escrito por alguien que conoce tu marca hace años." : "Looks like it was written by someone who's known your brand for years."}
-            </div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(0,0,0,0.5)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 20 }}>
-              {lang === "PT" ? "Sem reunião · Preço fixo · Revisão inclusa" : lang === "ES" ? "Sin reunión · Precio fijo · Revisión incluida" : "No meetings · Fixed price · Revision included"}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <a href="/cliente" onClick={handleCta} style={{ display: "inline-block", background: "#111", color: "#AAFF00", padding: "14px 28px", fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>{t.navCta} →</a>
-              <a href="#planos" style={{ fontSize: 11, color: "#111", opacity: 0.6, textDecoration: "none", textAlign: "center" }}>{lang === "PT" ? "Ver planos ↓" : lang === "ES" ? "Ver planes ↓" : "See plans ↓"}</a>
-            </div>
+        </div>
+
+        {/* Right — Dark side */}
+        <div className="voku-surface-dark flex flex-col">
+          <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-20 py-20">
+            <p className="voku-text-subheading mb-4" style={{ color: "hsl(40 23% 95% / 0.5)" }}>
+              {t.heroRight.label}
+            </p>
+            <h2 className="text-6xl md:text-8xl lg:text-9xl font-black leading-none" style={{ color: "#AAFF00" }}>
+              {t.heroRight.big}
+            </h2>
+            <p className="mt-6 text-sm max-w-sm" style={{ color: "hsl(40 23% 95% / 0.5)" }}>
+              {t.heroRight.sub}
+            </p>
+          </div>
+
+          {/* Bottom lime card */}
+          <div className="voku-surface-lime px-8 md:px-16 lg:px-20 py-12">
+            <h3 className="text-lg md:text-xl font-bold leading-tight max-w-md mb-3">
+              {t.heroCta.title}
+            </h3>
+            <p className="text-xs uppercase tracking-[0.15em] opacity-70 mb-8">
+              {t.heroCta.badges}
+            </p>
+            <a href="/cliente" onClick={handleCta} className="block w-full text-center py-4 font-semibold text-sm hover:opacity-90 transition-opacity" style={{ background: "hsl(0 0% 10%)", color: "hsl(40 23% 95%)", textDecoration: "none" }}>
+              {t.heroCta.cta}
+            </a>
+            <a href="#planos" className="block text-center mt-4 text-sm opacity-70 hover:opacity-100 transition-opacity" style={{ textDecoration: "none", color: "inherit" }}>
+              {t.heroCta.plans}
+            </a>
           </div>
         </div>
       </section>
 
-      {/* ══ TICKER ══ */}
-      <div style={{ background: "#111", padding: "12px 0", overflow: "hidden", whiteSpace: "nowrap" }}>
-        <div style={{ display: "inline-block", animation: "ticker 30s linear infinite" }}>
-          {[0, 1].map(i => (
-            <span key={i} style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#AAFF00", textTransform: "uppercase", paddingRight: 48 }}>
-              {t.ticker} &nbsp;&nbsp;·&nbsp;&nbsp; {t.ticker} &nbsp;&nbsp;·&nbsp;&nbsp;
+      {/* ══ MARQUEE ══ */}
+      <div className="voku-surface-dark py-3 overflow-hidden" style={{ borderTop: "1px solid rgba(170,255,0,0.3)", borderBottom: "1px solid rgba(170,255,0,0.3)" }}>
+        <div className="voku-animate-marquee flex whitespace-nowrap">
+          {[0, 1].map(r => (
+            <span key={r} className="text-xs uppercase tracking-[0.15em] font-medium mx-2" style={{ color: "#AAFF00" }}>
+              {t.ticker} &nbsp;&nbsp;·&nbsp;&nbsp;
             </span>
           ))}
         </div>
       </div>
 
       {/* ══ PORTFOLIO ══ */}
-      <section id="s0" ref={portfolioRef} style={{ padding: "56px 48px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ ...rv(portfolioVis), marginBottom: 12 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 12 }}>{t.portfolio.label}</div>
-            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05 }}>{t.portfolio.title}</h2>
-          </div>
-          <p style={{ ...rv(portfolioVis, 0.1), fontSize: 14, color: "#666", lineHeight: 1.75, marginBottom: 24 }}>{t.portfolio.sub}</p>
-
-          {/* Tabs */}
-          <div style={{ ...rv(portfolioVis, 0.15), display: "flex", gap: 32, marginBottom: 16, borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-            {t.portfolio.tabs.map((tab, i) => (
-              <button key={i} onClick={() => setPortfolioTab(i)} style={{
-                fontFamily: FF, fontSize: 13, fontWeight: portfolioTab === i ? 700 : 500,
-                color: portfolioTab === i ? "#111" : "#888", background: "none", border: "none",
-                borderBottom: portfolioTab === i ? "2px solid #111" : "2px solid transparent",
-                padding: "12px 0", cursor: "pointer", marginBottom: -1,
-              }}>{tab}</button>
+      <section id="servicos" ref={portfolioRef} className="py-24 px-6 md:px-16 lg:px-20 max-w-7xl mx-auto">
+        <div className="mb-12" style={rv(portfolioVis)}>
+          <p className="voku-text-subheading mb-4">{t.portfolio.label}</p>
+          <h2 className="voku-text-heading max-w-4xl">{t.portfolio.title}</h2>
+          <p className="text-sm mt-4 max-w-xl" style={{ color: "hsl(0 0% 40%)" }}>
+            {t.portfolio.sub}
+          </p>
+          <div className="flex flex-wrap gap-2 mt-6">
+            {CONTENT_TYPES.map(type => (
+              <span key={type} className="text-[10px] uppercase tracking-wider font-semibold border px-3 py-1.5 rounded-full" style={{ borderColor: "hsl(40 10% 85%)", color: "hsl(0 0% 40%)" }}>
+                {type}
+              </span>
             ))}
           </div>
+        </div>
 
-          {/* Grid */}
-          <div style={{ ...rv(portfolioVis, 0.2) }}>
-            <PortfolioGrid
-              tab={portfolioTab}
-              caption={t.portfolio[`caption${portfolioTab + 1}`]}
-              captionB={t.portfolio[`caption${portfolioTab + 1}b`]}
-            />
+        {/* Showcase grid */}
+        <div className="voku-portfolio-grid grid grid-cols-1 md:grid-cols-3 auto-rows-[260px] gap-3" style={rv(portfolioVis, 0.15)}>
+          {SHOWCASE.map((item, i) => (
+            <div key={i} className={`${item.span} relative rounded-lg overflow-hidden voku-portfolio-item cursor-pointer group`}>
+              <img src={item.image} alt={item.title} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+              <div className="voku-overlay absolute inset-0" style={{ background: "linear-gradient(to top, hsl(0 0% 10% / 0.9), hsl(0 0% 10% / 0.3) 50%, transparent)" }} />
+              <div className="absolute top-3 left-3 z-10 flex gap-1.5">
+                <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider" style={{ background: "#AAFF00", color: "hsl(0 0% 5%)" }}>{item.type}</span>
+                <span className="text-[10px] px-2.5 py-1 rounded-full font-medium uppercase tracking-wider" style={{ background: "hsl(0 0% 10% / 0.8)", color: "hsl(40 23% 95%)" }}>{item.niche}</span>
+              </div>
+              <div className="voku-hover-text absolute bottom-0 left-0 right-0 p-5 z-10">
+                <h3 className="text-sm md:text-base font-bold leading-tight" style={{ color: "hsl(40 23% 95%)" }}>{item.title}</h3>
+              </div>
+              <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(to top, hsl(0 0% 10% / 0.4), transparent)" }} />
+            </div>
+          ))}
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="mt-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6" style={rv(portfolioVis, 0.25)}>
+          <div>
+            <p className="text-xs" style={{ color: "hsl(0 0% 40%)" }}>{t.portfolio.bottom1}</p>
+            <p className="text-xs mt-1" style={{ color: "hsl(0 0% 40%)" }}>{t.portfolio.bottom2}</p>
           </div>
+          <a href="/cliente" onClick={handleCta} className="inline-flex items-center gap-2 text-xs font-semibold px-6 py-3 rounded-full shrink-0 transition-all duration-300" style={{ background: "hsl(0 0% 10%)", color: "hsl(40 23% 95%)", textDecoration: "none" }}>
+            {t.portfolio.cta} <span>→</span>
+          </a>
         </div>
       </section>
 
-      {/* ══ PLANOS ══ */}
-      <section id="planos" ref={productsRef} style={{ padding: "56px 48px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div style={{ ...rv(productsVis), marginBottom: 32 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 16 }}>PLANOS</div>
-            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", margin: 0, lineHeight: 1.05, marginBottom: 12 }}>Escolha. Comece. Crie.</h2>
-            <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, maxWidth: 560, margin: 0 }}>Créditos mensais para gerar copy, posts e e-mails com a identidade da sua marca. Sem contrato longo. Cancele quando quiser.</p>
-          </div>
+      {/* ══ PRICING ══ */}
+      <section id="planos" ref={pricingRef} className="py-24 px-6 md:px-16 lg:px-20 max-w-7xl mx-auto">
+        <div style={rv(pricingVis)}>
+          <p className="voku-text-subheading mb-4">{t.pricing.label}</p>
+          <h2 className="voku-text-heading mb-4">{t.pricing.title}</h2>
+          <p className="text-sm mb-12 max-w-lg" style={{ color: "hsl(0 0% 40%)" }}>{t.pricing.sub}</p>
+        </div>
 
-          {/* Plans grid */}
-          <div style={{ ...rv(productsVis, 0.1), display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "rgba(0,0,0,0.1)" }}>
-            {[
-              { label: "STARTER", price: "R$149", credits: "100 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Entrega em 24–48h"], href: "https://buy.stripe.com/fZu7sE33MgDL7Zu1324gg06", dark: false },
-              { label: "PRO", price: "R$397", credits: "300 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Entrega em 24–48h", "Suporte prioritário por e-mail"], href: "https://buy.stripe.com/bJe14g47Q73bfrW6nm4gg0a", dark: false },
-              { label: "BUSINESS", price: "R$897", credits: "800 créditos/mês", badge: "Mais popular", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Volume para múltiplos projetos", "Histórico completo de entregas", "Suporte prioritário por e-mail"], href: "https://buy.stripe.com/6oUfZa7k20ENcfKcLK4gg07", dark: true },
-              { label: "ENTERPRISE", price: "R$1.997", credits: "2.000 créditos/mês", items: ["Landing pages, posts e e-mails", "Revisão inclusa em todos os projetos", "Área do cliente com aprovação", "Volume para múltiplos projetos", "Histórico completo de entregas", "Suporte prioritário por e-mail", "Onboarding dedicado", "SLA garantido"], href: "https://buy.stripe.com/5kQcMY6fYdrz4Ni7rq4gg09", dark: false, ctaLabel: "Falar com a equipe →" },
-            ].map((plan, i) => (
-              <div key={i} style={{ background: plan.dark ? "#111" : "#F5F0E8", padding: "36px 32px", position: "relative", display: "flex", flexDirection: "column" }}>
-                {plan.badge && <div style={{ position: "absolute", top: 0, right: 0, background: "#AAFF00", color: "#111", fontSize: 7, fontWeight: 900, letterSpacing: 2, padding: "5px 14px", textTransform: "uppercase" }}>{plan.badge}</div>}
-                <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: plan.dark ? "#AAFF00" : "#888", textTransform: "uppercase", marginBottom: 20 }}>{plan.label}</div>
-                <div style={{ fontSize: 40, fontWeight: 900, color: plan.dark ? "#fff" : "#111", letterSpacing: -1 }}>{plan.price}</div>
-                <div style={{ fontSize: 12, color: plan.dark ? "#555" : "#888", marginBottom: 6 }}>/mês</div>
-                <div style={{ fontSize: 11, color: plan.dark ? "#555" : "#666", marginBottom: 20 }}>{plan.credits}</div>
-                <div style={{ height: 1, background: plan.dark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)", marginBottom: 16 }} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 0, flex: 1 }}>
-                  {plan.items.map((item, j) => (
-                    <div key={j} style={{ fontSize: 11, color: plan.dark ? "#666" : "#666", padding: "7px 0", borderBottom: `1px solid ${plan.dark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)"}` }}>{item}</div>
-                  ))}
-                </div>
-                <a href={plan.href} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: 28, fontSize: 11, fontWeight: 700, color: plan.dark ? "#AAFF00" : "#111", letterSpacing: "0.05em", textDecoration: "none" }}>{plan.ctaLabel || "Começar agora →"}</a>
+        <div className="voku-plans-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-20" style={rv(pricingVis, 0.1)}>
+          {PLANS.map((plan, i) => (
+            <div key={plan.label} className={`p-6 rounded-sm border flex flex-col ${plan.highlighted ? "voku-surface-lime" : ""}`}
+              style={{ borderColor: plan.highlighted ? "#AAFF00" : "hsl(40 10% 85%)", background: plan.highlighted ? undefined : "hsl(40 23% 95%)" }}>
+              {plan.badge && (
+                <div className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full mb-3 w-fit" style={{ background: "#AAFF00", color: "hsl(0 0% 5%)" }}>{plan.badge}</div>
+              )}
+              <p className="voku-text-subheading mb-2" style={plan.highlighted ? { color: "hsl(0 0% 5% / 0.6)" } : undefined}>{plan.label}</p>
+              <div className="mb-1">
+                <span className="text-3xl font-bold">{plan.price}</span>
+                <span className="text-sm" style={{ color: plan.highlighted ? "hsl(0 0% 5% / 0.6)" : "hsl(0 0% 40%)" }}>/mês</span>
+              </div>
+              <p className="text-xs mb-6" style={{ color: plan.highlighted ? "hsl(0 0% 5% / 0.6)" : "hsl(0 0% 40%)" }}>{plan.credits}</p>
+              <ul className="flex-1 space-y-2 mb-8">
+                {plan.items.map(f => (
+                  <li key={f} className="text-xs leading-relaxed" style={{ color: plan.highlighted ? "hsl(0 0% 5% / 0.8)" : "hsl(0 0% 40%)" }}>{f}</li>
+                ))}
+              </ul>
+              <a href={plan.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-semibold group" style={{ color: plan.highlighted ? "hsl(0 0% 5%)" : "hsl(0 0% 10%)", textDecoration: "none" }}>
+                {plan.ctaLabel || "Começar agora"} <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
+              </a>
+            </div>
+          ))}
+        </div>
+
+        {/* Credit packs */}
+        <div className="border-t pt-12" style={{ borderColor: "hsl(40 10% 85%)" }}>
+          <h3 className="text-lg font-bold mb-2">{t.pricing.more}</h3>
+          <p className="text-sm mb-8" style={{ color: "hsl(0 0% 40%)" }}>{t.pricing.moreSub}</p>
+          <div className="voku-credits-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+            {CREDIT_PACKS.map(pack => (
+              <div key={pack.n} className="border p-6 rounded-sm" style={{ borderColor: "hsl(40 10% 85%)" }}>
+                <p className="text-3xl font-bold mb-1">{pack.n}</p>
+                <p className="text-xs uppercase tracking-wider mb-4" style={{ color: "hsl(0 0% 40%)" }}>CRÉDITOS</p>
+                <p className="text-2xl font-bold mb-4">{pack.price}</p>
+                <a href={pack.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs font-semibold group" style={{ textDecoration: "none", color: "hsl(0 0% 10%)" }}>
+                  COMPRAR <span className="group-hover:translate-x-1 transition-transform inline-block">→</span>
+                </a>
               </div>
             ))}
-          </div>
-
-          {/* Credits add-on */}
-          <div style={{ ...rv(productsVis, 0.15), paddingTop: 48 }}>
-            <div style={{ fontSize: 18, fontWeight: 900, textTransform: "uppercase", letterSpacing: -0.5, color: "#111", marginBottom: 6 }}>Precisa de mais?</div>
-            <div style={{ fontSize: 12, color: "#666", marginBottom: 24 }}>Compre créditos avulsos sem alterar seu plano. Pagamento único.</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "rgba(0,0,0,0.1)" }}>
-              {[
-                { n: "50", price: "R$49", href: "https://buy.stripe.com/eVq8wI33M87fcfKfXW4gg01" },
-                { n: "200", price: "R$149", href: "https://buy.stripe.com/8x200ceMugDLenSaDC4gg08" },
-                { n: "500", price: "R$297", href: "https://buy.stripe.com/6oU9AMdIq1IRgw02764gg02" },
-              ].map((c, i) => (
-                <div key={i} style={{ background: "#F5F0E8", padding: "28px 32px" }}>
-                  <div style={{ fontSize: 36, fontWeight: 900, color: "#111", letterSpacing: -1 }}>{c.n}</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: 2, color: "#888", textTransform: "uppercase", marginBottom: 12 }}>créditos</div>
-                  <div style={{ fontSize: 22, fontWeight: 900, color: "#111", marginBottom: 2 }}>{c.price}</div>
-                  <div style={{ fontSize: 10, color: "#888", marginBottom: 20 }}>pagamento único</div>
-                  <a href={c.href} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#111", letterSpacing: 1, textTransform: "uppercase", textDecoration: "none", borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 16, marginTop: 16 }}>Comprar →</a>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
 
       {/* ══ PROCESS ══ */}
-      <section id="s2" ref={processRef} style={{ background: "#111", padding: "56px 48px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80 }}>
-          <div style={{ ...rv(processVis) }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#555", marginBottom: 12, textTransform: "uppercase" }}>{t.process.label}</div>
-            <h2 style={{ fontSize: "clamp(32px,4vw,56px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", color: "#fff", margin: 0, lineHeight: 1.05, marginBottom: 20 }}>{t.process.title}</h2>
-            <p style={{ fontSize: 14, color: "#888", lineHeight: 1.75, marginBottom: 32 }}>{t.process.sub}</p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-              {[
-                { n: "24h", l: "Landing Page" },
-                { n: "48h", l: "Social Pack" },
-                { n: "100%", l: lang === "PT" ? "Aprovação inclusa" : lang === "ES" ? "Aprobación incluida" : "Approval included" },
-              ].map((m, i) => (
-                <div key={i}>
-                  <div style={{ fontSize: 32, fontWeight: 900, color: "#AAFF00", letterSpacing: -1 }}>{m.n}</div>
-                  <div style={{ fontSize: 10, color: "#444", marginTop: 4 }}>{m.l}</div>
+      <section id="processo" ref={processRef} className="voku-surface-dark py-24">
+        <div className="max-w-7xl mx-auto px-6 md:px-16 lg:px-20">
+          <div className="voku-process-grid grid grid-cols-1 lg:grid-cols-2 gap-16">
+            {/* Left */}
+            <div style={rv(processVis)}>
+              <p className="voku-text-subheading" style={{ color: "hsl(40 23% 95% / 0.4)" }}>{t.process.label}</p>
+              <h2 className="voku-text-heading mt-4 mb-8" style={{ color: "hsl(40 23% 95%)" }}>{t.process.title}</h2>
+              <p className="text-sm mb-12 max-w-sm" style={{ color: "hsl(40 23% 95% / 0.5)" }}>{t.process.sub}</p>
+              <div className="flex gap-8">
+                {[
+                  { n: "24h", l: "Landing Page" },
+                  { n: "48h", l: "Social Pack" },
+                  { n: "100%", l: lang === "PT" ? "Revisão inclusa" : lang === "ES" ? "Revisión incluida" : "Revision included" },
+                ].map(stat => (
+                  <div key={stat.n}>
+                    <p className="text-3xl md:text-4xl font-bold" style={{ color: "#AAFF00" }}>{stat.n}</p>
+                    <p className="text-xs mt-1" style={{ color: "hsl(40 23% 95% / 0.4)" }}>{stat.l}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — Steps */}
+            <div className="space-y-8">
+              {t.process.steps.map((step, i) => (
+                <div key={step.n} className="border-t pt-6" style={{ ...rv(processVis, 0.1 + i * 0.08), borderColor: "hsl(40 23% 95% / 0.1)" }}>
+                  <p className="text-xs font-bold mb-2" style={{ color: "#AAFF00" }}>{step.n}</p>
+                  <h3 className="text-lg font-bold mb-2" style={{ color: "hsl(40 23% 95%)" }}>{step.t}</h3>
+                  <p className="text-sm" style={{ color: "hsl(40 23% 95% / 0.5)" }}>{step.d}</p>
                 </div>
               ))}
             </div>
-          </div>
-          <div>
-            {t.process.steps.map((step, i) => (
-              <div key={i} style={{ ...rv(processVis, 0.1 + i * 0.08), borderTop: "1px solid #1e1e1e", padding: "28px 0" }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#AAFF00", marginBottom: 8 }}>{step.n}</div>
-                <div style={{ fontSize: 18, fontWeight: 900, color: "#fff", marginBottom: 8 }}>{step.t}</div>
-                <div style={{ fontSize: 13, color: "#999", lineHeight: 1.6 }}>{step.d}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
 
       {/* ══ GUARANTEE ══ */}
-      <section ref={guaranteeRef} style={{ background: "#AAFF00", padding: "56px 48px" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
-          <div style={{ ...rv(guaranteeVis), fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "rgba(0,0,0,0.4)", textTransform: "uppercase", marginBottom: 16 }}>{t.guarantee.label}</div>
-          <h2 style={{ ...rv(guaranteeVis, 0.08), fontSize: "clamp(36px,5vw,64px)", fontWeight: 900, letterSpacing: -2, textTransform: "uppercase", color: "#111", margin: 0, lineHeight: 1.05, marginBottom: 20 }}>{t.guarantee.title}</h2>
-          <p style={{ ...rv(guaranteeVis, 0.14), fontSize: 14, color: "rgba(0,0,0,0.6)", lineHeight: 1.75, maxWidth: 480, marginBottom: 32 }}>{t.guarantee.body}</p>
-          <a href="/cliente" onClick={handleCta} style={{ ...rv(guaranteeVis, 0.2), display: "inline-block", background: "#111", color: "#AAFF00", padding: "15px 36px", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>{t.guarantee.cta}</a>
+      <section ref={guaranteeRef} className="voku-surface-lime py-24">
+        <div className="max-w-7xl mx-auto px-6 md:px-16 lg:px-20 text-center">
+          <p className="voku-text-subheading mb-4" style={{ ...rv(guaranteeVis), color: "hsl(0 0% 5% / 0.5)" }}>{t.guarantee.label}</p>
+          <h2 className="voku-text-heading mb-6 max-w-2xl mx-auto" style={{ ...rv(guaranteeVis, 0.08), color: "hsl(0 0% 5%)" }}>{t.guarantee.title}</h2>
+          <p className="text-sm max-w-md mx-auto mb-10" style={{ ...rv(guaranteeVis, 0.14), color: "hsl(0 0% 5% / 0.7)" }}>{t.guarantee.body}</p>
+          <a href="/cliente" onClick={handleCta} className="inline-block font-semibold py-4 px-10 text-sm hover:opacity-90 transition-opacity rounded-sm" style={{ ...rv(guaranteeVis, 0.2), background: "hsl(0 0% 10%)", color: "hsl(40 23% 95%)", textDecoration: "none" }}>
+            {t.guarantee.cta}
+          </a>
         </div>
       </section>
 
       {/* ══ FOOTER ══ */}
-      <footer style={{ background: "#E8E3D8", borderTop: "1px solid rgba(0,0,0,0.1)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: 40, padding: "56px 48px", maxWidth: 1200, margin: "0 auto" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-              <LogoIcon size={16} />
-              <span style={{ fontWeight: 900, fontSize: 14, letterSpacing: -0.5 }}>VOKU</span>
+      <footer className="voku-surface-dark py-16">
+        <div className="max-w-7xl mx-auto px-6 md:px-16 lg:px-20">
+          <div className="voku-footer-grid grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="grid grid-cols-2 gap-0.5">
+                  <div className="w-2 h-2 rounded-sm" style={{ background: "#AAFF00" }} />
+                  <div className="w-2 h-2 rounded-sm" style={{ background: "#AAFF00" }} />
+                  <div className="w-2 h-2 rounded-sm" style={{ background: "#AAFF00" }} />
+                  <div className="w-2 h-2 rounded-sm" style={{ background: "#AAFF00" }} />
+                </div>
+                <span className="font-bold" style={{ color: "hsl(40 23% 95%)" }}>VOKU</span>
+              </div>
+              <p className="text-xs leading-relaxed max-w-xs" style={{ color: "hsl(40 23% 95% / 0.4)" }}>{t.footer.desc}</p>
             </div>
-            <p style={{ fontSize: 12, color: "#666", lineHeight: 1.7, maxWidth: 280, margin: 0 }}>{t.footer.desc}</p>
-          </div>
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 16, textTransform: "uppercase" }}>{t.footer.col2label}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {t.footer.col2.map((l, i) => <span key={i} style={{ fontSize: 13, color: "#333" }}>{l}</span>)}
+            <div>
+              <p className="text-xs uppercase tracking-[0.15em] font-medium mb-4" style={{ color: "hsl(40 23% 95% / 0.4)" }}>{t.footer.col2label}</p>
+              <ul className="space-y-2">
+                {t.footer.col2.map(l => <li key={l}><span className="text-sm" style={{ color: "hsl(40 23% 95% / 0.6)" }}>{l}</span></li>)}
+              </ul>
             </div>
-          </div>
-          <div>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#888", marginBottom: 16, textTransform: "uppercase" }}>{t.footer.col3label}</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {t.footer.col3.map((l, i) => {
-                const href = i === 1 ? "/cliente" : i === 0 ? "#s2" : null;
-                return href ? <a key={i} href={href} style={{ fontSize: 13, color: "#333", textDecoration: "none" }}>{l}</a> : <span key={i} style={{ fontSize: 13, color: "#333" }}>{l}</span>;
-              })}
+            <div>
+              <p className="text-xs uppercase tracking-[0.15em] font-medium mb-4" style={{ color: "hsl(40 23% 95% / 0.4)" }}>{t.footer.col3label}</p>
+              <ul className="space-y-2">
+                {t.footer.col3.map((l, i) => {
+                  const href = i === 1 ? "/cliente" : i === 0 ? "#processo" : null;
+                  return <li key={l}>{href ? <a href={href} className="text-sm transition-colors hover:text-white" style={{ color: "hsl(40 23% 95% / 0.6)", textDecoration: "none" }}>{l}</a> : <span className="text-sm" style={{ color: "hsl(40 23% 95% / 0.6)" }}>{l}</span>}</li>;
+                })}
+              </ul>
             </div>
+            <div />
           </div>
-        </div>
-        <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", padding: "16px 0", textAlign: "center", maxWidth: 1200, margin: "0 auto" }}>
-          <span style={{ fontSize: 10, color: "#888", letterSpacing: 2 }}>Estúdio de Mídia com IA · EN · PT · ES · voku.one</span>
-        </div>
-        <div style={{ borderTop: "1px solid rgba(0,0,0,0.1)", padding: "20px 48px", display: "flex", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
-          <span style={{ fontSize: 11, color: "#888" }}>{t.footer.bottom1}</span>
-          <span style={{ fontSize: 11, color: "#888" }}>{t.footer.bottom2}</span>
+          <div className="border-t pt-8 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderColor: "hsl(40 23% 95% / 0.1)" }}>
+            <p className="text-xs" style={{ color: "hsl(40 23% 95% / 0.3)" }}>{t.footer.bottom1}</p>
+            <p className="text-xs" style={{ color: "hsl(40 23% 95% / 0.3)" }}>{t.footer.bottom2}</p>
+          </div>
         </div>
       </footer>
 
-      {/* Beta Modal */}
+      {/* ══ BETA MODAL ══ */}
       {betaModal && (
-        <div onClick={(e) => { if (e.target === e.currentTarget) setBetaModal(false); }} style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div style={{ background: "#111", border: "1.5px solid #AAFF00", borderRadius: 4, padding: "48px 40px", maxWidth: 440, width: "100%", textAlign: "center", position: "relative", animation: "modalIn 0.35s ease forwards" }}>
-            <button onClick={() => setBetaModal(false)} style={{ position: "absolute", top: 16, right: 20, background: "none", border: "none", color: "#444", fontSize: 22, cursor: "pointer" }}>×</button>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 3, color: "#AAFF00", marginBottom: 24 }}>ACESSO BETA LIBERADO</div>
-            <div style={{ fontWeight: 900, fontSize: 28, color: "#fff", lineHeight: 1.1, marginBottom: 12, letterSpacing: -1 }}>7 dias grátis.</div>
-            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7, marginBottom: 32 }}>Acesso completo. Sem cartão. Sem compromisso.</div>
-            <div style={{ height: 1, background: "#222", marginBottom: 24 }} />
-            <div style={{ textAlign: "left", display: "flex", flexDirection: "column", gap: 10, marginBottom: 32 }}>
+        <div onClick={(e) => { if (e.target === e.currentTarget) setBetaModal(false); }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-6"
+          style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(4px)" }}>
+          <div className="relative w-full max-w-md text-center" style={{ background: "#111", border: "1.5px solid #AAFF00", borderRadius: 4, padding: "48px 40px", animation: "voku-modal-in 0.35s ease forwards" }}>
+            <button onClick={() => setBetaModal(false)} className="absolute top-4 right-5" style={{ background: "none", border: "none", color: "#444", fontSize: 22, cursor: "pointer" }}>×</button>
+            <div className="text-[10px] font-bold tracking-[3px] mb-6" style={{ color: "#AAFF00" }}>ACESSO BETA LIBERADO</div>
+            <div className="text-3xl font-black mb-3" style={{ color: "#fff", letterSpacing: -1 }}>7 dias grátis.</div>
+            <div className="text-sm mb-8" style={{ color: "#888", lineHeight: 1.7 }}>Acesso completo. Sem cartão. Sem compromisso.</div>
+            <div className="h-px mb-6" style={{ background: "#222" }} />
+            <div className="text-left space-y-3 mb-8">
               {[
-                lang === "PT" ? "Todos os produtos desbloqueados" : "All products unlocked",
-                lang === "PT" ? "Chat com agente IA" : "AI agent chat",
-                lang === "PT" ? "Landing pages, posts, e-mails" : "Landing pages, posts, emails",
-                lang === "PT" ? "Sem limite de projetos" : "Unlimited projects",
+                lang === "PT" ? "Todos os produtos desbloqueados" : lang === "ES" ? "Todos los productos desbloqueados" : "All products unlocked",
+                lang === "PT" ? "Chat com agente IA" : lang === "ES" ? "Chat con agente IA" : "AI agent chat",
+                lang === "PT" ? "Landing pages, posts, e-mails" : lang === "ES" ? "Landing pages, posts, emails" : "Landing pages, posts, emails",
+                lang === "PT" ? "Sem limite de projetos" : lang === "ES" ? "Sin límite de proyectos" : "Unlimited projects",
               ].map(item => (
-                <div key={item} style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <span style={{ color: "#AAFF00", fontWeight: 700, fontSize: 13 }}>→</span>
-                  <span style={{ color: "#fff", fontSize: 13 }}>{item}</span>
+                <div key={item} className="flex items-center gap-3">
+                  <span className="text-sm font-bold" style={{ color: "#AAFF00" }}>→</span>
+                  <span className="text-sm" style={{ color: "#fff" }}>{item}</span>
                 </div>
               ))}
             </div>
-            <a href="/cliente" style={{ display: "block", background: "#AAFF00", color: "#111", fontWeight: 800, fontSize: 14, padding: 16, border: "none", textDecoration: "none", textAlign: "center" }}>Ativar agora →</a>
-            <div style={{ fontSize: 11, color: "#444", marginTop: 14 }}>{lang === "PT" ? "Sem cartão de crédito. Cancele quando quiser." : "No credit card. Cancel anytime."}</div>
+            <a href="/cliente" className="block w-full py-4 text-center font-bold text-sm" style={{ background: "#AAFF00", color: "#111", textDecoration: "none" }}>
+              Ativar agora →
+            </a>
+            <div className="text-xs mt-4" style={{ color: "#444" }}>
+              {lang === "PT" ? "Sem cartão de crédito. Cancele quando quiser." : lang === "ES" ? "Sin tarjeta de crédito. Cancela cuando quieras." : "No credit card. Cancel anytime."}
+            </div>
           </div>
         </div>
       )}
-
-      <style>{`
-        @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @keyframes modalIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-      `}</style>
     </div>
   );
 }

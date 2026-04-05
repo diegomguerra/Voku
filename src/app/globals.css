@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,6 +8,99 @@ body {
   background: #FFFFFF;
   color: #111111;
   -webkit-text-size-adjust: 100%;
+}
+
+/* ── VOKU Landing utilities ─────────────────── */
+.voku-landing {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: hsl(40 23% 95%);
+  color: hsl(0 0% 10%);
+  -webkit-font-smoothing: antialiased;
+}
+.voku-landing h1, .voku-landing h2, .voku-landing h3,
+.voku-landing h4, .voku-landing h5, .voku-landing h6 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.voku-text-display {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: -0.05em;
+}
+.voku-text-heading {
+  font-size: clamp(1.875rem, 5vw, 3rem);
+  font-weight: 700;
+  text-transform: uppercase;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+.voku-text-subheading {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: hsl(0 0% 40%);
+  font-weight: 500;
+}
+
+.voku-surface-dark { background: hsl(0 0% 10%); color: hsl(40 23% 95%); }
+.voku-surface-lime { background: hsl(78 100% 50%); color: hsl(0 0% 5%); }
+
+.voku-btn-primary {
+  background: hsl(78 100% 50%);
+  color: hsl(0 0% 5%);
+  font-weight: 600;
+  padding: 1rem 2rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: filter 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+.voku-btn-primary:hover { filter: brightness(1.1); }
+.voku-btn-outline {
+  border: 1px solid hsl(0 0% 10%);
+  color: hsl(0 0% 10%);
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.2s;
+  text-decoration: none;
+  display: inline-block;
+}
+.voku-btn-outline:hover { background: hsl(0 0% 10%); color: hsl(40 23% 95%); }
+
+@keyframes voku-marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+.voku-animate-marquee { animation: voku-marquee 30s linear infinite; }
+
+.voku-fade-in { opacity: 0; transform: translateY(20px); transition: opacity 0.6s, transform 0.6s; }
+.voku-fade-in.visible { opacity: 1; transform: translateY(0); }
+
+.voku-portfolio-item img { transition: transform 0.7s; }
+.voku-portfolio-item:hover img { transform: scale(1.05); }
+.voku-portfolio-item .voku-overlay { opacity: 0; transition: opacity 0.5s; }
+.voku-portfolio-item:hover .voku-overlay { opacity: 1; }
+.voku-portfolio-item .voku-hover-text { transform: translateY(1rem); opacity: 0; transition: all 0.5s; }
+.voku-portfolio-item:hover .voku-hover-text { transform: translateY(0); opacity: 1; }
+
+@keyframes voku-modal-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+
+/* Mobile landing */
+@media (max-width: 768px) {
+  .voku-hero-grid { grid-template-columns: 1fr !important; }
+  .voku-process-grid { grid-template-columns: 1fr !important; }
+  .voku-plans-grid { grid-template-columns: 1fr !important; }
+  .voku-credits-grid { grid-template-columns: 1fr !important; }
+  .voku-portfolio-grid { grid-template-columns: 1fr !important; }
+  .voku-portfolio-grid > * { grid-column: span 1 !important; grid-row: span 1 !important; }
+  .voku-footer-grid { grid-template-columns: 1fr !important; }
+  .voku-nav-desktop { display: none !important; }
+  .voku-nav-mobile-btn { display: flex !important; }
 }
 
 /* ── Admin responsive system ──────────────────── */
