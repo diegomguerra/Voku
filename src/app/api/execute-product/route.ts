@@ -286,14 +286,31 @@ Each variation must be complete and production-ready. Only output the JSON array
 
     let variations: { label: string; text: string }[]
     try {
-      const cleaned = rawOutput.replace(/```(?:json|JSON)?\s*\n?/g, '').trim()
-      const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
-      if (!jsonMatch) throw new Error('No JSON array found')
-      variations = JSON.parse(jsonMatch[0])
-      if (!Array.isArray(variations) || variations.length === 0) throw new Error('Empty array')
+      // Strip markdown fences
+      let cleaned = rawOutput.replace(/```(?:json|JSON)?\s*\n?/g, '').replace(/```\s*$/g, '').trim()
+      // Find the JSON array — try multiple approaches
+      let parsed: any = null
+      // Attempt 1: direct parse
+      try { parsed = JSON.parse(cleaned) } catch {}
+      // Attempt 2: extract array with regex
+      if (!parsed) {
+        const jsonMatch = cleaned.match(/\[[\s\S]*\]/)
+        if (jsonMatch) try { parsed = JSON.parse(jsonMatch[0]) } catch {}
+      }
+      // Attempt 3: find first [ and last ] manually
+      if (!parsed) {
+        const firstBracket = cleaned.indexOf('[')
+        const lastBracket = cleaned.lastIndexOf(']')
+        if (firstBracket !== -1 && lastBracket > firstBracket) {
+          try { parsed = JSON.parse(cleaned.slice(firstBracket, lastBracket + 1)) } catch {}
+        }
+      }
+      if (!Array.isArray(parsed) || parsed.length === 0) throw new Error('Could not parse JSON array')
+      variations = parsed
     } catch (parseErr) {
-      console.error(`[execute-product] JSON parse failed:`, (parseErr as Error).message)
-      variations = [{ label: 'Option A', text: rawOutput }]
+      console.error(`[execute-product] JSON parse failed:`, (parseErr as Error).message, `rawOutput first 200 chars:`, rawOutput.slice(0, 200))
+      // Fallback: save as single variation but strip fences from text
+      variations = [{ label: 'Option A', text: stripFences(rawOutput) }]
     }
 
     variations = variations.slice(0, 3)

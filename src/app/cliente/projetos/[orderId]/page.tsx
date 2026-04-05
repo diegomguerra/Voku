@@ -186,9 +186,16 @@ export default function ProjetoPage() {
           email: ctx?.email || "",
         }),
       });
-      if (!res.ok) { setExecuting(false); }
-      else { loadChoices(); }
-    } catch { setExecuting(false); }
+      if (!res.ok) {
+        console.error("[briefing] execute-product failed:", res.status);
+        setExecuting(false);
+      } else {
+        loadChoices();
+      }
+    } catch (err) {
+      console.error("[briefing] error:", err);
+      setExecuting(false);
+    }
   }, [orderId, order, ctx, loadChoices]);
 
   /* ── Approve choice ── */
@@ -300,15 +307,27 @@ export default function ProjetoPage() {
         {/* ═══ ZONA C: Split — Rordens + Conteúdo ═══ */}
         <div style={{ flex: 1, display: "grid", gridTemplateColumns: chatHandleDetected && status === "briefing" ? "1fr" : "380px 1fr", overflow: "hidden" }}>
 
-          {/* ── Rordens ── */}
-          <RordensPanel
-            produto={order?.product || "post_instagram"}
-            produtoLabel={productLabel}
-            passo={formStep}
-            status={status}
-            orderId={orderId}
-            onHandleDetected={(handle) => setChatHandleDetected(true)}
-          />
+          {/* ── Rordens + upload hint ── */}
+          <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
+            {status === "briefing" && (
+              <div style={{ padding: "10px 16px", background: "#EAF3DE", borderBottom: "1px solid #C0DD97", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <span style={{ fontSize: 14 }}>📎</span>
+                <span style={{ fontFamily: FI, fontSize: 11, color: "#2D5016", fontWeight: 600 }}>
+                  Use o chat para enviar logo, prints e referências visuais da sua marca
+                </span>
+              </div>
+            )}
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <RordensPanel
+                produto={order?.product || "post_instagram"}
+                produtoLabel={productLabel}
+                passo={formStep}
+                status={status}
+                orderId={orderId}
+                onHandleDetected={(handle) => setChatHandleDetected(true)}
+              />
+            </div>
+          </div>
 
           {/* ── Coluna direita — muda por status ── */}
           <div style={{ background: T.sand, overflowY: "auto" }}>
@@ -326,7 +345,14 @@ export default function ProjetoPage() {
                   />
                 ) : order?.product === "content_pack" ? (
                   <PostsBriefingForm
-                    onSubmit={(data) => handleBriefingSubmit({ ...data, type: "content_pack", resumo: data.descricao }, "content_pack")}
+                    onSubmit={(data) => handleBriefingSubmit({
+                      ...data,
+                      type: "content_pack",
+                      resumo: data.descricao,
+                      nome_marca: data.nome_marca,
+                      publico_detalhado: data.publico,
+                      pilares_conteudo: data.pilares,
+                    }, "content_pack")}
                     loading={executing}
                     onStepChange={setFormStep}
                   />
