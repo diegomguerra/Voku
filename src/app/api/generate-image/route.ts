@@ -10,7 +10,7 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
 // Technical camera signature — anchored AFTER translation, never filtered
-const CAMERA_SIG = `photograph taken with a phone camera, natural available light, overcast flat lighting, visible skin pores and imperfections, uneven skin texture, real body proportions, worn everyday clothes, no makeup or minimal makeup, slight image noise, muted desaturated colors, no dramatic shadows, no rim light, no backlight glow`
+const CAMERA_SIG = `photograph taken with a phone camera, natural available light, overcast flat lighting, visible skin pores and imperfections, crow's feet around eyes, forehead lines, nasolabial folds, uneven skin texture with dark spots and sun damage, under-eye circles, real body proportions not model-thin, worn everyday clothes, no makeup or minimal makeup, slight image noise, muted desaturated colors, no dramatic shadows, no rim light, no backlight glow, real aged skin appropriate for the person's age`
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
