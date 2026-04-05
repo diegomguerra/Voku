@@ -301,7 +301,7 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
   }
 
   return (
-    <div style={{ fontFamily: FF, color: S.text, maxWidth: 720, margin: "0 auto" }}>
+    <div style={{ fontFamily: FF, color: S.text, maxWidth: 520, margin: "0 auto" }}>
       {/* Cover image */}
       {activeChoice.image_url && (
         <img
@@ -436,9 +436,9 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
         style={{
           background: S.cardBg,
           border: `1px solid ${S.cardBorder}`,
-          borderRadius: 12,
-          padding: 28,
-          marginBottom: 20,
+          borderRadius: 10,
+          padding: 20,
+          marginBottom: 16,
         }}
       >
         {/* FORMATO */}
@@ -447,7 +447,7 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: S.textSub, marginBottom: 4 }}>
               FORMATO
             </div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{post.formato}</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{post.formato}</div>
           </div>
         )}
 
@@ -457,22 +457,22 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: S.textSub, marginBottom: 4 }}>
               GANCHO
             </div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>{post.gancho}</div>
+            <div style={{ fontSize: 13, fontWeight: 600 }}>{post.gancho}</div>
           </div>
         )}
 
         {/* Separator */}
         {(post.formato || post.gancho) && post.desenvolvimento && (
-          <hr style={{ border: "none", borderTop: `1px solid ${S.cardBorder}`, margin: "16px 0" }} />
+          <hr style={{ border: "none", borderTop: `1px solid ${S.cardBorder}`, margin: "10px 0" }} />
         )}
 
         {/* DESENVOLVIMENTO */}
         {post.desenvolvimento && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: S.textSub, marginBottom: 8 }}>
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: S.textSub, marginBottom: 4 }}>
               DESENVOLVIMENTO
             </div>
-            <div style={{ fontSize: 14, lineHeight: 1.7, color: S.text }}>
+            <div style={{ fontSize: 12, lineHeight: 1.6, color: S.text }}>
               {post.desenvolvimento.split("\n").map((line, i) => (
                 <span key={i}>
                   {line}
@@ -485,7 +485,7 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
 
         {/* Separator */}
         {post.desenvolvimento && (post.cta || post.hashtags.length > 0 || post.sugestaoVisual) && (
-          <hr style={{ border: "none", borderTop: `1px solid ${S.cardBorder}`, margin: "16px 0" }} />
+          <hr style={{ border: "none", borderTop: `1px solid ${S.cardBorder}`, margin: "10px 0" }} />
         )}
 
         {/* CTA */}
@@ -494,7 +494,7 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: S.textSub, marginBottom: 4 }}>
               CTA
             </div>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>{post.cta}</div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>{post.cta}</div>
           </div>
         )}
 
@@ -530,7 +530,7 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.08em", color: S.textSub, marginBottom: 4 }}>
               SUGESTÃO VISUAL
             </div>
-            <div style={{ fontSize: 14, color: S.textSub, lineHeight: 1.6 }}>
+            <div style={{ fontSize: 12, color: S.textSub, lineHeight: 1.5 }}>
               {post.sugestaoVisual}
             </div>
           </div>
