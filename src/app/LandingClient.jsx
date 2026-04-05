@@ -147,19 +147,17 @@ const T = {
   },
 };
 
-/* ─── Portfolio images (Supabase) ─── */
-const STORAGE = "https://movfynswogmookzcjijt.supabase.co/storage/v1/object/public/imagens/portfolio";
-const IMG = { skincare: `${STORAGE}/skincare-01.png`, wellness: `${STORAGE}/wellness-02.png`, drink: `${STORAGE}/drink-03.png`, agro: `${STORAGE}/agro-04.png`, tech: `${STORAGE}/tech-05.png`, product: `${STORAGE}/product-06.png` };
-
+/* ─── Portfolio images (Lovable-generated) ─── */
+const P = "/portfolio";
 const SHOWCASE = [
-  { type: "REELS", niche: "SKINCARE", title: "Reels de produto com sérum anti-aging para marca de beleza.", image: IMG.skincare, col: "1/2", row: "1/3" },
-  { type: "POST", niche: "GASTRONOMIA", title: "Post de feed para restaurante gourmet.", image: IMG.drink, col: "2/3", row: "1/2" },
-  { type: "LANDING PAGE", niche: "MODA", title: "Landing page e-commerce para marca de streetwear.", image: IMG.agro, col: "2/4", row: "2/3" },
-  { type: "CARROSSEL", niche: "FITNESS", title: "Carrossel educativo com dicas de treino.", image: IMG.wellness, col: "3/4", row: "1/2" },
-  { type: "STORIES", niche: "IMOBILIÁRIO", title: "Stories de lançamento imobiliário.", image: IMG.tech, col: "1/2", row: "3/5" },
-  { type: "EMAIL", niche: "BELEZA", title: "Newsletter para marca premium de skincare.", image: IMG.product, col: "2/3", row: "3/4" },
-  { type: "POST", niche: "ARQUITETURA", title: "Post para estúdio de design de interiores.", image: IMG.skincare, col: "3/4", row: "3/4" },
-  { type: "LANDING PAGE", niche: "INTERIORES", title: "Landing page para captação de leads.", image: IMG.agro, col: "2/4", row: "4/5" },
+  { type: "REELS", niche: "SKINCARE", title: "Reels de produto com sérum anti-aging para marca de beleza.", image: `${P}/showcase-reels-skincare.jpg`, col: "1/2", row: "1/3" },
+  { type: "POST INSTAGRAM", niche: "GASTRONOMIA", title: "Post de feed para restaurante gourmet com fotografia de produto.", image: `${P}/showcase-post-food.jpg`, col: "2/3", row: "1/2" },
+  { type: "LANDING PAGE", niche: "MODA", title: "Landing page e-commerce para marca de streetwear.", image: `${P}/showcase-landing-fashion.jpg`, col: "2/4", row: "2/3" },
+  { type: "CARROSSEL", niche: "FITNESS", title: "Carrossel educativo com dicas de treino para personal trainer.", image: `${P}/showcase-carousel-fitness.jpg`, col: "3/4", row: "1/2" },
+  { type: "STORIES", niche: "IMOBILIÁRIO", title: "Stories de lançamento imobiliário com CTA de swipe up.", image: `${P}/showcase-stories-realestate.jpg`, col: "1/2", row: "3/5" },
+  { type: "EMAIL MARKETING", niche: "BELEZA", title: "Newsletter de lançamento para marca premium de skincare.", image: `${P}/showcase-email-beauty.jpg`, col: "2/3", row: "3/4" },
+  { type: "POST INSTAGRAM", niche: "ARQUITETURA", title: "Post de feed para estúdio de design de interiores corporativo.", image: `${P}/portfolio-interior-post.jpg`, col: "3/4", row: "3/4" },
+  { type: "LANDING PAGE", niche: "INTERIORES", title: "Landing page para captação de leads no segmento corporativo.", image: `${P}/portfolio-interior-landing.jpg`, col: "2/4", row: "4/5" },
 ];
 
 const CONTENT_TYPES = ["Posts", "Reels", "Stories", "Carrosséis", "Landing Pages", "E-mails"];
