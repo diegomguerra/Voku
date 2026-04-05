@@ -107,9 +107,17 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
     if (hex) colorMap[hex] = (colorMap[hex] || 0) + 10; // boost meta colors
   }
 
-  // Lower threshold — accept any color that appears 2+ times
+  // Broad scan: extract ALL hex codes in the full HTML (catches Tailwind, CSS-in-JS, SVG fills)
+  const allHexRe = /#[0-9a-fA-F]{6}\b/g;
+  let allHexMatch;
+  while ((allHexMatch = allHexRe.exec(allText)) !== null) {
+    const hex = normalizeHex(allHexMatch[0]);
+    if (hex && !colorMap[hex]) colorMap[hex] = 1; // only add if not already found
+  }
+
+  // Accept any color that appears 1+ times (very permissive for SPAs)
   const totalColors = Object.values(colorMap).reduce((a, b) => a + b, 0);
-  const minCount = Math.max(2, totalColors * 0.005);
+  const minCount = Math.max(1, totalColors * 0.003);
 
   return Object.entries(colorMap)
     .map(([hex, count]) => ({ hex, count, sat: saturation(hex) }))
