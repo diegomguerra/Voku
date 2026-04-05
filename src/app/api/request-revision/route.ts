@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       // Generate 3 new variations with Anthropic
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       const message = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 6000,
         system: `You are RORDENS, Voku's execution engine. Generate 3 NEW and DIFFERENT variations.
 ${notes ? `CLIENT FEEDBACK: "${notes}" — incorporate this feedback into all variations.` : ''}
@@ -251,7 +251,7 @@ Only output the JSON array, no other text.`,
       // Rewrite with Anthropic
       const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
       const message = await anthropic.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         system: `You are RORDENS, Voku's execution engine. Revise the content based on client feedback.
 Keep the same format and structure but apply the requested changes.

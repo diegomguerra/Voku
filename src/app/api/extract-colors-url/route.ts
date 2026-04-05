@@ -151,7 +151,7 @@ export async function POST(req: Request) {
     const hexList = extracted.map(c => `${c.hex} (${c.count}x, saturação ${(c.sat * 100).toFixed(0)}%)`).join(", ");
 
     const response = await anthropic.messages.create({
-      model: "claude-haiku-4-5-20251001",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 800,
       messages: [
         {

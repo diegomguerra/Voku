@@ -268,7 +268,7 @@ export async function POST(req: NextRequest) {
       TONE_INSTRUCTIONS.map(async (tone) => {
         try {
           const msg = await anthropic.messages.create({
-            model: 'claude-haiku-4-5-20251001',
+            model: 'claude-sonnet-4-20250514',
             max_tokens: maxTokens,
             system: `${baseSystem}\n\nTone for this variation: ${tone.label}. Generate ONE complete variation. Output ONLY the content text — no JSON, no wrapper, no label prefix.`,
             messages: [{
