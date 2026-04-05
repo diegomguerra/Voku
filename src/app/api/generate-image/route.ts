@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     // Sonnet ONLY translates — zero creative direction, zero artistic embellishment
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-haiku-4-5-20251001',  // Haiku for speed — literal translation only
       max_tokens: 150,
       messages: [{
         role: 'user',

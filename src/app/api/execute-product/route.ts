@@ -6,7 +6,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300
+export const maxDuration = 120  // Haiku for text (fast) + fire-and-forget images
 
 function stripFences(s: string): string {
   return s.replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim()
@@ -268,7 +268,7 @@ export async function POST(req: NextRequest) {
       TONE_INSTRUCTIONS.map(async (tone) => {
         try {
           const msg = await anthropic.messages.create({
-            model: 'claude-sonnet-4-20250514',
+            model: 'claude-haiku-4-5-20251001',  // Haiku for speed — 3-5x faster for bulk post copy
             max_tokens: maxTokens,
             system: `${baseSystem}\n\nTone for this variation: ${tone.label}. Generate ONE complete variation. Output ONLY the content text — no JSON, no wrapper, no label prefix.`,
             messages: [{
