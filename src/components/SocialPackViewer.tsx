@@ -20,6 +20,7 @@ type Choice = {
   position: number;
   is_selected: boolean;
   image_url?: string | null;
+  post_images?: Record<string, string>;
 };
 
 type OrderData = {
@@ -38,6 +39,9 @@ type Post = {
   cta: string;
   hashtags: string[];
   sugestaoVisual: string;
+  pilar?: string;
+  imagePrompt?: string;
+  slides?: { number: number; headline: string; text: string }[];
 };
 
 type Props = {
@@ -62,19 +66,30 @@ function parsePosts(choice: Choice): Post[] {
     }
   }
 
-  // Already an array of post objects
+  // NEW: Structured JSON posts from multi-agent pipeline
+  if (raw?.posts && Array.isArray(raw.posts)) {
+    return raw.posts.map((p: any, i: number) => ({
+      label: `POST ${p.post_number || i + 1}`,
+      formato: p.format || "",
+      gancho: p.hook || "",
+      desenvolvimento: p.body || "",
+      cta: p.cta || "",
+      hashtags: Array.isArray(p.hashtags) ? p.hashtags : [],
+      sugestaoVisual: p.visual_suggestion || "",
+      pilar: p.pillar || "",
+      imagePrompt: p.image_prompt || "",
+      slides: p.slides || [],
+    }));
+  }
+
+  // Already an array of post objects (legacy)
   if (Array.isArray(raw)) {
     return raw.map((obj: any, i: number) => parsePostObj(obj, i));
   }
 
-  // Object with text field
+  // Object with text field (legacy markdown)
   let text: string = raw?.text || "";
-
-  // Unescape literal \\n to real newlines
-  if (text.includes("\\n")) {
-    text = text.replace(/\\n/g, "\n");
-  }
-
+  if (text.includes("\\n")) text = text.replace(/\\n/g, "\n");
   return splitPostsFromText(text);
 }
 
@@ -430,6 +445,21 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
           </button>
         </div>
       </div>
+
+      {/* Per-post image */}
+      {(() => {
+        const postNum = String(currentPost + 1);
+        const postImg = activeChoice?.post_images?.[postNum];
+        if (postImg) return (
+          <img src={postImg} alt={`Post ${postNum}`} style={{ width: "100%", height: 240, objectFit: "cover", borderRadius: 8, display: "block", marginBottom: 12 }} />
+        );
+        return null;
+      })()}
+
+      {/* Pillar badge */}
+      {post.pilar && (
+        <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: 2, textTransform: "uppercase" as const, color: "#999", marginBottom: 8 }}>{post.pilar}</div>
+      )}
 
       {/* Post card */}
       <div

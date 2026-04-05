@@ -4,6 +4,8 @@ import { ProductId } from '@/lib/products'
 import { ImageSlug } from '@/lib/image-engine/types'
 import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
+import { brandAnalystPrompt, copywriterPrompt, artDirectorPrompt, editorPrompt } from '@/lib/agents/prompts'
+import type { StructuredPost } from '@/lib/types/post'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120  // Haiku for text (fast) + fire-and-forget images
@@ -194,12 +196,14 @@ function fireImageGeneration(params: {
   order_id: string
   choice_id: string
   choice_position: number
-  choice_label: string
-  choice_text: string
-  slug: string
-  brand: Record<string, string>
+  post_number?: number
+  image_prompt?: string
+  choice_label?: string
+  choice_text?: string
+  slug?: string
+  brand?: Record<string, string>
   reference_image_url?: string
-  briefing_text: string
+  briefing_text?: string
   product: string
   visao_imagem?: string | null
 }) {
@@ -209,6 +213,79 @@ function fireImageGeneration(params: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   }).catch(e => console.error('[fire-image] fetch error:', e))
+}
+
+/** Call a specialist agent (Haiku for speed) and parse JSON response */
+async function callAgent(
+  anthropic: Anthropic,
+  systemPrompt: string,
+  userContent: string,
+  maxTokens = 4000
+): Promise<any> {
+  const msg = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userContent }],
+  })
+  const text = msg.content[0].type === 'text' ? msg.content[0].text : '[]'
+  return JSON.parse(stripFences(text))
+}
+
+/** Multi-agent content pack pipeline: Analyst → Copywriter → Art Director → Editor */
+async function generateContentPack(
+  anthropic: Anthropic,
+  tone: string,
+  briefingText: string,
+  brand: Record<string, any>,
+  visaoImagem: string,
+  quantidade: number,
+  pilares: string[],
+): Promise<StructuredPost[]> {
+  // Agent 1: Brand Analyst (~3s)
+  let analysis: Record<string, any>
+  try {
+    analysis = await callAgent(anthropic, brandAnalystPrompt(brand), briefingText, 1000)
+  } catch {
+    analysis = { target_audience_refined: brand.publico || '', tone_direction: tone, content_angles: pilares }
+  }
+
+  // Agent 2: Copywriter (~5s)
+  let posts: StructuredPost[]
+  try {
+    posts = await callAgent(anthropic, copywriterPrompt(brand, analysis, tone, pilares, quantidade), briefingText, 4000)
+    if (!Array.isArray(posts)) posts = []
+  } catch {
+    posts = []
+  }
+
+  if (posts.length === 0) return []
+
+  // Agent 3: Art Director (~3s)
+  try {
+    const imagePrompts = await callAgent(anthropic, artDirectorPrompt(posts, brand, visaoImagem), '', 2000)
+    if (Array.isArray(imagePrompts)) {
+      for (const ip of imagePrompts) {
+        const post = posts.find(p => p.post_number === ip.post_number)
+        if (post) post.image_prompt = ip.image_prompt
+      }
+    }
+  } catch {
+    // Fallback: generic image prompt
+    for (const post of posts) {
+      if (!post.image_prompt) post.image_prompt = `${brand.nome_marca || 'brand'} product in natural setting, ${post.visual_suggestion || ''}`
+    }
+  }
+
+  // Agent 4: Editor (~3s)
+  try {
+    const edited = await callAgent(anthropic, editorPrompt(posts, brand), '', 4000)
+    if (Array.isArray(edited) && edited.length === posts.length) posts = edited
+  } catch {
+    // Keep unedited posts
+  }
+
+  return posts
 }
 
 export async function POST(req: NextRequest) {
@@ -260,36 +337,69 @@ export async function POST(req: NextRequest) {
       supabase.from('project_steps').update({ status: 'active' }).eq('order_id', order_id).eq('step_number', 6),
     ])
 
-    // Generate 3 variations in PARALLEL — one call per tone (avoids JSON parse hell)
-    const SIMPLE_PRODUCTS = ['post_instagram', 'ad_copy', 'reels_script']
-    const maxTokens = SIMPLE_PRODUCTS.includes(product) ? 4000 : 6000
+    // ── Content Pack: Multi-agent pipeline (structured JSON) ──
+    // ── Other products: Single Haiku call per tone (legacy text) ──
+    const isContentPack = product === 'content_pack'
+    const quantidade = structured_data?.quantidade || 4
+    const pilares = structured_data?.pilares_conteudo || structured_data?.pilares || ['Educativo', 'Bastidores', 'Prova Social', 'Conversão']
+    const visaoImagem = structured_data?.visao_imagem || ''
 
-    const toneResults = await Promise.all(
-      TONE_INSTRUCTIONS.map(async (tone) => {
-        try {
-          const msg = await anthropic.messages.create({
-            model: 'claude-haiku-4-5-20251001',  // Haiku for speed — 3-5x faster for bulk post copy
-            max_tokens: maxTokens,
-            system: `${baseSystem}\n\nTone for this variation: ${tone.label}. Generate ONE complete variation. Output ONLY the content text — no JSON, no wrapper, no label prefix.`,
-            messages: [{
-              role: 'user',
-              content: `BRIEFING DO CLIENTE:\n${briefingText}\n\nGenerate the complete deliverable in ${tone.label} tone now.`,
-            }],
-          })
-          const text = msg.content[0].type === 'text' ? msg.content[0].text : ''
-          return { label: tone.label, text: stripFences(text) }
-        } catch (err) {
-          console.error(`[execute-product] Tone ${tone.label} failed:`, (err as Error).message)
-          return null
-        }
-      })
-    )
-
-    const variations = toneResults.filter((v): v is { label: string; text: string } => v !== null && v.text.length > 50)
-    if (variations.length === 0) {
-      throw new Error('All 3 tone generations failed')
+    // Fetch full brand context for multi-agent pipeline
+    const { data: brandRow } = await supabase
+      .from('brand_contexts').select('*').eq('user_id', user_id).limit(1).single()
+    const brand: Record<string, any> = {
+      nome_marca: structured_data?.nome_marca || brandRow?.nome_marca || '',
+      tom: structured_data?.tom || brandRow?.tom || '',
+      cor_primaria: structured_data?.cor_primaria || brandRow?.cor_primaria || '#111',
+      cor_secundaria: structured_data?.cor_secundaria || brandRow?.cor_secundaria || '#fff',
+      estilo_visual: structured_data?.estilo_visual || brandRow?.estilo_visual || 'clean',
+      publico: structured_data?.publico_detalhado || structured_data?.publico || '',
+      fonte_preferida: brandRow?.fonte_preferida || '',
     }
-    console.log(`[execute-product] Generated ${variations.length} variations for order=${order_id}`)
+
+    let variations: { label: string; text?: string; posts?: StructuredPost[] }[]
+
+    if (isContentPack) {
+      // Multi-agent pipeline: 3 tones in parallel, each runs Analyst→Copywriter→ArtDirector→Editor
+      const toneResults = await Promise.all(
+        TONE_INSTRUCTIONS.map(async (tone) => {
+          try {
+            const posts = await generateContentPack(anthropic, tone.label, briefingText, brand, visaoImagem, quantidade, pilares)
+            if (posts.length === 0) return null
+            return { label: tone.label, posts }
+          } catch (err) {
+            console.error(`[execute-product] Multi-agent ${tone.label} failed:`, (err as Error).message)
+            return null
+          }
+        })
+      )
+      variations = toneResults.filter((v): v is { label: string; posts: StructuredPost[] } => v !== null && (v.posts?.length || 0) > 0)
+    } else {
+      // Legacy: single Haiku call per tone for non-content-pack products
+      const SIMPLE_PRODUCTS = ['post_instagram', 'ad_copy', 'reels_script']
+      const maxTokens = SIMPLE_PRODUCTS.includes(product) ? 4000 : 6000
+      const toneResults = await Promise.all(
+        TONE_INSTRUCTIONS.map(async (tone) => {
+          try {
+            const msg = await anthropic.messages.create({
+              model: 'claude-haiku-4-5-20251001',
+              max_tokens: maxTokens,
+              system: `${baseSystem}\n\nTone for this variation: ${tone.label}. Generate ONE complete variation. Output ONLY the content text — no JSON, no wrapper, no label prefix.`,
+              messages: [{ role: 'user', content: `BRIEFING DO CLIENTE:\n${briefingText}\n\nGenerate the complete deliverable in ${tone.label} tone now.` }],
+            })
+            const text = msg.content[0].type === 'text' ? msg.content[0].text : ''
+            return { label: tone.label, text: stripFences(text) }
+          } catch (err) {
+            console.error(`[execute-product] Tone ${tone.label} failed:`, (err as Error).message)
+            return null
+          }
+        })
+      )
+      variations = toneResults.filter((v): v is { label: string; text: string } => v !== null && (v.text?.length || 0) > 50)
+    }
+
+    if (variations.length === 0) throw new Error('All tone generations failed')
+    console.log(`[execute-product] Generated ${variations.length} variations for order=${order_id} (${isContentPack ? 'structured' : 'legacy'})`)
 
     const previewText = (variations[0]?.text || '').slice(0, 300)
     await supabase.from('orders').update({ preview_text: previewText }).eq('id', order_id)
@@ -299,7 +409,7 @@ export async function POST(req: NextRequest) {
         order_id,
         type: product,
         label: v.label || TONE_INSTRUCTIONS[i]?.label || `Option ${i + 1}`,
-        content: { text: stripFences(v.text || '') },
+        content: v.posts ? { posts: v.posts } : { text: stripFences(v.text || '') },
         is_selected: false,
         position: i,
       }))
@@ -329,38 +439,44 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ── Visão da imagem: cena descrita pelo usuário no formulário ──
-    const visaoImagem = structured_data?.visao_imagem || null
-
     const imageSlug = structured_data?.image_slug || IMAGE_PRODUCTS[product]
     if (imageSlug) {
       const { data: insertedChoices } = await supabase
         .from('choices').select('id, position, label, content').eq('order_id', order_id).order('position')
 
-      const { data: brandRow } = await supabase
-        .from('brand_contexts').select('nome_marca, tom').eq('user_id', user_id).limit(1).single()
-
-      const brand: Record<string, string> = brandRow
-        ? { nome_marca: brandRow.nome_marca || '', tom: brandRow.tom || '' }
-        : {}
-
       if (insertedChoices?.length) {
+        let imageCount = 0
         for (const choice of insertedChoices) {
-          fireImageGeneration({
-            order_id: order_id!,
-            choice_id: choice.id,
-            choice_position: choice.position,
-            choice_label: choice.label || '',
-            choice_text: choice.content?.text || '',
-            slug: imageSlug,
-            brand,
-            reference_image_url: reference_image_url || undefined,
-            briefing_text: briefingText,
-            product,
-            visao_imagem: visaoImagem,
-          })
+          if (isContentPack && choice.content?.posts?.length > 0) {
+            // Structured: fire image for FIRST post only (preview). Remaining on approval.
+            const firstPost = choice.content.posts[0]
+            fireImageGeneration({
+              order_id: order_id!,
+              choice_id: choice.id,
+              choice_position: choice.position,
+              post_number: 1,
+              image_prompt: firstPost.image_prompt,
+              product,
+              brand,
+              visao_imagem: visaoImagem || null,
+            })
+            imageCount++
+          } else {
+            // Legacy: one image per choice using visao_imagem
+            fireImageGeneration({
+              order_id: order_id!,
+              choice_id: choice.id,
+              choice_position: choice.position,
+              choice_text: choice.content?.text || '',
+              product,
+              brand,
+              briefing_text: briefingText,
+              visao_imagem: visaoImagem || null,
+            })
+            imageCount++
+          }
         }
-        console.log(`[execute-product] Fired ${insertedChoices.length} image jobs | visao="${visaoImagem?.slice(0, 60) || 'none'}"`)
+        console.log(`[execute-product] Fired ${imageCount} image jobs`)
 
         if (gerarVideo && insertedChoices?.length) {
           for (const choice of insertedChoices) {

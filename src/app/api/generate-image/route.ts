@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
       order_id,
       choice_id,
       choice_position,
+      post_number,
+      image_prompt: directImagePrompt,
       choice_text,
       choice_label,
       briefing_text,
@@ -43,38 +45,32 @@ export async function POST(req: NextRequest) {
         ? { width: 1080, height: 1350 }
         : PRODUCT_DIMENSIONS[product] || { width: 1080, height: 1350 }
 
-    const storageKey = `generated/${order_id}/choice-${choice_position ?? 0}.png`
+    const postSuffix = post_number ? `-post-${post_number}` : ''
+    const storageKey = `generated/${order_id}/choice-${choice_position ?? 0}${postSuffix}.png`
 
-    const context = briefing_text || choice_text || ''
-    const brandName = brand?.nome_marca || ''
-    const brandTom = brand?.tom || ''
-    const sceneInput = visao_imagem || ''
+    let finalPrompt: string
 
-    // Sonnet ONLY translates — zero creative direction, zero artistic embellishment
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const msg = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',  // Haiku for speed — literal translation only
-      max_tokens: 150,
-      messages: [{
-        role: 'user',
-        content: `Translate this scene description from Portuguese to English. LITERAL translation. Do NOT add any artistic direction, mood, style, composition guidance, or photography terms. Do NOT say "documentary", "intimate", "candid", "captures", "moment". Just describe what is physically there.
+    if (directImagePrompt) {
+      // Structured path: image_prompt already in English from Art Director agent
+      finalPrompt = directImagePrompt + `, ` + CAMERA_SIG
+    } else {
+      // Legacy path: translate visao_imagem from PT to EN via Haiku
+      const context = briefing_text || choice_text || ''
+      const sceneInput = visao_imagem || ''
 
-"${sceneInput || context.slice(0, 500)}"
+      const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+      const msg = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 150,
+        messages: [{
+          role: 'user',
+          content: `Translate this scene to English. LITERAL, no embellishment. 30-60 words. Return ONLY the translation.\n\n"${sceneInput || context.slice(0, 400)}"`,
+        }],
+      })
 
-Example of what I want:
-Input: "Mulher de 30 anos na cozinha fazendo café"
-Output: "A 30-year-old woman in a kitchen making coffee"
-
-That's it. Plain. Boring. Factual. 30-60 words max. Return ONLY the translation.`,
-      }],
-    })
-
-    const sceneDesc = msg.content[0].type === 'text'
-      ? msg.content[0].text.trim()
-      : `a person in a real everyday setting`
-
-    // Final prompt = literal scene + camera/realism signature (never passes through LLM)
-    const finalPrompt = sceneDesc + `, ` + CAMERA_SIG
+      const sceneDesc = msg.content[0].type === 'text' ? msg.content[0].text.trim() : `a person in a real everyday setting`
+      finalPrompt = sceneDesc + `, ` + CAMERA_SIG
+    }
 
     // Call edge function — uses flux-realism for human photos
     const edgeRes = await fetch(
@@ -111,10 +107,18 @@ That's it. Plain. Boring. Factual. 30-60 words max. Return ONLY the translation.
 
     const imageUrl = edgeData.url
 
-    await supabase
-      .from('choices')
-      .update({ image_url: imageUrl })
-      .eq('id', choice_id)
+    if (post_number) {
+      // Per-post image: store in post_images jsonb
+      const { data: current } = await supabase.from('choices').select('post_images, image_url').eq('id', choice_id).single()
+      const postImages = { ...(current?.post_images || {}), [String(post_number)]: imageUrl }
+      await supabase.from('choices').update({
+        post_images: postImages,
+        image_url: current?.image_url || imageUrl, // First post image becomes the cover
+      }).eq('id', choice_id)
+    } else {
+      // Legacy: single image per choice
+      await supabase.from('choices').update({ image_url: imageUrl }).eq('id', choice_id)
+    }
 
     const { data: allChoices } = await supabase
       .from('choices')
