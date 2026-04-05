@@ -220,11 +220,13 @@ async function callAgent(
   anthropic: Anthropic,
   systemPrompt: string,
   userContent: string,
-  maxTokens = 4000
+  maxTokens = 4000,
+  temperature = 0.7
 ): Promise<any> {
   const msg = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: maxTokens,
+    temperature,
     system: systemPrompt,
     messages: [{ role: 'user', content: userContent }],
   })
@@ -232,7 +234,8 @@ async function callAgent(
   return JSON.parse(stripFences(text))
 }
 
-/** Multi-agent content pack pipeline: Analyst → Copywriter → Art Director → Editor */
+/** Multi-agent content pack pipeline: Analyst → Copywriter → Art Director → Editor
+ *  ACCUMULATIVE: each agent receives the full output of all previous agents */
 async function generateContentPack(
   anthropic: Anthropic,
   tone: string,
@@ -242,18 +245,20 @@ async function generateContentPack(
   quantidade: number,
   pilares: string[],
 ): Promise<StructuredPost[]> {
-  // Agent 1: Brand Analyst (~3s)
+  // Agent 1: Brand Analyst (temp 0.3 — factual, don't invent)
   let analysis: Record<string, any>
   try {
-    analysis = await callAgent(anthropic, brandAnalystPrompt(brand), briefingText, 1000)
+    analysis = await callAgent(anthropic, brandAnalystPrompt(brand), briefingText, 1000, 0.3)
   } catch {
-    analysis = { target_audience_refined: brand.publico || '', tone_direction: tone, content_angles: pilares }
+    analysis = { business_summary: brand.descricao || '', target_audience_refined: brand.publico || '', tone_direction: tone, content_angles: pilares, visual_keywords: [] }
   }
 
-  // Agent 2: Copywriter (~5s)
+  // Agent 2: Copywriter (temp 0.8 — creative but controlled)
+  // Receives: briefing + full brand analysis (accumulative context)
   let posts: StructuredPost[]
   try {
-    posts = await callAgent(anthropic, copywriterPrompt(brand, analysis, tone, pilares, quantidade), briefingText, 4000)
+    const copyContext = `${briefingText}\n\n[BRAND ANALYSIS]\n${JSON.stringify(analysis, null, 2)}\n\n[CLIENT SCENE VISION]\n${visaoImagem || 'not specified'}`
+    posts = await callAgent(anthropic, copywriterPrompt(brand, analysis, tone, pilares, quantidade, briefingText), copyContext, 4000, 0.8)
     if (!Array.isArray(posts)) posts = []
   } catch {
     posts = []
@@ -261,9 +266,11 @@ async function generateContentPack(
 
   if (posts.length === 0) return []
 
-  // Agent 3: Art Director (~3s)
+  // Agent 3: Art Director (temp 0.5 — visual consistency)
+  // Receives: posts + analysis + scene vision (accumulative)
   try {
-    const imagePrompts = await callAgent(anthropic, artDirectorPrompt(posts, brand, visaoImagem), '', 2000)
+    const artContext = `[BRAND ANALYSIS]\n${JSON.stringify(analysis, null, 2)}\n\n[POSTS TO ILLUSTRATE]\n${JSON.stringify(posts.map(p => ({ n: p.post_number, hook: p.hook, visual: p.visual_suggestion })))}`
+    const imagePrompts = await callAgent(anthropic, artDirectorPrompt(posts, brand, visaoImagem, analysis), artContext, 2000, 0.5)
     if (Array.isArray(imagePrompts)) {
       for (const ip of imagePrompts) {
         const post = posts.find(p => p.post_number === ip.post_number)
@@ -271,18 +278,18 @@ async function generateContentPack(
       }
     }
   } catch {
-    // Fallback: generic image prompt
     for (const post of posts) {
-      if (!post.image_prompt) post.image_prompt = `${brand.nome_marca || 'brand'} product in natural setting, ${post.visual_suggestion || ''}`
+      if (!post.image_prompt) post.image_prompt = `${brand.nome_marca || 'brand'} product, ${post.visual_suggestion || visaoImagem || 'natural setting'}`
     }
   }
 
-  // Agent 4: Editor (~3s)
+  // Agent 4: Editor (temp 0.2 — correct, don't reinvent)
+  // Receives: everything (accumulative) — can check brand accuracy
   try {
-    const edited = await callAgent(anthropic, editorPrompt(posts, brand), '', 4000)
+    const edited = await callAgent(anthropic, editorPrompt(posts, brand, analysis, visaoImagem), '', 4000, 0.2)
     if (Array.isArray(edited) && edited.length === posts.length) posts = edited
   } catch {
-    // Keep unedited posts
+    // Keep unedited
   }
 
   return posts
