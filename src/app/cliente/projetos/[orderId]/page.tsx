@@ -327,6 +327,11 @@ export default function ProjetoPage() {
                 status={status}
                 orderId={orderId}
                 onHandleDetected={(handle) => setChatHandleDetected(true)}
+                onExecute={(action) => {
+                  if (action?.action === "execute" && action?.structured_data) {
+                    handleBriefingSubmit(action.structured_data, action.product || order?.product);
+                  }
+                }}
               />
             </div>
           </div>

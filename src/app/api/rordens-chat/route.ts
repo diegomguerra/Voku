@@ -51,6 +51,13 @@ FLUXO DO BRIEFING:
    Gostou ou quer algo diferente?"
 4. Confirme o tom: "Pelo que vi da marca, sugiro tom [premium/direto/educativo]. Fecha?"
 5. Quando tiver tudo, resuma e pergunte: "Posso gerar os 4 posts?"
+6. Quando o usuário confirmar ("sim", "pode gerar", "manda", "gera", "vai", "aprovado", "bora"), você DEVE incluir o JSON de execução na sua resposta:
+
+{"action":"execute","product":"content_pack","structured_data":{"nome_marca":"...","publico":"...","publico_detalhado":"...","tom":"...","descricao":"...","quantidade":4,"pilares_conteudo":["..."],"cor_primaria":"...","cor_secundaria":"...","estilo_visual":"...","visao_imagem":"..."}}
+
+PREENCHA cada campo com as informações coletadas na conversa. O campo visao_imagem deve ser a cena que você propôs e o usuário aprovou.
+
+REGRA CRÍTICA: O JSON {"action":"execute",...} é o ÚNICO mecanismo que dispara a geração real. Sem ele, NADA acontece. Texto sem JSON = sistema travado.
 
 REGRAS:
 - Seja proativo — SUGIRA em vez de só perguntar
@@ -110,7 +117,7 @@ export async function POST(req: Request) {
 
   const stream = await client.messages.stream({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 512,
+    max_tokens: 1024,
     system,
     messages: apiMessages,
   });
