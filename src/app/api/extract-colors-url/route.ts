@@ -75,8 +75,7 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
   // Combine all text
   const allText = html + "\n" + cssTexts.join("\n");
 
-  // Extract hex codes ONLY from color-relevant CSS properties
-  // This avoids picking up random hex from SVGs, data URIs, comments, etc.
+  // Extract hex codes from CSS properties AND inline styles
   const colorPropRe = /(?:color|background(?:-color)?|border(?:-color|-top-color|-bottom-color|-left-color|-right-color)?|fill|stroke|outline-color|box-shadow|text-shadow)\s*:\s*([^;}{]+)/gi;
   const colorMap: Record<string, number> = {};
   let propMatch;
@@ -89,21 +88,39 @@ async function extractColorsFromUrl(url: string): Promise<{ hex: string; count: 
     }
   }
 
-  // Convert to array, keep colors that appear frequently (≥1.5% of total or ≥15 times)
+  // Also extract from style="" attributes (React/SPA sites render inline)
+  const styleAttrRe = /style="([^"]*)"/gi;
+  let styleMatch;
+  while ((styleMatch = styleAttrRe.exec(allText)) !== null) {
+    const hexInStyle = styleMatch[1].match(/#[0-9a-fA-F]{3,6}\b/g) || [];
+    for (const raw of hexInStyle) {
+      const hex = normalizeHex(raw);
+      if (hex) colorMap[hex] = (colorMap[hex] || 0) + 1;
+    }
+  }
+
+  // Also check meta theme-color and og:image colors
+  const metaRe = /content="(#[0-9a-fA-F]{3,6})"/gi;
+  let metaMatch;
+  while ((metaMatch = metaRe.exec(allText)) !== null) {
+    const hex = normalizeHex(metaMatch[1]);
+    if (hex) colorMap[hex] = (colorMap[hex] || 0) + 10; // boost meta colors
+  }
+
+  // Lower threshold — accept any color that appears 2+ times
   const totalColors = Object.values(colorMap).reduce((a, b) => a + b, 0);
-  const minCount = Math.max(15, totalColors * 0.015);
+  const minCount = Math.max(2, totalColors * 0.005);
 
   return Object.entries(colorMap)
     .map(([hex, count]) => ({ hex, count, sat: saturation(hex) }))
     .filter(({ count }) => count >= minCount)
     .sort((a, b) => {
-      // Saturated colors first, then by frequency
-      const aChromatic = a.sat > 0.2 ? 1 : 0;
-      const bChromatic = b.sat > 0.2 ? 1 : 0;
+      const aChromatic = a.sat > 0.15 ? 1 : 0;
+      const bChromatic = b.sat > 0.15 ? 1 : 0;
       if (aChromatic !== bChromatic) return bChromatic - aChromatic;
       return b.count - a.count;
     })
-    .slice(0, 8);
+    .slice(0, 10);
 }
 
 export async function POST(req: Request) {

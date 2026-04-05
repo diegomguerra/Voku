@@ -6,7 +6,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 120
 
 function stripFences(s: string): string {
   return s.replace(/^```(?:json|JSON)?\s*\n?/, '').replace(/\n?```\s*$/, '').trim()

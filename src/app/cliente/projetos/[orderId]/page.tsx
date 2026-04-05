@@ -47,8 +47,11 @@ interface Choice {
 function deriveStatus(order: any, choices: Choice[], executing: boolean): "briefing" | "producao" | "aguardando_aprovacao" | "concluido" {
   if (!order) return "briefing";
 
-  // DB may store "delivered", "concluido", or "concluded"
   const raw = (order.status || "").toLowerCase();
+
+  // Failed orders go back to briefing so user can retry
+  if (raw === "failed") return "briefing";
+
   if (raw === "delivered" || raw === "concluido" || raw === "concluded") return "concluido";
 
   // Choices with a selected one = concluído (even if status is stale)
@@ -146,7 +149,7 @@ export default function ProjetoPage() {
     const isLanding = choices.length > 0 && (choices[0] as any)?.html_content !== undefined;
     const generationDone = isLanding
       ? choices.length >= 1 && choices.some(c => c.html_content)
-      : choices.length >= 3 && choices.every(c => c.image_url);
+      : choices.length >= 1; // Stop polling as soon as any choices arrive (images come async)
     if (generationDone) {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
       setExecuting(false);
