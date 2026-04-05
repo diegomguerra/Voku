@@ -9,8 +9,8 @@ export const maxDuration = 60
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
 
-// Technical camera signature — anchored AFTER Sonnet, never filtered
-const CAMERA_SIG = `shot on Sony A7III with 50mm f/1.8 lens, natural lens distortion, subtle chromatic aberration on edges, visible skin pores and texture, slight uneven skin tone, faint expression lines, real hair with flyaways, film grain, natural available light only, no flash, no reflectors`
+// Technical camera signature — anchored AFTER translation, never filtered
+const CAMERA_SIG = `photograph taken with a phone camera, natural available light, overcast flat lighting, visible skin pores and imperfections, uneven skin texture, real body proportions, worn everyday clothes, no makeup or minimal makeup, slight image noise, muted desaturated colors, no dramatic shadows, no rim light, no backlight glow`
 
 export async function POST(req: NextRequest) {
   const supabase = supabaseAdmin()
@@ -50,38 +50,31 @@ export async function POST(req: NextRequest) {
     const brandTom = brand?.tom || ''
     const sceneInput = visao_imagem || ''
 
-    // Sonnet builds the scene — it understands nuance better than Haiku
+    // Sonnet ONLY translates — zero creative direction, zero artistic embellishment
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
-      max_tokens: 250,
+      max_tokens: 150,
       messages: [{
         role: 'user',
-        content: `You are a documentary photographer directing a shoot. Write an image generation prompt in English for this scene.
+        content: `Translate this scene description from Portuguese to English. LITERAL translation. Do NOT add any artistic direction, mood, style, composition guidance, or photography terms. Do NOT say "documentary", "intimate", "candid", "captures", "moment". Just describe what is physically there.
 
-SCENE THE CLIENT DESCRIBED: "${sceneInput || context.slice(0, 500)}"
-${brandName ? `BRAND CONTEXT: ${brandName}${brandTom ? ` (${brandTom})` : ''}` : ''}
+"${sceneInput || context.slice(0, 500)}"
 
-YOUR STYLE: You shoot like a seasoned photojournalist — real moments, real people, real light. Think Steve McCurry meets everyday life. Your photos feel intimate and authentic. People in your photos look like they exist — with skin texture, messy hair, wrinkled clothes, natural posture.
+Example of what I want:
+Input: "Mulher de 30 anos na cozinha fazendo café"
+Output: "A 30-year-old woman in a kitchen making coffee"
 
-RULES:
-- Describe the EXACT scene: who, what they wear, what they hold, where they are, time of day, weather
-- Lighting must be NATURAL and AVAILABLE — overcast daylight, window light, open shade. Never studio.
-- Include at least 2 physical imperfections: uneven skin, flyaway hair, wrinkled fabric, chipped nail polish, faded clothes
-- The person should NOT be posing — they are caught in a real moment
-- NO text, words, or letters visible in the image
-- 80-120 words. Return ONLY the prompt text.
-
-NEVER USE these words: cinematic, stunning, beautiful, elegant, glamorous, perfect, flawless, masterpiece, award-winning, hyper-realistic, ultra-detailed, 4k, 8k, HDR, bokeh, dreamy, ethereal, magical`,
+That's it. Plain. Boring. Factual. 30-60 words max. Return ONLY the translation.`,
       }],
     })
 
     const sceneDesc = msg.content[0].type === 'text'
       ? msg.content[0].text.trim()
-      : `Person in a candid moment, natural light, real environment`
+      : `a person in a real everyday setting`
 
-    // Final prompt = Sonnet scene + camera signature (never passes through any LLM)
-    const finalPrompt = sceneDesc + `. ` + CAMERA_SIG
+    // Final prompt = literal scene + camera/realism signature (never passes through LLM)
+    const finalPrompt = sceneDesc + `, ` + CAMERA_SIG
 
     // Call edge function — uses flux-realism for human photos
     const edgeRes = await fetch(

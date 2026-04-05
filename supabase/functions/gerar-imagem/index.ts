@@ -71,14 +71,14 @@ async function falGen(
     sync_mode: true,
   };
 
-  // flux-realism supports strength param (0-1, lower = more realistic)
+  // flux-realism: lower guidance = less "AI direction", more natural
   if (model === "flux-realism") {
-    body.strength = 0.7;
-    body.num_inference_steps = opts?.num_inference_steps || 35;
-    body.guidance_scale = opts?.guidance_scale || 3.5;
+    body.strength = 0.6;
+    body.num_inference_steps = opts?.num_inference_steps || 30;
+    body.guidance_scale = opts?.guidance_scale || 2.8;
   } else {
-    body.num_inference_steps = opts?.num_inference_steps || 32;
-    body.guidance_scale = opts?.guidance_scale || 3.5;
+    body.num_inference_steps = opts?.num_inference_steps || 28;
+    body.guidance_scale = opts?.guidance_scale || 3.0;
   }
 
   const r = await fetch(endpoint, {
