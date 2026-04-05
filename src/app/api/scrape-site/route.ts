@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
 
-export const maxDuration = 15
+export const maxDuration = 30
 
 export async function POST(req: Request) {
   try {
@@ -9,6 +10,7 @@ export async function POST(req: Request) {
 
     const urlNorm = url.startsWith('http') ? url : `https://${url}`
 
+    // Fetch the raw HTML
     const ac = new AbortController()
     setTimeout(() => ac.abort(), 10000)
     const res = await fetch(urlNorm, {
@@ -16,51 +18,77 @@ export async function POST(req: Request) {
       signal: ac.signal,
     })
 
-    if (!res.ok) return NextResponse.json({ error: `HTTP ${res.status}`, content: '' })
+    if (!res.ok) return NextResponse.json({ error: `HTTP ${res.status}` })
 
     const html = await res.text()
 
-    // Extract title
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
-    const title = titleMatch ? titleMatch[1].trim() : ''
+    // Strip scripts, styles, SVGs to reduce token count — keep only visible text
+    const cleaned = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 6000) // max ~6k chars for Claude
 
-    // Extract meta description
+    // Also extract structured data from meta tags (always reliable)
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i)
     const descMatch = html.match(/<meta\s+(?:name|property)="(?:description|og:description)"[^>]*content="([^"]+)"/i)
       || html.match(/<meta\s+content="([^"]+)"[^>]*(?:name|property)="(?:description|og:description)"/i)
-    const description = descMatch ? descMatch[1].trim() : ''
 
-    // Extract h1, h2, h3 headings
-    const headings: string[] = []
-    const hRe = /<h[1-3][^>]*>([^<]+)<\/h[1-3]>/gi
-    let hMatch
-    while ((hMatch = hRe.exec(html)) !== null && headings.length < 10) {
-      const text = hMatch[1].replace(/\s+/g, ' ').trim()
-      if (text.length > 3 && text.length < 200) headings.push(text)
+    const metaTitle = titleMatch ? titleMatch[1].trim() : ''
+    const metaDesc = descMatch ? descMatch[1].trim() : ''
+
+    // Use Haiku to analyze the site content (fast, cheap)
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 500,
+      messages: [{
+        role: 'user',
+        content: `Analyze this website and extract business information. Return ONLY a JSON object.
+
+URL: ${urlNorm}
+META TITLE: ${metaTitle}
+META DESCRIPTION: ${metaDesc}
+
+VISIBLE TEXT FROM SITE:
+${cleaned}
+
+Return this exact JSON structure (fill what you can find, leave empty string if not found):
+{
+  "business_name": "company/brand name",
+  "business_type": "what the company does in 1 sentence",
+  "products_services": "main products or services offered",
+  "target_audience": "who the company serves",
+  "value_proposition": "main value proposition or tagline",
+  "tone": "perceived brand tone (professional/casual/premium/scientific/etc)",
+  "industry": "industry sector",
+  "key_phrases": ["3-5 key phrases from the site that define the brand"]
+}
+
+Use the ACTUAL text from the site. Do NOT invent or assume anything not present in the text.
+Return ONLY valid JSON.`,
+      }],
+    })
+
+    const analysisText = msg.content[0].type === 'text' ? msg.content[0].text : '{}'
+    let analysis: any
+    try {
+      analysis = JSON.parse(analysisText.replace(/```json\n?/g, '').replace(/```/g, '').trim())
+    } catch {
+      analysis = { business_name: metaTitle, business_type: metaDesc }
     }
-
-    // Extract visible paragraphs (first 5 meaningful ones)
-    const paragraphs: string[] = []
-    const pRe = /<p[^>]*>([^<]{20,})<\/p>/gi
-    let pMatch
-    while ((pMatch = pRe.exec(html)) !== null && paragraphs.length < 5) {
-      const text = pMatch[1].replace(/\s+/g, ' ').replace(/&[a-z]+;/gi, ' ').trim()
-      if (text.length > 20) paragraphs.push(text.slice(0, 200))
-    }
-
-    // Extract meta keywords
-    const kwMatch = html.match(/<meta\s+name="keywords"[^>]*content="([^"]+)"/i)
-    const keywords = kwMatch ? kwMatch[1].trim() : ''
 
     return NextResponse.json({
       ok: true,
-      title,
-      description,
-      headings,
-      paragraphs,
-      keywords,
       url: urlNorm,
+      title: metaTitle,
+      description: metaDesc,
+      analysis,
     })
   } catch (err) {
-    return NextResponse.json({ error: (err as Error).message, content: '' })
+    return NextResponse.json({ error: (err as Error).message })
   }
 }

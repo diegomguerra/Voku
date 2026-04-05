@@ -183,11 +183,20 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           let ctx = `\nSite: ${urlMatch[0]}`;
           if (contentRes) {
             const content = await contentRes.json();
-            if (content.title) ctx += `\nTítulo: ${content.title}`;
-            if (content.description) ctx += `\nDescrição: ${content.description}`;
-            if (content.headings?.length) ctx += `\nSeções: ${content.headings.join(" | ")}`;
-            if (content.paragraphs?.length) ctx += `\nConteúdo: ${content.paragraphs.join(" ")}`;
-            if (content.keywords) ctx += `\nPalavras-chave: ${content.keywords}`;
+            if (content.analysis) {
+              const a = content.analysis;
+              if (a.business_name) ctx += `\nEmpresa: ${a.business_name}`;
+              if (a.business_type) ctx += `\nO que faz: ${a.business_type}`;
+              if (a.products_services) ctx += `\nProdutos/serviços: ${a.products_services}`;
+              if (a.target_audience) ctx += `\nPúblico-alvo: ${a.target_audience}`;
+              if (a.value_proposition) ctx += `\nProposta de valor: ${a.value_proposition}`;
+              if (a.tone) ctx += `\nTom percebido: ${a.tone}`;
+              if (a.industry) ctx += `\nSetor: ${a.industry}`;
+              if (a.key_phrases?.length) ctx += `\nFrases-chave do site: ${a.key_phrases.join(", ")}`;
+            } else {
+              if (content.title) ctx += `\nTítulo: ${content.title}`;
+              if (content.description) ctx += `\nDescrição: ${content.description}`;
+            }
           }
           if (colorRes) {
             const colors = await colorRes.json();
