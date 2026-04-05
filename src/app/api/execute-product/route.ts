@@ -300,9 +300,16 @@ export async function POST(req: NextRequest) {
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
 
+    // Landing page: delegate to Lovable Cloud pipeline
     if (product === 'landing_page_copy') {
-      await supabase.from('orders').update({ status: 'briefing' }).eq('id', order_id)
-      return NextResponse.json({ ok: true, product: 'landing_page_copy', message: 'Landing page — aguardando formulário visual' })
+      await supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id)
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      fetch(`${baseUrl}/api/generate-landing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id, user_id, structured_data }),
+      }).catch(e => console.error('[execute-product] generate-landing fire error:', e))
+      return NextResponse.json({ ok: true, product: 'landing_page_copy', message: 'Landing page em produção via Lovable Cloud' })
     }
 
     const { data: existingChoices } = await supabase
