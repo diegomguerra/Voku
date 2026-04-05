@@ -245,52 +245,66 @@ async function generateContentPack(
   quantidade: number,
   pilares: string[],
 ): Promise<StructuredPost[]> {
+  // Track all prompts for transparency
+  const agentLog: Record<string, any> = {}
+
   // Agent 1: Brand Analyst (temp 0.3 — factual, don't invent)
+  const analystPrompt = brandAnalystPrompt(brand)
   let analysis: Record<string, any>
   try {
-    analysis = await callAgent(anthropic, brandAnalystPrompt(brand), briefingText, 1000, 0.3)
+    analysis = await callAgent(anthropic, analystPrompt, briefingText, 1000, 0.3)
+    agentLog.brand_analyst = { prompt: analystPrompt, output: analysis }
   } catch {
     analysis = { business_summary: brand.descricao || '', target_audience_refined: brand.publico || '', tone_direction: tone, content_angles: pilares, visual_keywords: [] }
+    agentLog.brand_analyst = { prompt: analystPrompt, output: analysis, fallback: true }
   }
 
   // Agent 2: Copywriter (temp 0.8 — creative but controlled)
-  // Receives: briefing + full brand analysis (accumulative context)
+  const copyPrompt = copywriterPrompt(brand, analysis, tone, pilares, quantidade, briefingText)
   let posts: StructuredPost[]
   try {
     const copyContext = `${briefingText}\n\n[BRAND ANALYSIS]\n${JSON.stringify(analysis, null, 2)}\n\n[CLIENT SCENE VISION]\n${visaoImagem || 'not specified'}`
-    posts = await callAgent(anthropic, copywriterPrompt(brand, analysis, tone, pilares, quantidade, briefingText), copyContext, 4000, 0.8)
+    posts = await callAgent(anthropic, copyPrompt, copyContext, 4000, 0.8)
     if (!Array.isArray(posts)) posts = []
+    agentLog.copywriter = { prompt: copyPrompt.slice(0, 500) + '...', output_count: posts.length }
   } catch {
     posts = []
+    agentLog.copywriter = { prompt: copyPrompt.slice(0, 500) + '...', error: true }
   }
 
   if (posts.length === 0) return []
 
   // Agent 3: Art Director (temp 0.5 — visual consistency)
-  // Receives: posts + analysis + scene vision (accumulative)
+  const artPrompt = artDirectorPrompt(posts, brand, visaoImagem, analysis)
   try {
     const artContext = `[BRAND ANALYSIS]\n${JSON.stringify(analysis, null, 2)}\n\n[POSTS TO ILLUSTRATE]\n${JSON.stringify(posts.map(p => ({ n: p.post_number, hook: p.hook, visual: p.visual_suggestion })))}`
-    const imagePrompts = await callAgent(anthropic, artDirectorPrompt(posts, brand, visaoImagem, analysis), artContext, 2000, 0.5)
+    const imagePrompts = await callAgent(anthropic, artPrompt, artContext, 2000, 0.5)
     if (Array.isArray(imagePrompts)) {
       for (const ip of imagePrompts) {
         const post = posts.find(p => p.post_number === ip.post_number)
         if (post) post.image_prompt = ip.image_prompt
       }
     }
+    agentLog.art_director = { prompt: artPrompt.slice(0, 500) + '...', output_count: imagePrompts?.length || 0 }
   } catch {
     for (const post of posts) {
       if (!post.image_prompt) post.image_prompt = `${brand.nome_marca || 'brand'} product, ${post.visual_suggestion || visaoImagem || 'natural setting'}`
     }
+    agentLog.art_director = { prompt: artPrompt.slice(0, 500) + '...', fallback: true }
   }
 
   // Agent 4: Editor (temp 0.2 — correct, don't reinvent)
-  // Receives: everything (accumulative) — can check brand accuracy
+  const editPromptText = editorPrompt(posts, brand, analysis, visaoImagem)
   try {
-    const edited = await callAgent(anthropic, editorPrompt(posts, brand, analysis, visaoImagem), '', 4000, 0.2)
+    const edited = await callAgent(anthropic, editPromptText, '', 4000, 0.2)
     if (Array.isArray(edited) && edited.length === posts.length) posts = edited
+    agentLog.editor = { prompt: editPromptText.slice(0, 500) + '...', corrections_applied: true }
   } catch {
-    // Keep unedited
+    agentLog.editor = { prompt: editPromptText.slice(0, 500) + '...', skipped: true }
   }
+
+  // Attach log to posts for transparency
+  ;(posts as any).__agentLog = agentLog
 
   return posts
 }
@@ -424,6 +438,7 @@ export async function POST(req: NextRequest) {
         type: product,
         label: v.label || TONE_INSTRUCTIONS[i]?.label || `Option ${i + 1}`,
         content: v.posts ? { posts: v.posts } : { text: stripFences(v.text || '') },
+        agent_prompts: v.posts ? ((v.posts as any).__agentLog || {}) : {},
         is_selected: false,
         position: i,
       }))

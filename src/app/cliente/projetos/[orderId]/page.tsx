@@ -120,7 +120,7 @@ export default function ProjetoPage() {
   const loadChoices = useCallback(async () => {
     const sb = supabase();
     const { data } = await sb.from("choices")
-      .select("id, label, content, image_url, position, is_selected, html_content")
+      .select("id, label, content, image_url, post_images, agent_prompts, position, is_selected, html_content")
       .eq("order_id", orderId).order("position");
     if (data) setChoices(data as Choice[]);
   }, [orderId]);

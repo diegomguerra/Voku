@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 
 const FF = "'Inter', sans-serif";
@@ -21,6 +21,7 @@ type Choice = {
   is_selected: boolean;
   image_url?: string | null;
   post_images?: Record<string, string>;
+  agent_prompts?: Record<string, any>;
 };
 
 type OrderData = {
@@ -214,6 +215,7 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
   const [adjustNotes, setAdjustNotes] = useState("");
   const [adjustSending, setAdjustSending] = useState(false);
   const [adjustSent, setAdjustSent] = useState(false);
+  const [showPrompts, setShowPrompts] = useState(false);
 
   const activeChoice = sorted[activeTab];
   const posts = activeChoice ? parsePosts(activeChoice) : [];
@@ -696,6 +698,54 @@ export default function SocialPackViewer({ order, choices: rawChoices, iteration
               Cancelar
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Agent Prompts — collapsible panel */}
+      {activeChoice?.agent_prompts && Object.keys(activeChoice.agent_prompts).length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <button
+            onClick={() => setShowPrompts(!showPrompts)}
+            style={{
+              fontFamily: FF, fontSize: 10, fontWeight: 600, letterSpacing: 1,
+              textTransform: "uppercase" as const, color: "#999", background: "none",
+              border: "none", cursor: "pointer", padding: 0,
+            }}
+          >
+            {showPrompts ? "Ocultar prompts dos agentes" : "Ver prompts dos agentes"} {showPrompts ? "−" : "+"}
+          </button>
+          {showPrompts && (
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              {Object.entries(activeChoice.agent_prompts).map(([agent, data]: [string, any]) => (
+                <div key={agent} style={{
+                  background: "#f8f8f5", border: "1px solid #eee", borderRadius: 6, padding: 12,
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase" as const, color: "#999", marginBottom: 6 }}>
+                    {agent.replace(/_/g, " ")}
+                    {data.fallback && <span style={{ color: "#c00", marginLeft: 6 }}>fallback</span>}
+                    {data.skipped && <span style={{ color: "#888", marginLeft: 6 }}>skipped</span>}
+                  </div>
+                  {data.prompt && (
+                    <pre style={{
+                      fontSize: 10, color: "#555", lineHeight: 1.5, margin: 0,
+                      whiteSpace: "pre-wrap", wordBreak: "break-word",
+                      maxHeight: 120, overflow: "auto",
+                    }}>
+                      {typeof data.prompt === "string" ? data.prompt : JSON.stringify(data.prompt, null, 2)}
+                    </pre>
+                  )}
+                  {data.output && (
+                    <details style={{ marginTop: 6 }}>
+                      <summary style={{ fontSize: 10, color: "#999", cursor: "pointer" }}>Output</summary>
+                      <pre style={{ fontSize: 10, color: "#666", lineHeight: 1.4, margin: "4px 0 0", whiteSpace: "pre-wrap", maxHeight: 100, overflow: "auto" }}>
+                        {JSON.stringify(data.output, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
