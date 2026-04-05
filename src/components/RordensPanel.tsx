@@ -92,6 +92,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
   const [gravando, setGravando] = useState(false);
   const [pendingImage, setPendingImage] = useState<{ base64: string; mediaType: string; url: string } | null>(null);
   const [imagensReferencia, setImagensReferencia] = useState<string[]>([]);
+  const [brandContext, setBrandContext] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -171,9 +172,8 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     setStreaming(true);
 
     try {
-      // Detect URL in user text — scrape site for brand context
+      // Detect URL in user text — scrape site for brand context (persists across messages)
       const urlMatch = text.match(/https?:\/\/[^\s]+/i);
-      let siteContext = "";
       if (urlMatch) {
         try {
           const scrapeRes = await fetch("/api/extract-colors-url", {
@@ -184,21 +184,21 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           const scrapeData = await scrapeRes.json();
           if (scrapeData.cores?.length > 0) {
             const colorList = scrapeData.cores.map((c: any) => `${c.hex} (${c.nome})`).join(", ");
-            siteContext = `\n\n[CONTEXTO EXTRAÍDO DO SITE ${urlMatch[0]}]\nCores encontradas: ${colorList}\nUse essas cores como referência da identidade visual da marca.`;
+            setBrandContext(prev => prev + `\nSite analisado: ${urlMatch[0]}\nCores: ${colorList}`);
           }
         } catch {}
       }
 
-      // Also detect @handle — try to use as Instagram context
+      // Also detect @handle
       const atMatch = text.match(/@([a-zA-Z0-9_.]{2,30})/);
       if (atMatch) {
-        siteContext += `\n\n[HANDLE DETECTADO: @${atMatch[1]}]\nO usuário informou o perfil @${atMatch[1]}. Pergunte sobre o negócio e crie o briefing baseado nesse perfil.`;
+        setBrandContext(prev => prev + `\nPerfil: @${atMatch[1]}`);
       }
 
-      // Build API payload
-      const apiMessages = newMsgs.map((m, idx) => ({
+      // Build API payload — brandContext is sent as formContext on every message
+      const apiMessages = newMsgs.map(m => ({
         role: m.role,
-        content: idx === newMsgs.length - 1 && siteContext ? m.content + siteContext : m.content,
+        content: m.content,
       }));
 
       const res = await fetch("/api/rordens-chat", {
@@ -206,7 +206,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: apiMessages,
-          formContext,
+          formContext: (formContext || '') + (brandContext ? `\n\n[MARCA IDENTIFICADA]\n${brandContext}` : ''),
           produto,
           passo,
           modo,
