@@ -234,9 +234,10 @@ async function callAgent(
   return JSON.parse(stripFences(text))
 }
 
-/** Multi-agent content pack pipeline: Analyst → Copywriter → Art Director → Editor
+/** Multi-agent pipeline: Copywriter → Art Director → Editor
+ *  Brand Analyst runs ONCE before this (shared across tones)
  *  ACCUMULATIVE: each agent receives the full output of all previous agents */
-async function generateContentPack(
+async function generateContentPackWithAnalysis(
   anthropic: Anthropic,
   tone: string,
   briefingText: string,
@@ -244,20 +245,11 @@ async function generateContentPack(
   visaoImagem: string,
   quantidade: number,
   pilares: string[],
+  analysis: Record<string, any>,
+  sharedAgentLog: Record<string, any>,
 ): Promise<StructuredPost[]> {
-  // Track all prompts for transparency
-  const agentLog: Record<string, any> = {}
-
-  // Agent 1: Brand Analyst (temp 0.3 — factual, don't invent)
-  const analystPrompt = brandAnalystPrompt(brand)
-  let analysis: Record<string, any>
-  try {
-    analysis = await callAgent(anthropic, analystPrompt, briefingText, 1000, 0.3)
-    agentLog.brand_analyst = { prompt: analystPrompt, output: analysis }
-  } catch {
-    analysis = { business_summary: brand.descricao || '', target_audience_refined: brand.publico || '', tone_direction: tone, content_angles: pilares, visual_keywords: [] }
-    agentLog.brand_analyst = { prompt: analystPrompt, output: analysis, fallback: true }
-  }
+  // Start with shared analyst log, add per-tone agents
+  const agentLog: Record<string, any> = { ...sharedAgentLog }
 
   // Agent 2: Copywriter (temp 0.8 — creative but controlled)
   const copyPrompt = copywriterPrompt(brand, analysis, tone, pilares, quantidade, briefingText)
@@ -388,11 +380,24 @@ export async function POST(req: NextRequest) {
     let variations: { label: string; text?: string; posts?: StructuredPost[] }[]
 
     if (isContentPack) {
-      // Multi-agent pipeline: 3 tones in parallel, each runs Analyst→Copywriter→ArtDirector→Editor
+      // OPTIMIZATION: Brand Analyst runs ONCE (same result for all 3 tones)
+      const analystPrompt = brandAnalystPrompt(brand)
+      let sharedAnalysis: Record<string, any>
+      const sharedAgentLog: Record<string, any> = {}
+      try {
+        sharedAnalysis = await callAgent(anthropic, analystPrompt, briefingText, 1000, 0.3)
+        sharedAgentLog.brand_analyst = { prompt: analystPrompt, output: sharedAnalysis }
+      } catch {
+        sharedAnalysis = { business_summary: brand.descricao || structured_data?.descricao || '', target_audience_refined: brand.publico || '', tone_direction: '', content_angles: pilares, visual_keywords: [] }
+        sharedAgentLog.brand_analyst = { prompt: analystPrompt, output: sharedAnalysis, fallback: true }
+      }
+      console.log(`[execute-product] Brand Analyst done: "${sharedAnalysis.business_summary?.slice(0, 60)}"`)
+
+      // 3 tones in parallel — each runs Copywriter→ArtDirector→Editor (NOT Analyst again)
       const toneResults = await Promise.all(
         TONE_INSTRUCTIONS.map(async (tone) => {
           try {
-            const posts = await generateContentPack(anthropic, tone.label, briefingText, brand, visaoImagem, quantidade, pilares)
+            const posts = await generateContentPackWithAnalysis(anthropic, tone.label, briefingText, brand, visaoImagem, quantidade, pilares, sharedAnalysis, sharedAgentLog)
             if (posts.length === 0) return null
             return { label: tone.label, posts }
           } catch (err) {
