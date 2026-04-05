@@ -4,7 +4,7 @@ import { PRODUCT_DIMENSIONS } from '@/lib/image-engine/types'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 120
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
