@@ -308,7 +308,7 @@ export default function ProjetoPage() {
         </div>
 
         {/* ═══ ZONA C: Split — Rordens + Conteúdo ═══ */}
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: chatHandleDetected && status === "briefing" ? "1fr" : "380px 1fr", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: status === "briefing" ? "1fr" : "380px 1fr", overflow: "hidden" }}>
 
           {/* ── Rordens + upload hint ── */}
           <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -334,8 +334,8 @@ export default function ProjetoPage() {
           {/* ── Coluna direita — muda por status ── */}
           <div style={{ background: T.sand, overflowY: "auto" }}>
 
-            {/* ── ESTADO 1: BRIEFING ── */}
-            {status === "briefing" && !chatHandleDetected && (
+            {/* ── ESTADO 1: BRIEFING — handled by chat, form hidden ── */}
+            {false && status === "briefing" && (
               <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
                 {order?.product === "landing_page_copy" ? (
                   <LandingPageViewer

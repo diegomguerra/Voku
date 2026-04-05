@@ -137,11 +137,14 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
 
   const selectMode = (m: "chat" | "form") => {
     setModo(m);
-    const greeting = m === "chat"
-      ? `Ótimo! Vou te guiar pelo briefing. Vamos começar — me conta sobre o seu negócio e o que você precisa.`
-      : `Perfeito! Preencha o formulário ao lado. Qualquer dúvida, é só me chamar aqui.`;
-    setMessages([{ role: "assistant", content: greeting }]);
+    setMessages([{ role: "assistant", content: `Cole o @ da marca ou me conte sobre o projeto. Você também pode enviar logo, prints e referências visuais.` }]);
   };
+
+  // Auto-start in chat mode
+  useEffect(() => {
+    if (!modo && status !== "concluido") selectMode("chat");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sendMessage = useCallback(async (text: string, image?: { base64: string; mediaType: string; url: string }) => {
     if ((!text.trim() && !image) || streaming) return;
@@ -334,7 +337,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     <>
       <style>{RORDENS_CSS}</style>
       <div style={{
-        width: 380, minWidth: 380, background: "#111", borderRight: "1px solid #222",
+        minWidth: 380, background: "#111", borderRight: "1px solid #222",
         display: "flex", flexDirection: "column", height: "100%",
       }}>
         {/* ─── Header ─── */}
@@ -343,7 +346,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           display: "flex", alignItems: "center", gap: 10, flexShrink: 0,
         }}>
           <div style={{
-            width: 28, height: 28, borderRadius: "50%", background: "#C8F135",
+            width: 28, height: 28, borderRadius: "50%", background: "#fff",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 12, color: "#111",
           }}>R</div>
@@ -352,7 +355,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
             <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 11, color: "#888", display: "flex", alignItems: "center", gap: 6 }}>
               Coordenador de Prompts · Voku
               <div style={{
-                width: 7, height: 7, borderRadius: "50%", background: "#C8F135",
+                width: 6, height: 6, borderRadius: "50%", background: "#4ade80",
                 animation: "rordens-pulse 2s ease-in-out infinite",
               }} />
             </div>
@@ -364,58 +367,14 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           flex: 1, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 10,
         }} className="rordens-scroll">
           {status === "concluido" && !modo ? (
-            /* ─── Concluded state ─── */
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <div style={{
                 padding: "10px 14px", borderRadius: "4px 12px 12px 12px",
                 background: "#1a1a1a", border: "1px solid #2a2a2a", maxWidth: 300,
-                fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, color: "#e8e8e8", lineHeight: 1.6,
+                fontFamily: "'Inter', sans-serif", fontSize: 13, color: "#e8e8e8", lineHeight: 1.6,
               }}>
-                Projeto concluído! O conteúdo aprovado está disponível para download quando precisar.
+                Projeto concluído. O conteúdo aprovado está disponível para download.
               </div>
-              <div style={{
-                padding: "10px 14px", borderRadius: "4px 12px 12px 12px",
-                background: "#1a1a1a", border: "1px solid #2a2a2a", maxWidth: 300,
-                fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, color: "#e8e8e8", lineHeight: 1.6,
-              }}>
-                Quer criar algo novo? É só clicar em <strong style={{ color: "#C8F135" }}>+ Novo Projeto</strong>.
-              </div>
-            </div>
-          ) : !modo ? (
-            /* ─── Mode selection ─── */
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{
-                padding: "10px 14px", borderRadius: "4px 12px 12px 12px",
-                background: "#1a1a1a", border: "1px solid #2a2a2a", maxWidth: 300,
-                fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 13.5, color: "#e8e8e8", lineHeight: 1.6,
-              }}>
-                Olá! Sou o <strong style={{ color: "#C8F135" }}>Rordens</strong>, coordenador de prompts da Voku. Vou te ajudar a montar o briefing de <strong style={{ color: "#C8F135" }}>{produtoLabel}</strong>. Como você prefere trabalhar?
-              </div>
-
-              {[
-                { mode: "chat" as const, icon: "💬", title: "Responder para o Rordens", desc: "Eu faço as perguntas e preencho o formulário" },
-                { mode: "form" as const, icon: "📋", title: "Preencher o formulário", desc: "Você preenche direto, eu tiro dúvidas" },
-              ].map(opt => (
-                <div
-                  key={opt.mode}
-                  onClick={() => selectMode(opt.mode)}
-                  style={{
-                    background: "#1a1a1a", border: "1px solid #2a2a2a", borderRadius: 10,
-                    padding: "12px 14px", cursor: "pointer", transition: "border-color 0.15s",
-                    maxWidth: 300,
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = "#C8F135")}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = "#2a2a2a")}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 16 }}>{opt.icon}</span>
-                    <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 600, fontSize: 13, color: "#fff" }}>{opt.title}</span>
-                  </div>
-                  <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 12, color: "#666", marginTop: 4, marginLeft: 24 }}>
-                    {opt.desc}
-                  </div>
-                </div>
-              ))}
             </div>
           ) : (
             <>
@@ -443,7 +402,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
                       background: "#1a1a1a", border: "1px solid #333",
                       borderRadius: 8, padding: "8px 12px", marginBottom: 4,
                     }}>
-                      <span style={{ fontSize: 16 }}>📎</span>
+                      <span style={{ fontSize: 11, color: "#555", fontWeight: 700 }}>FILE</span>
                       <div>
                         <div style={{ fontSize: 12, color: "#e8e8e8", fontWeight: 500 }}>{m.fileName}</div>
                         {m.fileSize && (
@@ -456,8 +415,8 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
                   {/* Text bubble */}
                   {m.content && (
                     <div style={{
-                      background: m.role === "user" ? "#C8F135" : "#1a1a1a",
-                      border: m.role === "user" ? "none" : "1px solid #2a2a2a",
+                      background: m.role === "user" ? "#fff" : "#1a1a1a",
+                      border: m.role === "user" ? "1px solid #333" : "1px solid #2a2a2a",
                       color: m.role === "user" ? "#111" : "#e8e8e8",
                       padding: "10px 14px",
                       borderRadius: m.role === "user" ? "12px 4px 12px 12px" : "4px 12px 12px 12px",
@@ -518,7 +477,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
                     padding: "5px 12px", cursor: "pointer", whiteSpace: "nowrap",
                     transition: "border-color 0.15s, color 0.15s",
                   }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#C8F135"; e.currentTarget.style.color = "#C8F135"; }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "#fff"; e.currentTarget.style.color = "#fff"; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = "#2a2a2a"; e.currentTarget.style.color = "#888"; }}
                 >
                   {chip}
@@ -538,8 +497,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
         )}
 
         {/* ─── Input area: [+] [mic] [textarea] [→] ─── */}
-        {modo && (
-          <div style={{
+        <div style={{
             padding: "10px 14px", borderTop: "1px solid #222",
             display: "flex", alignItems: "flex-end", gap: 8, flexShrink: 0,
           }}>
@@ -553,7 +511,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", flexShrink: 0, transition: "border-color 0.15s",
               }}
-              onMouseEnter={e => (e.currentTarget.style.borderColor = "#C8F135")}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = "#fff")}
               onMouseLeave={e => (e.currentTarget.style.borderColor = "#333")}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -575,8 +533,8 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
               title={gravando ? "Parar gravação" : "Gravar áudio"}
               style={{
                 width: 34, height: 34, borderRadius: "50%",
-                background: gravando ? "#C8F135" : "#1a1a1a",
-                border: `1px solid ${gravando ? "#C8F135" : "#333"}`,
+                background: gravando ? "#fff" : "#1a1a1a",
+                border: `1px solid ${gravando ? "#fff" : "#333"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 cursor: "pointer", flexShrink: 0, transition: "all 0.15s",
               }}
@@ -611,7 +569,7 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
               disabled={streaming || !canSend}
               style={{
                 width: 34, height: 34, borderRadius: 10,
-                background: canSend ? "#C8F135" : "#1a1a1a",
+                background: canSend ? "#fff" : "#1a1a1a",
                 border: "none", cursor: canSend && !streaming ? "pointer" : "default",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0, transition: "background 0.15s",
@@ -625,7 +583,6 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
               </svg>
             </button>
           </div>
-        )}
       </div>
 
       {/* Custom scrollbar CSS */}
