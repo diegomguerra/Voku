@@ -314,9 +314,8 @@ export default function ProjetoPage() {
           <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
             {status === "briefing" && (
               <div style={{ padding: "10px 16px", background: "#EAF3DE", borderBottom: "1px solid #C0DD97", display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-                <span style={{ fontSize: 14 }}>📎</span>
                 <span style={{ fontFamily: FI, fontSize: 11, color: "#2D5016", fontWeight: 600 }}>
-                  Use o chat para enviar logo, prints e referências visuais da sua marca
+                  Envie logo, prints e referências visuais pelo chat
                 </span>
               </div>
             )}
@@ -905,7 +904,7 @@ function GenericBriefingForm({ productLabel, onSubmit, loading }: {
     <div style={{ background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
       <div style={{ padding: "24px 28px 0", background: "#f8fafc", borderBottom: "1px solid #e2e8f0" }}>
         <h2 style={{ fontSize: 18, fontWeight: 700, color: "#0f172a", margin: "0 0 20px" }}>
-          📋 Briefing — {productLabel}
+          Briefing — {productLabel}
         </h2>
       </div>
       <div style={{ padding: 28 }}>
@@ -932,12 +931,12 @@ function GenericBriefingForm({ productLabel, onSubmit, loading }: {
           onClick={() => onSubmit(text)}
           disabled={loading || !text.trim()}
           style={{
-            background: "#CCEE33", color: "#1a1a1a", border: "none", padding: "12px 36px",
-            borderRadius: 9, fontSize: 15, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer",
+            background: "#111", color: "#fff", border: "none", padding: "12px 36px",
+            borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer",
             opacity: loading || !text.trim() ? 0.5 : 1,
           }}
         >
-          {loading ? "Gerando..." : `🚀 Gerar ${productLabel} com IA`}
+          {loading ? "Gerando..." : `Gerar ${productLabel}`}
         </button>
       </div>
     </div>

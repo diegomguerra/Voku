@@ -56,10 +56,10 @@ const PILARES = [
 // FORMATOS
 // ─────────────────────────────────────────────
 const FORMATOS = [
-  { id: 'post_estatico', emoji: '🖼', label: 'Post estático', desc: 'Imagem única com legenda' },
-  { id: 'carrossel',     emoji: '📚', label: 'Carrossel',     desc: 'Múltiplos slides deslizáveis' },
-  { id: 'reels',         emoji: '🎬', label: 'Reels / Vídeo', desc: 'Roteiro para vídeo curto' },
-  { id: 'stories',       emoji: '📱', label: 'Stories',       desc: 'Sequência de stories' },
+  { id: 'post_estatico', label: 'Post estático', desc: 'Imagem única com legenda' },
+  { id: 'carrossel',     label: 'Carrossel',     desc: 'Múltiplos slides deslizáveis' },
+  { id: 'reels',         label: 'Reels / Vídeo', desc: 'Roteiro para vídeo curto' },
+  { id: 'stories',       label: 'Stories',       desc: 'Sequência de stories' },
 ];
 
 // ─────────────────────────────────────────────
@@ -78,24 +78,24 @@ const OBJETIVOS = [
 // TONS DE VOZ
 // ─────────────────────────────────────────────
 const TONS = [
-  { id: 'direto',        label: 'Direto & Assertivo',    emoji: '🎯' },
-  { id: 'inspiracional', label: 'Inspiracional',          emoji: '✨' },
-  { id: 'educativo',     label: 'Educativo & Científico', emoji: '🧪' },
-  { id: 'premium',       label: 'Premium & Exclusivo',    emoji: '💎' },
-  { id: 'descontraido',  label: 'Descontraído',           emoji: '😎' },
-  { id: 'urgente',       label: 'Urgência & Conversão',   emoji: '🔥' },
+  { id: 'direto',        label: 'Direto & Assertivo' },
+  { id: 'inspiracional', label: 'Inspiracional' },
+  { id: 'educativo',     label: 'Educativo & Científico' },
+  { id: 'premium',       label: 'Premium & Exclusivo' },
+  { id: 'descontraido',  label: 'Descontraído' },
+  { id: 'urgente',       label: 'Urgência & Conversão' },
 ];
 
 // ─────────────────────────────────────────────
 // ESTILOS VISUAIS
 // ─────────────────────────────────────────────
 const ESTILOS = [
-  { id: 'moderno',     emoji: '⚡', label: 'Moderno & Bold',     desc: 'Cores vibrantes, tipografia grande' },
-  { id: 'clean',       emoji: '✦', label: 'Clean & Minimalista',  desc: 'Muito espaço, elegante' },
-  { id: 'colorido',    emoji: '🌈', label: 'Colorido & Fun',     desc: 'Múltiplas cores, energia jovem' },
-  { id: 'corporativo', emoji: '🏢', label: 'Corporativo',        desc: 'Profissional, confiável' },
-  { id: 'editorial',   emoji: '📰', label: 'Editorial',          desc: 'Inspirado em revistas' },
-  { id: 'luxury',      emoji: '💎', label: 'Premium & Luxury',   desc: 'Dourado, preto, exclusivo' },
+  { id: 'moderno',     label: 'Moderno & Bold',     desc: 'Cores vibrantes, tipografia grande' },
+  { id: 'clean',       label: 'Clean & Minimalista',  desc: 'Muito espaço, elegante' },
+  { id: 'colorido',    label: 'Colorido & Fun',     desc: 'Múltiplas cores, energia jovem' },
+  { id: 'corporativo', label: 'Corporativo',        desc: 'Profissional, confiável' },
+  { id: 'editorial',   label: 'Editorial',          desc: 'Inspirado em revistas' },
+  { id: 'luxury',      label: 'Premium & Luxury',   desc: 'Dourado, preto, exclusivo' },
 ];
 
 // ─────────────────────────────────────────────
@@ -125,7 +125,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
     publico:        prefill?.publico ?? '',
     objetivo:       prefill?.objetivo ?? [],
     descricao:      prefill?.descricao ?? '',
-    quantidade:     prefill?.quantidade ?? 8,
+    quantidade:     4,
     pilares:        prefill?.pilares ?? [],
     formatos:       prefill?.formatos ?? [],
     hashtags:       prefill?.hashtags ?? '',
@@ -192,7 +192,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
     row2:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 } as React.CSSProperties,
     row1:     { marginBottom: 16 } as React.CSSProperties,
     footer:   { padding: '20px 28px', background: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '0 0 16px 16px' } as React.CSSProperties,
-    btnPrimary: { background: '#CCEE33', color: '#1a1a1a', border: 'none', padding: '12px 32px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: 'pointer', transition: 'opacity 0.15s' } as React.CSSProperties,
+    btnPrimary: { background: '#111', color: '#fff', border: 'none', padding: '12px 32px', borderRadius: 6, fontSize: 13, fontWeight: 600, cursor: 'pointer', transition: 'opacity 0.15s' } as React.CSSProperties,
     btnSecondary: { background: 'transparent', color: '#64748b', border: '1.5px solid #e2e8f0', padding: '12px 24px', borderRadius: 9, fontSize: 14, fontWeight: 500, cursor: 'pointer' } as React.CSSProperties,
   };
 
@@ -204,7 +204,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>
-              {step === 1 ? '📋 Sobre o negócio' : step === 2 ? '📝 Conteúdo & Formatos' : '🎨 Tom & Visual'}
+              {step === 1 ? 'Sobre o negócio' : step === 2 ? 'Conteúdo & Formatos' : 'Tom & Visual'}
             </h2>
             <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
               Passo {step} de {TOTAL_STEPS}
@@ -212,7 +212,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[1, 2, 3].map(n => (
-              <div key={n} style={{ width: n === step ? 32 : 10, height: 10, borderRadius: 100, background: n === step ? '#CCEE33' : n < step ? '#22c55e' : '#e2e8f0', transition: 'all 0.3s' }} />
+              <div key={n} style={{ width: n === step ? 24 : 8, height: 4, borderRadius: 2, background: n === step ? '#111' : n < step ? '#111' : '#ddd', transition: 'all 0.3s' }} />
             ))}
           </div>
         </div>
@@ -246,10 +246,10 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                   <div
                     key={obj}
                     onClick={() => toggleArray('objetivo', obj)}
-                    style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: selected ? '#CCEE33' : '#e2e8f0', background: selected ? '#fafde7' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: selected ? '#78350f' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: selected ? '#111' : '#e2e8f0', background: selected ? '#f8f8f5' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: selected ? '#111' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
                   >
-                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#CCEE33' : '#cbd5e1', background: selected ? '#CCEE33' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
-                      {selected && <span style={{ fontSize: 10, color: '#1a1a1a', fontWeight: 900 }}>✓</span>}
+                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#111' : '#cbd5e1', background: selected ? '#111' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+                      {selected && <span style={{ fontSize: 10, color: '#fff', fontWeight: 900 }}>✓</span>}
                     </div>
                     {obj}
                   </div>
@@ -269,29 +269,6 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
       {step === 2 && (
         <div style={s.body}>
 
-          {/* Quantidade */}
-          <div style={s.row1}>
-            <label style={s.label}>Quantidade de posts</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {[4, 8, 12, 16].map(n => (
-                <div
-                  key={n}
-                  onClick={() => set('quantidade', n)}
-                  style={{
-                    padding: '10px 20px', borderRadius: 8, border: '1.5px solid',
-                    borderColor: briefing.quantidade === n ? '#CCEE33' : '#e2e8f0',
-                    background: briefing.quantidade === n ? '#fafde7' : '#fff',
-                    cursor: 'pointer', fontSize: 14, fontWeight: 600,
-                    color: briefing.quantidade === n ? '#78350f' : '#374151',
-                    transition: 'all 0.15s', textAlign: 'center', flex: 1,
-                  }}
-                >
-                  {n} posts
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* Pilares */}
           <div style={s.row1}>
             <label style={s.label}>Pilares de conteúdo * <span style={{ fontWeight: 400, color: '#94a3b8' }}>(escolha pelo menos 1)</span></label>
@@ -302,10 +279,10 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                   <div
                     key={p}
                     onClick={() => toggleArray('pilares', p)}
-                    style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: selected ? '#CCEE33' : '#e2e8f0', background: selected ? '#fafde7' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: selected ? '#78350f' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
+                    style={{ padding: '10px 14px', borderRadius: 8, border: '1.5px solid', borderColor: selected ? '#111' : '#e2e8f0', background: selected ? '#f8f8f5' : '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: selected ? '#111' : '#374151', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 8 }}
                   >
-                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#CCEE33' : '#cbd5e1', background: selected ? '#CCEE33' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
-                      {selected && <span style={{ fontSize: 10, color: '#1a1a1a', fontWeight: 900 }}>✓</span>}
+                    <div style={{ width: 16, height: 16, borderRadius: 4, border: '2px solid', borderColor: selected ? '#111' : '#cbd5e1', background: selected ? '#111' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'all 0.15s' }}>
+                      {selected && <span style={{ fontSize: 10, color: '#fff', fontWeight: 900 }}>✓</span>}
                     </div>
                     {p}
                   </div>
@@ -324,11 +301,10 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                   <div
                     key={f.id}
                     onClick={() => toggleArray('formatos', f.id)}
-                    style={{ padding: '14px 16px', borderRadius: 10, border: '1.5px solid', borderColor: selected ? '#CCEE33' : '#e2e8f0', background: selected ? '#fafde7' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}
+                    style={{ padding: '14px 16px', borderRadius: 10, border: '1.5px solid', borderColor: selected ? '#111' : '#e2e8f0', background: selected ? '#f8f8f5' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 18 }}>{f.emoji}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: selected ? '#78350f' : '#0f172a' }}>{f.label}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: selected ? '#111' : '#0f172a' }}>{f.label}</span>
                     </div>
                     <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{f.desc}</p>
                   </div>
@@ -363,10 +339,9 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                 <div
                   key={t.id}
                   onClick={() => set('tom', t.id)}
-                  style={{ padding: '12px 14px', borderRadius: 10, border: '1.5px solid', borderColor: briefing.tom === t.id ? '#CCEE33' : '#e2e8f0', background: briefing.tom === t.id ? '#fafde7' : '#fff', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}
+                  style={{ padding: '12px 14px', borderRadius: 10, border: '1.5px solid', borderColor: briefing.tom === t.id ? '#111' : '#e2e8f0', background: briefing.tom === t.id ? '#f8f8f5' : '#fff', cursor: 'pointer', textAlign: 'center', transition: 'all 0.15s' }}
                 >
-                  <div style={{ fontSize: 22, marginBottom: 6 }}>{t.emoji}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: briefing.tom === t.id ? '#78350f' : '#0f172a' }}>{t.label}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: briefing.tom === t.id ? '#111' : '#0f172a' }}>{t.label}</div>
                 </div>
               ))}
             </div>
@@ -380,11 +355,10 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                 <div
                   key={e.id}
                   onClick={() => set('estilo_visual', e.id)}
-                  style={{ padding: '14px 16px', borderRadius: 10, border: '1.5px solid', borderColor: briefing.estilo_visual === e.id ? '#CCEE33' : '#e2e8f0', background: briefing.estilo_visual === e.id ? '#fafde7' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}
+                  style={{ padding: '14px 16px', borderRadius: 10, border: '1.5px solid', borderColor: briefing.estilo_visual === e.id ? '#111' : '#e2e8f0', background: briefing.estilo_visual === e.id ? '#f8f8f5' : '#fff', cursor: 'pointer', transition: 'all 0.15s' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 18 }}>{e.emoji}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: briefing.estilo_visual === e.id ? '#78350f' : '#0f172a' }}>{e.label}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: briefing.estilo_visual === e.id ? '#111' : '#0f172a' }}>{e.label}</span>
                   </div>
                   <p style={{ fontSize: 12, color: '#64748b', margin: 0 }}>{e.desc}</p>
                 </div>
@@ -448,8 +422,8 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                     style={{
                       display: 'flex', alignItems: 'center', gap: 4,
                       padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
-                      background: briefing.cor_primaria === p.primary ? '#EAF3DE' : '#fff',
-                      border: briefing.cor_primaria === p.primary ? '1.5px solid #C8F135' : '1px solid #e2e8f0',
+                      background: briefing.cor_primaria === p.primary ? '#f0f0f0' : '#fff',
+                      border: briefing.cor_primaria === p.primary ? '1.5px solid #111' : '1px solid #e2e8f0',
                       fontSize: 11, fontWeight: 600, color: '#374151', transition: 'all 0.15s',
                     }}
                   >
@@ -464,7 +438,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
 
           {/* Visão de imagem */}
           <div style={{ ...s.row1, background: '#fafde7', border: '1.5px solid #d9f99d', borderRadius: 12, padding: '16px 18px' }}>
-            <label style={{ ...s.label, color: '#3f6212', marginBottom: 4 }}>📸 Que cena você imagina nas imagens?</label>
+            <label style={{ ...s.label, color: '#3f6212', marginBottom: 4 }}>Que cena você imagina nas imagens?</label>
             <p style={{ fontSize: 12, color: '#4d7c0f', margin: '0 0 10px', lineHeight: 1.5 }}>Descreva de forma simples — Ex: mulher usando o produto em casa pela manhã.</p>
             <textarea style={{ ...s.textarea, minHeight: 72, border: '1.5px solid #bbf451', background: '#fff' }} placeholder='Descreva a cena que você imagina para as imagens' value={briefing.visao_imagem} onChange={e => set('visao_imagem', e.target.value)} />
           </div>
@@ -497,7 +471,6 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
           </div>
 
           <div style={{ background: '#fafde7', border: '1px solid #d9f99d', borderRadius: 10, padding: '14px 18px', marginTop: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 20 }}>🤖</span>
             <div>
               <p style={{ fontSize: 13, fontWeight: 700, color: '#3f6212', marginBottom: 4 }}>O que será gerado</p>
               <p style={{ fontSize: 13, color: '#4d7c0f', margin: 0, lineHeight: 1.6 }}>
@@ -540,7 +513,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                   <span style={{ width: 16, height: 16, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: '#1a1a1a', borderRadius: '50%', display: 'inline-block', animation: 'pbfspin 0.8s linear infinite' }} />
                   Gerando...
                 </>
-              ) : '🚀 Gerar pack de posts com IA'}
+              ) : 'Gerar posts'}
             </button>
           )}
         </div>

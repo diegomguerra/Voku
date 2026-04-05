@@ -51,14 +51,14 @@ const PRODUCT_ICON_COLOR = {
 };
 
 const PRODUCT_ICON = {
-  landing_page_copy: '🌐',
-  post_instagram: '📸',
-  carrossel: '🎠',
-  reels_script: '🎬',
-  email_sequence: '📧',
-  ad_copy: '📢',
-  content_pack: '📦',
-  app: '💻',
+  landing_page_copy: 'LP',
+  post_instagram: 'IG',
+  carrossel: 'CR',
+  reels_script: 'RL',
+  email_sequence: 'EM',
+  ad_copy: 'AD',
+  content_pack: 'PK',
+  app: 'AP',
 };
 
 const ORDER_STATUS = {
@@ -683,7 +683,7 @@ export default function ProjetosPage() {
     if (deliverables.length === 0) {
       return (
         <div style={{ textAlign: "center", padding: "40px 0", color: T.inkMid }}>
-          <div style={{ fontSize: 28, marginBottom: 12 }}>📦</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: '#999', marginBottom: 12 }}>—</div>
           <div style={{ fontSize: 14, fontWeight: 600 }}>Nenhuma entrega ainda.</div>
           <div style={{ fontSize: 13, marginTop: 4 }}>As entregas aparecerão aqui conforme forem geradas.</div>
         </div>

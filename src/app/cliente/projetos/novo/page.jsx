@@ -3,14 +3,10 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 const TYPES = [
-  { product: "landing_page_copy", title: "Landing Page Copy", desc: "Do hero ao CTA. Estruturado para converter.", credits: "40 créditos",
-    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><circle cx="7" cy="6" r="1" fill="#C8F135"/><circle cx="10" cy="6" r="1" fill="#C8F135"/></svg> },
-  { product: "content_pack", title: "Pack de Posts", desc: "Hook, legenda e hashtags prontos para publicar.", credits: "8 créditos/post", hasCalendar: true,
-    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg> },
-  { product: "email_sequence", title: "Sequência de E-mails", desc: "5 e-mails do dia 0 ao dia 8.", credits: "25 créditos",
-    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="2,4 12,13 22,4"/></svg> },
-  { product: "ad_copy", title: "Copy Meta Ads", desc: "3 ângulos: dor, benefício, prova.", credits: "10 créditos",
-    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#C8F135" strokeWidth="2"><path d="M3 11l6-8v6h6l-6 8v-6H3z"/></svg> },
+  { product: "landing_page_copy", title: "Landing Page Copy", desc: "Do hero ao CTA. Estruturado para converter.", credits: "40 créditos", tag: "LP" },
+  { product: "content_pack", title: "Pack de Posts", desc: "4 posts com hook, legenda, hashtags e imagem.", credits: "25 créditos", hasCalendar: true, tag: "PK" },
+  { product: "email_sequence", title: "Sequência de E-mails", desc: "5 e-mails do dia 0 ao dia 8.", credits: "25 créditos", tag: "EM" },
+  { product: "ad_copy", title: "Copy Meta Ads", desc: "3 ângulos: dor, benefício, prova.", credits: "10 créditos", tag: "AD" },
 ];
 
 export default function NovoProjetoPage() {
@@ -65,19 +61,18 @@ export default function NovoProjetoPage() {
               key={t.product}
               onClick={() => handleSelect(t.product)}
               style={{
-                background: isActive ? "#fafff0" : "#fff",
-                border: `1.5px solid ${isActive ? "#C8F135" : "#E8E5DE"}`,
-                borderRadius: 12, padding: 24, cursor: "pointer",
-                textAlign: "center", transition: "all 0.15s",
+                background: isActive ? "#f8f8f5" : "#fff",
+                border: `1.5px solid ${isActive ? "#111" : "#E8E5DE"}`,
+                borderRadius: 8, padding: 24, cursor: "pointer",
+                transition: "all 0.15s",
               }}
             >
-              <div style={{ marginBottom: 12 }}>{t.icon}</div>
+              <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 10, color: "#999", letterSpacing: 2, marginBottom: 12, textTransform: "uppercase" }}>{t.tag}</div>
               <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, color: "#111" }}>{t.title}</div>
               <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 400, fontSize: 12, color: "#888", lineHeight: 1.5, marginTop: 6 }}>{t.desc}</div>
               <div style={{
-                marginTop: 10, fontFamily: "'Inter', sans-serif", fontWeight: 700,
-                fontSize: 11, color: "#C8F135", background: "#111",
-                padding: "3px 10px", borderRadius: 4, display: "inline-block",
+                marginTop: 10, fontFamily: "'Inter', sans-serif", fontWeight: 600,
+                fontSize: 11, color: "#888",
               }}>{t.credits}</div>
             </div>
           );
@@ -92,7 +87,7 @@ export default function NovoProjetoPage() {
           alignItems: "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            <span style={{ fontSize: 24 }}>📅</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#888" }}>CAL</span>
             <div>
               <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14, color: "#111" }}>
                 Quer planejar um calendário de 30 dias primeiro?
@@ -103,8 +98,8 @@ export default function NovoProjetoPage() {
             </div>
           </div>
           <a href="/cliente/calendario" style={{
-            background: "#111", color: "#C8F135", fontFamily: "'Inter', sans-serif",
-            fontWeight: 800, fontSize: 12, padding: "10px 20px", borderRadius: 8,
+            background: "#111", color: "#fff", fontFamily: "'Inter', sans-serif",
+            fontWeight: 600, fontSize: 12, padding: "10px 20px", borderRadius: 6,
             border: "none", textDecoration: "none", whiteSpace: "nowrap",
           }}>
             Planejar calendário →
@@ -118,9 +113,9 @@ export default function NovoProjetoPage() {
           disabled={creating}
           style={{
             display: "block", width: "100%", marginTop: showCalendarOption ? 16 : 32, padding: 16,
-            fontFamily: "'Inter', sans-serif", fontWeight: 900, fontSize: 16,
-            background: creating ? "#aaa" : "#C8F135", color: "#111",
-            border: "none", borderRadius: 10, cursor: creating ? "wait" : "pointer",
+            fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 14,
+            background: creating ? "#aaa" : "#111", color: "#fff",
+            border: "none", borderRadius: 6, cursor: creating ? "wait" : "pointer",
           }}
         >
           {creating ? "Criando..." : `Começar projeto de ${selectedType?.title} →`}
