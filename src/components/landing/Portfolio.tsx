@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+
 const showcaseReels = "/images/portfolio/showcase-reels-skincare.jpg";
 const showcasePostFood = "/images/portfolio/showcase-post-food.jpg";
 const showcaseLanding = "/images/portfolio/showcase-landing-fashion.jpg";
@@ -105,20 +105,20 @@ const Portfolio = () => {
       </div>
 
       {/* Showcase grid */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5 }}
+      <div
+        
+        
+        
+        
         className="grid grid-cols-1 md:grid-cols-3 auto-rows-[260px] gap-3"
       >
         {showcaseItems.map((item, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.06, duration: 0.4 }}
+            
+            
+            
+            
             className={`${item.span} relative rounded-lg overflow-hidden group cursor-pointer`}
           >
             <img
@@ -152,9 +152,9 @@ const Portfolio = () => {
 
             {/* Base gradient */}
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/40 to-transparent pointer-events-none" />
-          </motion.div>
+          </div>
         ))}
-      </motion.div>
+      </div>
 
       {/* Bottom CTA */}
       <div className="mt-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">

@@ -1,5 +1,5 @@
 "use client";
-import { motion } from "framer-motion";
+
 
 const stats = [
   { value: "24h", label: "Landing Page" },
@@ -59,18 +59,18 @@ const Process = () => {
           {/* Right - Steps */}
           <div className="space-y-8">
             {steps.map((step, i) => (
-              <motion.div
+              <div
                 key={step.number}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
+                
+                
+                
+                
                 className="border-t border-surface-dark-foreground/10 pt-6"
               >
                 <p className="text-xs text-accent font-bold mb-2">{step.number}</p>
                 <h3 className="text-lg font-bold text-surface-dark-foreground mb-2">{step.title}</h3>
                 <p className="text-sm text-surface-dark-foreground/50">{step.description}</p>
-              </motion.div>
+              </div>
             ))}
           </div>
         </div>

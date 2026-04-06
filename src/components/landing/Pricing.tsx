@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+
 import { ArrowRight } from "lucide-react";
 
 const plans = [
@@ -85,12 +85,12 @@ const Pricing = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-20">
         {plans.map((plan, i) => (
-          <motion.div
+          <div
             key={plan.name}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
+            
+            
+            
+            
             className={`p-6 rounded-sm border flex flex-col ${
               plan.highlighted
                 ? "surface-lime border-accent"
@@ -127,7 +127,7 @@ const Pricing = () => {
               Começar agora
               <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </a>
-          </motion.div>
+          </div>
         ))}
       </div>
 
