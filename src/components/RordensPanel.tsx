@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase";
 
 /* ─── Types ─── */
 interface Msg {
@@ -99,6 +100,54 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
+  /* ─── Persist: save message to DB ─── */
+  const saveMsg = useCallback(async (role: string, content: string, imageUrl?: string) => {
+    if (!orderId || !content) return;
+    try {
+      const sb = supabase();
+      const { data: auth } = await sb.auth.getUser();
+      await sb.from("chat_messages").insert({
+        order_id: orderId,
+        user_id: auth?.user?.id || null,
+        role,
+        content,
+        image_url: imageUrl || null,
+        channel: "rordens",
+      });
+    } catch (e) {
+      console.error("[RordensPanel] saveMsg error:", e);
+    }
+  }, [orderId]);
+
+  /* ─── Persist: load messages on mount ─── */
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (!orderId || loadedRef.current) return;
+    loadedRef.current = true;
+    (async () => {
+      try {
+        const sb = supabase();
+        const { data } = await sb
+          .from("chat_messages")
+          .select("role, content, image_url, created_at")
+          .eq("order_id", orderId)
+          .eq("channel", "rordens")
+          .order("created_at", { ascending: true });
+        if (data && data.length > 0) {
+          const loaded: Msg[] = data.map((m: any) => ({
+            role: m.role as "user" | "assistant",
+            content: m.content,
+            ...(m.image_url && { imageUrl: m.image_url }),
+          }));
+          setMessages(loaded);
+          setModo("chat");
+        }
+      } catch (e) {
+        console.error("[RordensPanel] loadMessages error:", e);
+      }
+    })();
+  }, [orderId]);
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streaming]);
@@ -138,14 +187,22 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
 
   const selectMode = (m: "chat" | "form") => {
     setModo(m);
-    setMessages([{ role: "assistant", content: `Cole o @ da marca ou me conte sobre o projeto. Você também pode enviar logo, prints e referências visuais.` }]);
+    const greeting = `Cole o @ da marca ou me conte sobre o projeto. Você também pode enviar logo, prints e referências visuais.`;
+    setMessages([{ role: "assistant", content: greeting }]);
+    saveMsg("assistant", greeting);
   };
 
-  // Auto-start in chat mode
+  // Auto-start in chat mode (only if no messages were loaded from DB)
   useEffect(() => {
-    if (!modo && status !== "concluido") selectMode("chat");
+    if (!modo && status !== "concluido" && !loadedRef.current) {
+      // Wait a tick for loadMessages to finish
+      const t = setTimeout(() => {
+        if (messages.length === 0) selectMode("chat");
+      }, 300);
+      return () => clearTimeout(t);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [modo, status]);
 
   const sendMessage = useCallback(async (text: string, image?: { base64: string; mediaType: string; url: string }) => {
     if ((!text.trim() && !image) || streaming) return;
@@ -170,6 +227,9 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
     setInput("");
     setPendingImage(null);
     setStreaming(true);
+
+    // Persist user message
+    saveMsg("user", userMsg.content, image?.url);
 
     try {
       // Detect URL — scrape site content AND colors in parallel
@@ -284,12 +344,14 @@ export default function RordensPanel({ produto, produtoLabel, passo, formContext
           }
         }
       }
+      // Persist assistant response
+      if (assistantText) saveMsg("assistant", assistantText);
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "Desculpe, tive um problema. Pode repetir?" }]);
     } finally {
       setStreaming(false);
     }
-  }, [messages, formContext, produto, passo, modo, streaming, imagensReferencia, onExecute, onHandleDetected]);
+  }, [messages, formContext, produto, passo, modo, streaming, imagensReferencia, onExecute, onHandleDetected, saveMsg, brandContext]);
 
   /* ─── File upload handler ─── */
   const handleFiles = async (files: FileList) => {
