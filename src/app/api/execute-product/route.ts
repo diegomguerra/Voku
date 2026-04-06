@@ -318,18 +318,44 @@ export async function POST(req: NextRequest) {
     if (product === 'landing_page_copy' || product === 'landing_page') {
       await supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id)
       try {
-        const brand = structured_data?.brand_context || structured_data || {}
+        const sd = structured_data || {}
+        const brand = sd.brand_context || {}
+
+        // Build headline from tagline or nome_marca — NOT the full resumo
+        const tagline = sd.tagline || brand.tagline || ''
+        const nomeMarca = sd.nome_marca || brand.nome_marca || 'Marca'
+        const headline = sd.headline || tagline || nomeMarca
+
+        // Build subheadline from resumo or produto description
+        const subheadline = sd.subheadline || sd.resumo || sd.produto || ''
+
+        // Build sections from objectives + what Rordens suggested
+        const defaultSections = ['Hero', 'Benefícios', 'Como Funciona', 'Depoimentos', 'CTA final']
+        const sections = sd.sections || (sd.objetivos?.length ? sd.objetivos.map((o: string) => o) : defaultSections)
+
+        // Pass ALL structured_data fields to Lovable as extra context
         const payload = {
-          brand_name: brand.nome_marca || structured_data?.nome_marca || 'Marca',
-          headline: brand.headline || structured_data?.headline || structured_data?.resumo || 'Transforme seu negócio',
-          cta_text: brand.cta_text || structured_data?.cta_texto || 'Começar agora',
-          primary_color: brand.cor_primaria || '#6C3AED',
-          secondary_color: brand.cor_secundaria || '#1E1B4B',
-          tone: brand.tom || structured_data?.tom || 'profissional e moderno',
-          audience: brand.publico || structured_data?.publico || 'empresas e profissionais',
-          subheadline: brand.subheadline || structured_data?.subheadline || '',
-          sections: structured_data?.sections || ['Hero', 'Benefícios', 'Como Funciona', 'CTA final'],
-          images: structured_data?.images || [],
+          // Required fields
+          brand_name: nomeMarca,
+          headline,
+          cta_text: sd.cta_texto || sd.cta_text || brand.cta_text || 'Começar agora',
+          // Colors
+          primary_color: sd.cor_primaria || brand.cor_primaria || '#6C3AED',
+          secondary_color: sd.cor_secundaria || brand.cor_secundaria || '#1E1B4B',
+          // Content
+          tone: [sd.tom, sd.estilo].filter(Boolean).join(' + ') || 'profissional e moderno',
+          audience: sd.publico || brand.publico || 'empresas e profissionais',
+          subheadline,
+          sections,
+          images: sd.images || [],
+          // Extra context for richer generation
+          ...(sd.cor_texto && { text_color: sd.cor_texto }),
+          ...(sd.tagline && { tagline: sd.tagline }),
+          ...(sd.palavras_chave && { keywords: sd.palavras_chave }),
+          ...(sd.visao_imagem && { image_description: sd.visao_imagem }),
+          ...(sd.estilo && { style: sd.estilo }),
+          ...(sd.objetivos && { objectives: sd.objetivos }),
+          ...(sd.produto && { product_type: sd.produto }),
         }
 
         console.log(`[execute-product] Calling Lovable Cloud for order=${order_id} brand=${payload.brand_name}`)
