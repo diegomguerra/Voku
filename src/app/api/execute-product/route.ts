@@ -314,7 +314,8 @@ export async function POST(req: NextRequest) {
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
 
     // Landing page: call Lovable Cloud directly (no self-fetch proxy)
-    if (product === 'landing_page_copy') {
+    // Accept both "landing_page_copy" and "landing_page" (Rordens may use either)
+    if (product === 'landing_page_copy' || product === 'landing_page') {
       await supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id)
       try {
         const brand = structured_data?.brand_context || structured_data || {}

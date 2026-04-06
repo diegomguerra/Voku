@@ -329,7 +329,8 @@ export default function ProjetoPage() {
                 onHandleDetected={(handle) => setChatHandleDetected(true)}
                 onExecute={(action) => {
                   if (action?.action === "execute" && action?.structured_data) {
-                    handleBriefingSubmit(action.structured_data, action.product || order?.product);
+                    // Always prefer order.product (correct ID from DB) over Rordens JSON (may be abbreviated)
+                    handleBriefingSubmit(action.structured_data, order?.product || action.product);
                   }
                 }}
               />
