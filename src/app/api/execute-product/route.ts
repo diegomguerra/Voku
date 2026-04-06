@@ -319,62 +319,48 @@ export async function POST(req: NextRequest) {
       await supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id)
       try {
         const sd = structured_data || {}
-        const brand = sd.brand_context || {}
 
-        // Build headline from tagline or nome_marca — NOT the full resumo
-        const tagline = sd.tagline || brand.tagline || ''
-        const nomeMarca = sd.nome_marca || brand.nome_marca || 'Marca'
-        const headline = sd.headline || tagline || nomeMarca
-
-        // Build subheadline from resumo or produto description
-        const subheadline = sd.subheadline || sd.resumo || sd.produto || ''
-
-        // Build sections from objectives + what Rordens suggested
-        const defaultSections = ['Hero', 'Benefícios', 'Como Funciona', 'Depoimentos', 'CTA final']
-        const sections = sd.sections || (sd.objetivos?.length ? sd.objetivos.map((o: string) => o) : defaultSections)
-
-        // Pass ALL structured_data fields to Lovable as extra context
-        const payload = {
-          // Required fields
-          brand_name: nomeMarca,
-          headline,
-          cta_text: sd.cta_texto || sd.cta_text || brand.cta_text || 'Começar agora',
-          // Colors
-          primary_color: sd.cor_primaria || brand.cor_primaria || '#6C3AED',
-          secondary_color: sd.cor_secundaria || brand.cor_secundaria || '#1E1B4B',
-          // Content
-          tone: [sd.tom, sd.estilo].filter(Boolean).join(' + ') || 'profissional e moderno',
-          audience: sd.publico || brand.publico || 'empresas e profissionais',
-          subheadline,
-          sections,
-          // Images: upload base64 to storage, send public URLs
-          images: await (async () => {
-            if (sd.images?.length) return sd.images
-            if (!sd.imagens_referencia?.length) return []
-            // Upload each base64 image to Supabase Storage and return public URLs
-            const urls: string[] = []
-            for (let i = 0; i < sd.imagens_referencia.length; i++) {
-              try {
-                const b64 = sd.imagens_referencia[i]
-                const buffer = Buffer.from(b64, 'base64')
-                const path = `briefing/${order_id}/ref-${i}.png`
-                await supabase.storage.from('imagens').upload(path, buffer, { contentType: 'image/png', upsert: true })
-                const { data: urlData } = supabase.storage.from('imagens').getPublicUrl(path)
-                if (urlData?.publicUrl) urls.push(urlData.publicUrl)
-              } catch (e) {
-                console.error(`[execute-product] image upload ${i} failed:`, e)
-              }
+        // Upload reference images to Supabase Storage
+        const imagesArray: string[] = []
+        if (sd.images?.length) {
+          imagesArray.push(...sd.images)
+        } else if (sd.imagens_referencia?.length) {
+          for (let i = 0; i < sd.imagens_referencia.length; i++) {
+            try {
+              const b64 = sd.imagens_referencia[i]
+              const buffer = Buffer.from(b64, 'base64')
+              const path = `briefing/${order_id}/ref-${i}.png`
+              await supabase.storage.from('imagens').upload(path, buffer, { contentType: 'image/png', upsert: true })
+              const { data: urlData } = supabase.storage.from('imagens').getPublicUrl(path)
+              if (urlData?.publicUrl) imagesArray.push(urlData.publicUrl)
+            } catch (e) {
+              console.error(`[execute-product] image upload ${i} failed:`, e)
             }
-            return urls
-          })(),
-          // Extra context for richer generation
+          }
+        }
+
+        // Map structured_data → Lovable Cloud payload (exact spec from Lovable)
+        const payload = {
+          // OBRIGATÓRIOS
+          brand_name: `${sd.nome_marca || 'Marca'} ${sd.produto && sd.produto !== 'produto' ? sd.produto : ''}`.trim(),
+          headline: sd.resumo || sd.nome_marca || 'Transforme seu negócio',
+          cta_text: sd.cta_texto || 'Começar agora',
+          // CORES
+          primary_color: sd.cor_primaria || '#6C3AED',
+          secondary_color: sd.cor_secundaria || '#1E1B4B',
+          // CONTEXTO
+          tone: [sd.tom, sd.estilo].filter(Boolean).join(' + ') || 'profissional e moderno',
+          audience: sd.publico || 'empresas e profissionais',
+          subheadline: sd.tagline || '',
+          sections: sd.objetivos || ['Hero', 'Benefícios', 'Como Funciona', 'CTA final'],
+          images: imagesArray,
+          // CAMPOS EXTRAS
           ...(sd.cor_texto && { text_color: sd.cor_texto }),
-          ...(sd.tagline && { tagline: sd.tagline }),
-          ...(sd.palavras_chave && { keywords: sd.palavras_chave }),
-          ...(sd.visao_imagem && { image_description: sd.visao_imagem }),
           ...(sd.estilo && { style: sd.estilo }),
-          ...(sd.objetivos && { objectives: sd.objetivos }),
-          ...(sd.produto && { product_type: sd.produto }),
+          ...(sd.palavras_chave && { keywords: sd.palavras_chave }),
+          ...(sd.tagline && { tagline: sd.tagline }),
+          ...(sd.tipografia && { typography: sd.tipografia }),
+          ...(sd.visao_imagem && { image_description: sd.visao_imagem }),
         }
 
         console.log(`[execute-product] Calling Lovable Cloud for order=${order_id} brand=${payload.brand_name}`)
