@@ -339,29 +339,48 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Map structured_data → Lovable Cloud payload (exact spec from Lovable)
-        const payload = {
+        // Map structured_data → Lovable Cloud Edge Function schema (official spec)
+        const payload: Record<string, any> = {
           // OBRIGATÓRIOS
-          brand_name: `${sd.nome_marca || 'Marca'} ${sd.produto && sd.produto !== 'produto' ? sd.produto : ''}`.trim(),
-          headline: sd.resumo || sd.nome_marca || 'Transforme seu negócio',
+          brand_name: sd.nome_marca || 'Marca',
+          headline: sd.resumo || sd.headline || sd.nome_marca || 'Transforme seu negócio',
           cta_text: sd.cta_texto || 'Começar agora',
-          // CORES
-          primary_color: sd.cor_primaria || '#6C3AED',
-          secondary_color: sd.cor_secundaria || '#1E1B4B',
+
+          // PRODUTO (campo separado do brand_name)
+          product_name: sd.produto && sd.produto !== 'produto' ? sd.produto : undefined,
+
+          // TAGLINE
+          tagline: sd.tagline || undefined,
+
+          // SUBTÍTULO
+          subheadline: sd.subheadline || undefined,
+
+          // CORES — mapeamento correto
+          primary_color: sd.cor_primaria || '#6C3AED',     // cor de destaque (âmbar #C4622D)
+          secondary_color: sd.cor_secundaria || '#1E1B4B',  // cor de apoio (#C9A49A)
+          text_color: sd.cor_texto || undefined,             // cor de texto (#2B1A10)
+          background_color: sd.cor_fundo || undefined,       // cor de fundo (#FFFFFF)
+          accent_color: sd.cor_accent || sd.cor_secundaria || undefined,
+
           // CONTEXTO
           tone: [sd.tom, sd.estilo].filter(Boolean).join(' + ') || 'profissional e moderno',
           audience: sd.publico || 'empresas e profissionais',
-          subheadline: sd.tagline || '',
-          sections: sd.objetivos || ['Hero', 'Benefícios', 'Como Funciona', 'CTA final'],
-          images: imagesArray,
-          // CAMPOS EXTRAS
-          ...(sd.cor_texto && { text_color: sd.cor_texto }),
-          ...(sd.estilo && { style: sd.estilo }),
-          ...(sd.palavras_chave && { keywords: sd.palavras_chave }),
-          ...(sd.tagline && { tagline: sd.tagline }),
-          ...(sd.tipografia && { typography: sd.tipografia }),
-          ...(sd.visao_imagem && { image_description: sd.visao_imagem }),
+          style: sd.estilo || undefined,
+          description: sd.resumo || undefined,
+          keywords: sd.palavras_chave || undefined,
+
+          // TIPOGRAFIA (objeto)
+          typography: sd.tipografia || undefined,
+
+          // SEÇÕES
+          sections: sd.sections || sd.objetivos || ['Hero', 'Benefícios', 'Como Funciona', 'Prova Social', 'CTA final'],
+
+          // IMAGENS
+          images: imagesArray.length > 0 ? imagesArray : undefined,
         }
+
+        // Remove undefined fields
+        Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k] })
 
         console.log(`[execute-product] Calling Lovable Cloud for order=${order_id} brand=${payload.brand_name}`)
 
