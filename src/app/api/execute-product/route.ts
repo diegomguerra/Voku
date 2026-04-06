@@ -313,27 +313,73 @@ export async function POST(req: NextRequest) {
 
     console.log(`[execute-product] Starting order=${order_id} product=${product}`)
 
-    // Landing page: delegate to Lovable Cloud pipeline
+    // Landing page: call Lovable Cloud directly (no self-fetch proxy)
     if (product === 'landing_page_copy') {
       await supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id)
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
-        const res = await fetch(`${baseUrl}/api/generate-landing`, {
+        const brand = structured_data?.brand_context || structured_data || {}
+        const payload = {
+          brand_name: brand.nome_marca || structured_data?.nome_marca || 'Marca',
+          headline: brand.headline || structured_data?.headline || structured_data?.resumo || 'Transforme seu negócio',
+          cta_text: brand.cta_text || structured_data?.cta_texto || 'Começar agora',
+          primary_color: brand.cor_primaria || '#6C3AED',
+          secondary_color: brand.cor_secundaria || '#1E1B4B',
+          tone: brand.tom || structured_data?.tom || 'profissional e moderno',
+          audience: brand.publico || structured_data?.publico || 'empresas e profissionais',
+          subheadline: brand.subheadline || structured_data?.subheadline || '',
+          sections: structured_data?.sections || ['Hero', 'Benefícios', 'Como Funciona', 'CTA final'],
+          images: structured_data?.images || [],
+        }
+
+        console.log(`[execute-product] Calling Lovable Cloud for order=${order_id} brand=${payload.brand_name}`)
+
+        const res = await fetch('https://ivflzjzmsynijynuphnr.supabase.co/functions/v1/gerar-landing-page', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ order_id, user_id, structured_data }),
+          body: JSON.stringify(payload),
         })
+
         if (!res.ok) {
           const err = await res.text()
-          console.error(`[execute-product] generate-landing failed ${res.status}:`, err.slice(0, 300))
+          console.error(`[execute-product] Lovable Cloud error ${res.status}:`, err.slice(0, 300))
           await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
-          return NextResponse.json({ error: 'Landing page generation failed' }, { status: 502 })
+          return NextResponse.json({ error: 'Lovable Cloud error' }, { status: 502 })
         }
+
         const data = await res.json()
-        console.log(`[execute-product] Landing page generated for order=${order_id}`)
-        return NextResponse.json({ ok: true, product: 'landing_page_copy', html: !!data.html })
+        const html = data.html || ''
+
+        if (!html) {
+          console.error('[execute-product] Lovable returned empty HTML')
+          await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
+          return NextResponse.json({ error: 'Empty HTML' }, { status: 502 })
+        }
+
+        // Save choice
+        const { data: existing } = await supabase.from('choices').select('id').eq('order_id', order_id).maybeSingle()
+        const choicePayload = {
+          html_content: html,
+          content: { text: payload.headline, copy: payload },
+          label: 'Landing Page',
+          type: 'landing_page_copy',
+          is_selected: false,
+          position: 0,
+        }
+        if (existing?.id) {
+          await supabase.from('choices').update(choicePayload).eq('id', existing.id)
+        } else {
+          await supabase.from('choices').insert({ ...choicePayload, order_id })
+        }
+
+        // Mark ready for approval
+        await supabase.from('orders').update({ status: 'awaiting_approval', preview_text: payload.headline }).eq('id', order_id)
+        await supabase.from('project_phases').update({ status: 'done', completed_at: new Date().toISOString() })
+          .eq('order_id', order_id).in('phase_number', [1, 2, 3])
+
+        console.log(`[execute-product] Landing page delivered for order=${order_id}`)
+        return NextResponse.json({ ok: true, product: 'landing_page_copy', html: true })
       } catch (e: any) {
-        console.error('[execute-product] generate-landing error:', e.message)
+        console.error('[execute-product] landing error:', e.message)
         await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
         return NextResponse.json({ error: e.message }, { status: 500 })
       }
