@@ -347,7 +347,26 @@ export async function POST(req: NextRequest) {
           audience: sd.publico || brand.publico || 'empresas e profissionais',
           subheadline,
           sections,
-          images: sd.images || [],
+          // Images: upload base64 to storage, send public URLs
+          images: await (async () => {
+            if (sd.images?.length) return sd.images
+            if (!sd.imagens_referencia?.length) return []
+            // Upload each base64 image to Supabase Storage and return public URLs
+            const urls: string[] = []
+            for (let i = 0; i < sd.imagens_referencia.length; i++) {
+              try {
+                const b64 = sd.imagens_referencia[i]
+                const buffer = Buffer.from(b64, 'base64')
+                const path = `briefing/${order_id}/ref-${i}.png`
+                await supabase.storage.from('imagens').upload(path, buffer, { contentType: 'image/png', upsert: true })
+                const { data: urlData } = supabase.storage.from('imagens').getPublicUrl(path)
+                if (urlData?.publicUrl) urls.push(urlData.publicUrl)
+              } catch (e) {
+                console.error(`[execute-product] image upload ${i} failed:`, e)
+              }
+            }
+            return urls
+          })(),
           // Extra context for richer generation
           ...(sd.cor_texto && { text_color: sd.cor_texto }),
           ...(sd.tagline && { tagline: sd.tagline }),
