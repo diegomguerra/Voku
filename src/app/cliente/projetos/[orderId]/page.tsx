@@ -307,8 +307,8 @@ export default function ProjetoPage() {
           </div>
         </div>
 
-        {/* ═══ ZONA C: Split — Rordens + Conteúdo ═══ */}
-        <div style={{ flex: 1, display: "grid", gridTemplateColumns: status === "briefing" ? "1fr" : "380px 1fr", overflow: "hidden" }}>
+        {/* ═══ ZONA C: Split — Chat esquerda + Entrega direita (sempre visível) ═══ */}
+        <div style={{ flex: 1, display: "grid", gridTemplateColumns: "380px 1fr", overflow: "hidden" }}>
 
           {/* ── Rordens + upload hint ── */}
           <div style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "hidden" }}>
@@ -337,9 +337,42 @@ export default function ProjetoPage() {
           </div>
 
           {/* ── Coluna direita — muda por status ── */}
-          <div style={{ background: T.sand, overflowY: "auto" }}>
+          <div style={{ background: T.sand, overflowY: "auto", borderLeft: `1px solid ${T.border}` }}>
 
-            {/* ── ESTADO 1: BRIEFING — handled by chat, form hidden ── */}
+            {/* ── ESTADO 1: BRIEFING — painel informativo ── */}
+            {status === "briefing" && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", padding: 48, gap: 20 }}>
+                <div style={{ width: 56, height: 56, borderRadius: "50%", background: T.bg, border: `2px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 24 }}>✎</span>
+                </div>
+                <h3 style={{ fontFamily: FI, fontSize: 17, fontWeight: 700, color: T.ink, margin: 0, textAlign: "center" }}>
+                  {productLabel}
+                </h3>
+                <p style={{ fontSize: 13, color: T.muted, margin: 0, textAlign: "center", maxWidth: 320, lineHeight: 1.7 }}>
+                  Converse com o Rordens no chat à esquerda. Ele vai coletar as informações do seu projeto e iniciar a produção automaticamente.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, width: "100%", maxWidth: 300 }}>
+                  {[
+                    "Cole o link do seu site ou @",
+                    "Envie logo e referências visuais",
+                    "Responda as perguntas do Rordens",
+                    "Ele gera automaticamente ao confirmar",
+                  ].map((step, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: T.bg, borderRadius: 8, border: `1px solid ${T.border}` }}>
+                      <span style={{ fontFamily: FI, fontSize: 11, fontWeight: 700, color: T.lime, width: 20 }}>0{i + 1}</span>
+                      <span style={{ fontSize: 12, color: T.ink }}>{step}</span>
+                    </div>
+                  ))}
+                </div>
+                {order?.order_number && (
+                  <span style={{ fontSize: 11, color: T.muted, marginTop: 8 }}>
+                    Projeto #{order.order_number} · {productLabel}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* ── LEGACY: old briefing form (disabled) ── */}
             {false && status === "briefing" && (
               <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 24px" }}>
                 {order?.product === "landing_page_copy" ? (
