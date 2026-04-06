@@ -316,13 +316,27 @@ export async function POST(req: NextRequest) {
     // Landing page: delegate to Lovable Cloud pipeline
     if (product === 'landing_page_copy') {
       await supabase.from('orders').update({ status: 'in_production' }).eq('id', order_id)
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-      fetch(`${baseUrl}/api/generate-landing`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id, user_id, structured_data }),
-      }).catch(e => console.error('[execute-product] generate-landing fire error:', e))
-      return NextResponse.json({ ok: true, product: 'landing_page_copy', message: 'Landing page em produção via Lovable Cloud' })
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'
+        const res = await fetch(`${baseUrl}/api/generate-landing`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order_id, user_id, structured_data }),
+        })
+        if (!res.ok) {
+          const err = await res.text()
+          console.error(`[execute-product] generate-landing failed ${res.status}:`, err.slice(0, 300))
+          await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
+          return NextResponse.json({ error: 'Landing page generation failed' }, { status: 502 })
+        }
+        const data = await res.json()
+        console.log(`[execute-product] Landing page generated for order=${order_id}`)
+        return NextResponse.json({ ok: true, product: 'landing_page_copy', html: !!data.html })
+      } catch (e: any) {
+        console.error('[execute-product] generate-landing error:', e.message)
+        await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
+        return NextResponse.json({ error: e.message }, { status: 500 })
+      }
     }
 
     const { data: existingChoices } = await supabase
