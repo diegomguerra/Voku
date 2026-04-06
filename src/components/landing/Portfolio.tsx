@@ -1,6 +1,13 @@
 "use client";
-
 import { motion } from "framer-motion";
+const showcaseReels = "/images/portfolio/showcase-reels-skincare.jpg";
+const showcasePostFood = "/images/portfolio/showcase-post-food.jpg";
+const showcaseLanding = "/images/portfolio/showcase-landing-fashion.jpg";
+const showcaseCarousel = "/images/portfolio/showcase-carousel-fitness.jpg";
+const showcaseStories = "/images/portfolio/showcase-stories-realestate.jpg";
+const showcaseEmail = "/images/portfolio/showcase-email-beauty.jpg";
+const interiorPost = "/images/portfolio/portfolio-interior-post.jpg";
+const interiorLanding = "/images/portfolio/portfolio-interior-landing.jpg";
 
 type ShowcaseItem = {
   type: string;
@@ -15,56 +22,56 @@ const showcaseItems: ShowcaseItem[] = [
     type: "REELS",
     niche: "SKINCARE",
     title: "Reels de produto com sérum anti-aging para marca de beleza.",
-    image: "/portfolio/showcase-reels-skincare.jpg",
+    image: showcaseReels,
     span: "md:col-span-1 md:row-span-2",
   },
   {
     type: "POST INSTAGRAM",
     niche: "GASTRONOMIA",
     title: "Post de feed para restaurante gourmet com fotografia de produto.",
-    image: "/portfolio/showcase-post-food.jpg",
+    image: showcasePostFood,
     span: "md:col-span-1 md:row-span-1",
   },
   {
     type: "LANDING PAGE",
     niche: "MODA",
     title: "Landing page e-commerce para marca de streetwear.",
-    image: "/portfolio/showcase-landing-fashion.jpg",
+    image: showcaseLanding,
     span: "md:col-span-2 md:row-span-1",
   },
   {
     type: "CARROSSEL",
     niche: "FITNESS",
     title: "Carrossel educativo com dicas de treino para personal trainer.",
-    image: "/portfolio/showcase-carousel-fitness.jpg",
+    image: showcaseCarousel,
     span: "md:col-span-1 md:row-span-1",
   },
   {
     type: "STORIES",
     niche: "IMOBILIÁRIO",
     title: "Stories de lançamento imobiliário com CTA de swipe up.",
-    image: "/portfolio/showcase-stories-realestate.jpg",
+    image: showcaseStories,
     span: "md:col-span-1 md:row-span-2",
   },
   {
     type: "EMAIL MARKETING",
     niche: "BELEZA",
     title: "Newsletter de lançamento para marca premium de skincare.",
-    image: "/portfolio/showcase-email-beauty.jpg",
+    image: showcaseEmail,
     span: "md:col-span-1 md:row-span-1",
   },
   {
     type: "POST INSTAGRAM",
     niche: "ARQUITETURA",
     title: "Post de feed para estúdio de design de interiores corporativo.",
-    image: "/portfolio/portfolio-interior-post.jpg",
+    image: interiorPost,
     span: "md:col-span-1 md:row-span-1",
   },
   {
     type: "LANDING PAGE",
     niche: "INTERIORES",
     title: "Landing page para captação de leads no segmento corporativo.",
-    image: "/portfolio/portfolio-interior-landing.jpg",
+    image: interiorLanding,
     span: "md:col-span-2 md:row-span-1",
   },
 ];

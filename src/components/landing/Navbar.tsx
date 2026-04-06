@@ -1,5 +1,4 @@
 "use client";
-
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
 
@@ -28,7 +27,7 @@ const Navbar = () => {
             <span className="px-3 py-1.5 text-muted-foreground">EN</span>
             <span className="px-3 py-1.5 text-muted-foreground">ES</span>
           </div>
-          <a href="#comecar" className="btn-outline text-xs py-2.5 px-5">Começar projeto</a>
+          <a href="/cliente" className="btn-outline text-xs py-2.5 px-5">Começar projeto</a>
         </div>
 
         <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
@@ -41,7 +40,7 @@ const Navbar = () => {
           <a href="#servicos" className="text-sm" onClick={() => setIsOpen(false)}>Serviços</a>
           <a href="#processo" className="text-sm" onClick={() => setIsOpen(false)}>Processo</a>
           <a href="#sobre" className="text-sm" onClick={() => setIsOpen(false)}>Sobre</a>
-          <a href="#comecar" className="btn-primary text-center text-xs" onClick={() => setIsOpen(false)}>Começar projeto</a>
+          <a href="/cliente" className="btn-primary text-center text-xs" onClick={() => setIsOpen(false)}>Começar projeto</a>
         </div>
       )}
     </nav>

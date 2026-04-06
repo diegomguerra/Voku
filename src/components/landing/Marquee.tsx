@@ -1,5 +1,4 @@
 "use client";
-
 const items = [
   "REVISÃO INCLUSA",
   "PREÇO FIXO EM BRL",

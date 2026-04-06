@@ -1,5 +1,4 @@
 "use client";
-
 const Footer = () => {
   return (
     <footer className="surface-dark py-16">
