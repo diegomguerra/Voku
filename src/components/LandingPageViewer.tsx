@@ -41,6 +41,9 @@ export default function LandingPageViewer({
   const [approving, setApproving] = useState(false);
   const [approved, setApproved]   = useState(false);
   const [lastBriefing, setLastBriefing] = useState<LandingBriefing | null>(null);
+  const [refineOpen, setRefineOpen] = useState(false);
+  const [refineText, setRefineText] = useState('');
+  const [refining, setRefining]   = useState(false);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const htmlRef   = useRef(initialHtml || '');
@@ -117,6 +120,38 @@ export default function LandingPageViewer({
     } catch (e: any) {
       setError(e.message);
       setState('error');
+    }
+  }
+
+  async function refinar() {
+    const instructions = refineText.trim();
+    if (!instructions || refining) return;
+    setRefining(true);
+    setError('');
+    try {
+      const res = await fetch('/api/generate-landing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          choice_id: currentChoiceId,
+          user_id: userId,
+          refinement_instructions: instructions,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.html) throw new Error(data.error || 'Falha ao refinar');
+      htmlRef.current = data.html;
+      setHtml(data.html);
+      // Re-render iframe
+      const doc = iframeRef.current?.contentDocument;
+      if (doc) { doc.open(); doc.write(data.html); doc.close(); }
+      setRefineText('');
+      setRefineOpen(false);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setRefining(false);
     }
   }
 
@@ -292,28 +327,94 @@ export default function LandingPageViewer({
 
           {/* ── BARRA DE AÇÃO FINAL ───────────────────────── */}
           {!approved ? (
-            <div style={{
-              borderTop: `1px solid ${T.border}`, background: T.bg,
-              padding: '16px 20px', display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
-            }}>
-              {/* Voltar */}
-              <button
-                onClick={() => setState('form')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '10px 18px', borderRadius: 8, border: `1px solid ${T.border}`,
-                  background: 'transparent', fontSize: 13, fontWeight: 600,
-                  color: T.ink, cursor: 'pointer',
-                }}
-              >
-                ← Voltar e reajustar briefing
-              </button>
+            <div style={{ borderTop: `1px solid ${T.border}`, background: T.bg }}>
+              {error && (
+                <div style={{ padding: '10px 20px', background: '#fef2f2', borderBottom: '1px solid #fecaca', fontSize: 12, color: '#991b1b' }}>
+                  ⚠️ {error}
+                </div>
+              )}
 
-              {/* Direita: aprovar */}
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  onClick={aprovar}
+              {refineOpen && (
+                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, background: T.sand }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: T.ink, marginBottom: 6 }}>
+                    Descreva o que você quer mudar
+                  </label>
+                  <textarea
+                    value={refineText}
+                    onChange={e => setRefineText(e.target.value)}
+                    disabled={refining}
+                    placeholder='Ex: "troque a cor do CTA para lime", "adicione uma seção de FAQ", "deixe o hero mais impactante"'
+                    rows={3}
+                    style={{
+                      width: '100%', padding: '10px 12px', borderRadius: 8, border: `1px solid ${T.border}`,
+                      background: T.bg, fontSize: 13, fontFamily: 'inherit', color: T.ink, resize: 'vertical', outline: 'none',
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 10 }}>
+                    <button
+                      onClick={() => { setRefineOpen(false); setRefineText(''); }}
+                      disabled={refining}
+                      style={{
+                        padding: '8px 16px', borderRadius: 8, border: `1px solid ${T.border}`,
+                        background: 'transparent', fontSize: 13, fontWeight: 600, color: T.muted,
+                        cursor: refining ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={refinar}
+                      disabled={refining || !refineText.trim()}
+                      style={{
+                        padding: '8px 18px', borderRadius: 8, border: 'none',
+                        background: T.ink, color: T.lime, fontSize: 13, fontWeight: 700,
+                        cursor: (refining || !refineText.trim()) ? 'not-allowed' : 'pointer',
+                        opacity: (refining || !refineText.trim()) ? 0.6 : 1,
+                        display: 'flex', alignItems: 'center', gap: 8,
+                      }}
+                    >
+                      {refining ? (
+                        <><div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.2)', borderTopColor: T.lime, borderRadius: '50%', animation: 'lpspin 0.8s linear infinite' }} />Refinando…</>
+                      ) : '✦ Aplicar refinamento'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div style={{
+                padding: '16px 20px', display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', gap: 12, flexWrap: 'wrap',
+              }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => setState('form')}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '10px 18px', borderRadius: 8, border: `1px solid ${T.border}`,
+                      background: 'transparent', fontSize: 13, fontWeight: 600,
+                      color: T.ink, cursor: 'pointer',
+                    }}
+                  >
+                    ← Reajustar briefing
+                  </button>
+                  <button
+                    onClick={() => setRefineOpen(o => !o)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '10px 18px', borderRadius: 8, border: `1px solid ${T.ink}`,
+                      background: refineOpen ? T.ink : 'transparent',
+                      fontSize: 13, fontWeight: 700,
+                      color: refineOpen ? T.lime : T.ink, cursor: 'pointer',
+                    }}
+                  >
+                    ✦ Refinar com instruções
+                  </button>
+                </div>
+
+                {/* Direita: aprovar */}
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={aprovar}
                   disabled={approving || !currentChoiceId}
                   style={{
                     padding: '10px 28px', borderRadius: 8, border: 'none',
@@ -323,10 +424,11 @@ export default function LandingPageViewer({
                     display: 'flex', alignItems: 'center', gap: 8,
                   }}
                 >
-                  {approving ? (
-                    <><div style={{ width: 14, height: 14, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: T.ink, borderRadius: '50%', animation: 'lpspin 0.8s linear infinite' }} />Aprovando...</>
-                  ) : '✓ Finalizar e aprovar'}
-                </button>
+                    {approving ? (
+                      <><div style={{ width: 14, height: 14, border: '2px solid rgba(0,0,0,0.2)', borderTopColor: T.ink, borderRadius: '50%', animation: 'lpspin 0.8s linear infinite' }} />Aprovando...</>
+                    ) : '✓ Finalizar e aprovar'}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (

@@ -6,6 +6,12 @@ import Anthropic from '@anthropic-ai/sdk'
 import { Resend } from 'resend'
 import { brandAnalystPrompt, copywriterPrompt, artDirectorPrompt, editorPrompt } from '@/lib/agents/prompts'
 import type { StructuredPost } from '@/lib/types/post'
+import {
+  uploadReferenceImages,
+  generateLanding,
+  refineLanding,
+  getExistingLandingHtml,
+} from '@/lib/lovable-payload'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 120  // Haiku for text (fast) + fire-and-forget images
@@ -320,85 +326,49 @@ export async function POST(req: NextRequest) {
       try {
         const sd = structured_data || {}
 
-        // Upload reference images to Supabase Storage
-        const imagesArray: string[] = []
-        if (sd.images?.length) {
-          imagesArray.push(...sd.images)
-        } else if (sd.imagens_referencia?.length) {
-          for (let i = 0; i < sd.imagens_referencia.length; i++) {
-            try {
-              const b64 = sd.imagens_referencia[i]
-              const buffer = Buffer.from(b64, 'base64')
-              const path = `briefing/${order_id}/ref-${i}.png`
-              await supabase.storage.from('imagens').upload(path, buffer, { contentType: 'image/png', upsert: true })
-              const { data: urlData } = supabase.storage.from('imagens').getPublicUrl(path)
-              if (urlData?.publicUrl) imagesArray.push(urlData.publicUrl)
-            } catch (e) {
-              console.error(`[execute-product] image upload ${i} failed:`, e)
-            }
+        // Refinement mode: if this order already has HTML, treat as iterative edit.
+        const existing = await getExistingLandingHtml(supabase, order_id!)
+        const refinementInstructions: string | undefined =
+          sd.refinement_instructions || sd.instrucoes_revisao || body.refinement_instructions
+
+        let html = ''
+        let previewText = ''
+        let contentCopy: Record<string, any> = {}
+
+        if (existing?.html && refinementInstructions) {
+          console.log(`[execute-product] Refining existing landing page for order=${order_id}`)
+          const result = await refineLanding(existing.html, refinementInstructions)
+          if (!result.ok) {
+            console.error(`[execute-product] Lovable refine error ${result.status}:`, result.error)
+            await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
+            return NextResponse.json({ error: 'Lovable Cloud error (refine)' }, { status: 502 })
           }
+          html = result.html || ''
+          previewText = (refinementInstructions || '').slice(0, 300)
+          contentCopy = { refinement_instructions: refinementInstructions }
+        } else {
+          const imagesArray = await uploadReferenceImages(supabase, order_id!, sd)
+
+          // Pull Rordens chat history (if stored by submit-briefing)
+          const { data: briefingRow } = await supabase
+            .from('briefings')
+            .select('raw_conversation')
+            .eq('order_id', order_id)
+            .maybeSingle()
+          const conversation =
+            briefingRow?.raw_conversation ?? sd.raw_conversation ?? sd.conversation
+
+          console.log(`[execute-product] Generating landing page for order=${order_id}`)
+          const result = await generateLanding(sd, imagesArray, conversation)
+          if (!result.ok) {
+            console.error(`[execute-product] Lovable Cloud error ${result.status}:`, result.error)
+            await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
+            return NextResponse.json({ error: 'Lovable Cloud error' }, { status: 502 })
+          }
+          html = result.html || ''
+          previewText = (sd.headline || sd.resumo || sd.nome_marca || '').toString().slice(0, 300)
+          contentCopy = { text: previewText }
         }
-
-        // Map structured_data → Lovable Cloud Edge Function schema (official spec)
-        const payload: Record<string, any> = {
-          // OBRIGATÓRIOS
-          brand_name: sd.nome_marca || 'Marca',
-          headline: sd.resumo || sd.headline || sd.nome_marca || 'Transforme seu negócio',
-          cta_text: sd.cta_texto || 'Começar agora',
-
-          // PRODUTO (campo separado do brand_name)
-          product_name: sd.produto && sd.produto !== 'produto' ? sd.produto : undefined,
-
-          // TAGLINE
-          tagline: sd.tagline || undefined,
-
-          // SUBTÍTULO
-          subheadline: sd.subheadline || undefined,
-
-          // CORES — mapeamento correto
-          primary_color: sd.cor_primaria || '#6C3AED',     // cor de destaque (âmbar #C4622D)
-          secondary_color: sd.cor_secundaria || '#1E1B4B',  // cor de apoio (#C9A49A)
-          text_color: sd.cor_texto || undefined,             // cor de texto (#2B1A10)
-          background_color: sd.cor_fundo || undefined,       // cor de fundo (#FFFFFF)
-          accent_color: sd.cor_accent || sd.cor_secundaria || undefined,
-
-          // CONTEXTO
-          tone: [sd.tom, sd.estilo].filter(Boolean).join(' + ') || 'profissional e moderno',
-          audience: sd.publico || 'empresas e profissionais',
-          style: sd.estilo || undefined,
-          description: sd.resumo || undefined,
-          keywords: sd.palavras_chave || undefined,
-
-          // TIPOGRAFIA (objeto)
-          typography: sd.tipografia || undefined,
-
-          // SEÇÕES
-          sections: sd.sections || sd.objetivos || ['Hero', 'Benefícios', 'Como Funciona', 'Prova Social', 'CTA final'],
-
-          // IMAGENS
-          images: imagesArray.length > 0 ? imagesArray : undefined,
-        }
-
-        // Remove undefined fields
-        Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k] })
-
-        console.log(`[execute-product] Calling Lovable Cloud for order=${order_id} brand=${payload.brand_name}`)
-
-        const res = await fetch('https://ivflzjzmsynijynuphnr.supabase.co/functions/v1/gerar-landing-page', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-
-        if (!res.ok) {
-          const err = await res.text()
-          console.error(`[execute-product] Lovable Cloud error ${res.status}:`, err.slice(0, 300))
-          await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
-          return NextResponse.json({ error: 'Lovable Cloud error' }, { status: 502 })
-        }
-
-        const data = await res.json()
-        const html = data.html || ''
 
         if (!html) {
           console.error('[execute-product] Lovable returned empty HTML')
@@ -406,26 +376,31 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ error: 'Empty HTML' }, { status: 502 })
         }
 
-        // Save choice
-        const { data: existing } = await supabase.from('choices').select('id').eq('order_id', order_id).maybeSingle()
+        // Save / upsert choice
         const choicePayload = {
           html_content: html,
-          content: { text: payload.headline, copy: payload },
+          content: { text: previewText, ...contentCopy },
           label: 'Landing Page',
           type: 'landing_page_copy',
           is_selected: false,
           position: 0,
         }
-        if (existing?.id) {
-          await supabase.from('choices').update(choicePayload).eq('id', existing.id)
+        if (existing?.choice_id) {
+          await supabase.from('choices').update(choicePayload).eq('id', existing.choice_id)
         } else {
           await supabase.from('choices').insert({ ...choicePayload, order_id })
         }
 
         // Mark ready for approval
-        await supabase.from('orders').update({ status: 'awaiting_approval', preview_text: payload.headline }).eq('id', order_id)
-        await supabase.from('project_phases').update({ status: 'done', completed_at: new Date().toISOString() })
-          .eq('order_id', order_id).in('phase_number', [1, 2, 3])
+        await supabase
+          .from('orders')
+          .update({ status: 'awaiting_approval', preview_text: previewText })
+          .eq('id', order_id)
+        await supabase
+          .from('project_phases')
+          .update({ status: 'done', completed_at: new Date().toISOString() })
+          .eq('order_id', order_id)
+          .in('phase_number', [1, 2, 3])
 
         console.log(`[execute-product] Landing page delivered for order=${order_id}`)
         return NextResponse.json({ ok: true, product: 'landing_page_copy', html: true })
