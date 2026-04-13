@@ -159,6 +159,16 @@ interface LovableResponse {
   html?: string
   metadata?: any
   error?: string
+  /** Human-readable message suitable for surfacing to the end user. */
+  userMessage?: string
+}
+
+function friendlyMessage(status: number, raw: string): string {
+  if (status === 429) return 'Muitas requisições. Aguarde alguns segundos e tente novamente.'
+  if (status === 402) return 'Créditos de IA insuficientes. Adicione créditos ao workspace.'
+  if (status === 400) return raw || 'Campos obrigatórios faltando no briefing.'
+  if (status === 0) return 'A geração demorou demais ou a rede falhou. Tente novamente.'
+  return raw || 'Erro ao processar landing page.'
 }
 
 async function postToLovable(body: Record<string, any>): Promise<LovableResponse> {
@@ -171,12 +181,18 @@ async function postToLovable(body: Record<string, any>): Promise<LovableResponse
     })
     if (!res.ok) {
       const err = await res.text()
-      return { ok: false, status: res.status, error: err.slice(0, 500) }
+      return {
+        ok: false,
+        status: res.status,
+        error: err.slice(0, 500),
+        userMessage: friendlyMessage(res.status, err.slice(0, 200)),
+      }
     }
     const data = await res.json()
     return { ok: true, status: res.status, html: data.html || '', metadata: data.metadata }
   } catch (e: any) {
-    return { ok: false, status: 0, error: e?.message || 'fetch error' }
+    const msg = e?.message || 'fetch error'
+    return { ok: false, status: 0, error: msg, userMessage: friendlyMessage(0, msg) }
   }
 }
 

@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
         console.error(`[generate-landing] Lovable refine error ${result.status}:`, result.error);
         if (order_id) await sb.from("orders").update({ status: "failed" }).eq("id", order_id);
         return NextResponse.json(
-          { error: `Lovable Cloud error: ${result.status}` },
-          { status: 502 }
+          { error: result.userMessage || `Lovable Cloud error: ${result.status}` },
+          { status: result.status === 429 || result.status === 402 ? result.status : 502 }
         );
       }
       html = result.html || "";
@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
         console.error(`[generate-landing] Lovable error ${result.status}:`, result.error);
         if (order_id) await sb.from("orders").update({ status: "failed" }).eq("id", order_id);
         return NextResponse.json(
-          { error: `Lovable Cloud error: ${result.status}` },
-          { status: 502 }
+          { error: result.userMessage || `Lovable Cloud error: ${result.status}` },
+          { status: result.status === 429 || result.status === 402 ? result.status : 502 }
         );
       }
       html = result.html || "";

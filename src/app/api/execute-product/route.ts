@@ -341,7 +341,10 @@ export async function POST(req: NextRequest) {
           if (!result.ok) {
             console.error(`[execute-product] Lovable refine error ${result.status}:`, result.error)
             await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
-            return NextResponse.json({ error: 'Lovable Cloud error (refine)' }, { status: 502 })
+            return NextResponse.json(
+              { error: result.userMessage || 'Lovable Cloud error (refine)' },
+              { status: result.status === 429 || result.status === 402 ? result.status : 502 },
+            )
           }
           html = result.html || ''
           previewText = (refinementInstructions || '').slice(0, 300)
@@ -363,7 +366,10 @@ export async function POST(req: NextRequest) {
           if (!result.ok) {
             console.error(`[execute-product] Lovable Cloud error ${result.status}:`, result.error)
             await supabase.from('orders').update({ status: 'failed' }).eq('id', order_id)
-            return NextResponse.json({ error: 'Lovable Cloud error' }, { status: 502 })
+            return NextResponse.json(
+              { error: result.userMessage || 'Lovable Cloud error' },
+              { status: result.status === 429 || result.status === 402 ? result.status : 502 },
+            )
           }
           html = result.html || ''
           previewText = (sd.headline || sd.resumo || sd.nome_marca || '').toString().slice(0, 300)
