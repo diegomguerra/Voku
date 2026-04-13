@@ -26,6 +26,7 @@ export interface PostsBriefing {
   cor_secundaria: string;
   logo_base64:    string;
   visao_imagem:   string;
+  product_visual_description: string;
   observacoes:    string;
 }
 
@@ -136,6 +137,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
     cor_secundaria: prefill?.cor_secundaria ?? '#0a0a0a',
     logo_base64:    prefill?.logo_base64 ?? '',
     visao_imagem:   prefill?.visao_imagem ?? '',
+    product_visual_description: prefill?.product_visual_description ?? '',
     observacoes:    prefill?.observacoes ?? '',
   });
 
@@ -443,6 +445,18 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
             <textarea style={{ ...s.textarea, minHeight: 72, border: '1.5px solid #bbf451', background: '#fff' }} placeholder='Descreva a cena que você imagina para as imagens' value={briefing.visao_imagem} onChange={e => set('visao_imagem', e.target.value)} />
           </div>
 
+          {/* Descrição visual do produto */}
+          <div style={{ ...s.row1, background: '#fafde7', border: '1.5px solid #d9f99d', borderRadius: 12, padding: '16px 18px' }}>
+            <label style={{ ...s.label, color: '#3f6212', marginBottom: 4 }}>Descrição Visual do Produto (opcional)</label>
+            <p style={{ fontSize: 12, color: '#4d7c0f', margin: '0 0 10px', lineHeight: 1.5 }}>Descreva a aparência física do produto para que as imagens geradas mostrem o produto real.</p>
+            <textarea
+              style={{ ...s.textarea, minHeight: 72, border: '1.5px solid #bbf451', background: '#fff' }}
+              placeholder='Ex: Garrafa long neck de vidro âmbar 275ml com rótulo branco minimalista. Sempre mostrar a garrafa como protagonista.'
+              value={briefing.product_visual_description}
+              onChange={e => set('product_visual_description', e.target.value)}
+            />
+          </div>
+
           {/* Observações */}
           <div style={s.row1}>
             <label style={s.label}>Observações finais</label>
@@ -461,6 +475,7 @@ export default function PostsBriefingForm({ onSubmit, loading = false, prefill, 
                 { label: 'Pilares', value: briefing.pilares.join(', ') },
                 { label: 'Tom', value: TONS.find(t => t.id === briefing.tom)?.label || '' },
                 { label: 'Cena', value: briefing.visao_imagem },
+                { label: 'Produto', value: briefing.product_visual_description },
               ].map(({ label, value }) => value ? (
                 <div key={label} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                   <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0, minWidth: 72 }}>{label}</span>
