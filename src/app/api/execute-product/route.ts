@@ -253,6 +253,7 @@ async function generateContentPackWithAnalysis(
   pilares: string[],
   analysis: Record<string, any>,
   sharedAgentLog: Record<string, any>,
+  productVisualDescription?: string,
 ): Promise<StructuredPost[]> {
   // Start with shared analyst log, add per-tone agents
   const agentLog: Record<string, any> = { ...sharedAgentLog }
@@ -273,7 +274,7 @@ async function generateContentPackWithAnalysis(
   if (posts.length === 0) return []
 
   // Agent 3: Art Director (temp 0.5 — visual consistency)
-  const artPrompt = artDirectorPrompt(posts, brand, visaoImagem, analysis)
+  const artPrompt = artDirectorPrompt(posts, brand, visaoImagem, analysis, productVisualDescription)
   try {
     const artContext = `[BRAND ANALYSIS]\n${JSON.stringify(analysis, null, 2)}\n\n[POSTS TO ILLUSTRATE]\n${JSON.stringify(posts.map(p => ({ n: p.post_number, hook: p.hook, visual: p.visual_suggestion })))}`
     const imagePrompts = await callAgent(anthropic, artPrompt, artContext, 2000, 0.5)
@@ -489,7 +490,7 @@ export async function POST(req: NextRequest) {
       const toneResults = await Promise.all(
         TONE_INSTRUCTIONS.map(async (tone) => {
           try {
-            const posts = await generateContentPackWithAnalysis(anthropic, tone.label, briefingText, brand, visaoImagem, quantidade, pilares, sharedAnalysis, sharedAgentLog)
+            const posts = await generateContentPackWithAnalysis(anthropic, tone.label, briefingText, brand, visaoImagem, quantidade, pilares, sharedAnalysis, sharedAgentLog, structured_data?.product_visual_description)
             if (posts.length === 0) return null
             return { label: tone.label, posts }
           } catch (err) {

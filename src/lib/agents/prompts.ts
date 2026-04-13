@@ -90,13 +90,18 @@ export function artDirectorPrompt(
   posts: any[],
   brand: Record<string, any>,
   visaoImagem: string,
-  analysis: Record<string, any>
+  analysis: Record<string, any>,
+  product_visual_description?: string,
 ): string {
   const corPrimaria = brand.cor_primaria || '#111'
   const corSecundaria = brand.cor_secundaria || '#fff'
   const estilo = brand.estilo_visual || 'clean'
   const nomeMarca = brand.nome_marca || ''
   const visualKw = analysis?.visual_keywords || []
+
+  const productVisualDesc = product_visual_description && product_visual_description.trim()
+    ? `\n\nCRITICAL — PRODUCT PHYSICAL DESCRIPTION (must appear in EVERY image prompt):\n${product_visual_description}\nEvery image prompt MUST describe the actual product as specified above. Do NOT use generic glasses, cups, or bottles — show the real product with its exact physical characteristics.`
+    : ''
 
   return `You are a Photography Art Director. You create image prompts for a social media post series.
 
@@ -107,7 +112,7 @@ BUSINESS: ${analysis?.business_summary || ''}
 VISUAL KEYWORDS FROM ANALYST: ${JSON.stringify(visualKw)}
 
 CLIENT'S SCENE VISION (THIS IS THE ANCHOR — every image must be a variation of this scene):
-"${visaoImagem || 'no specific scene described'}"
+"${visaoImagem || 'no specific scene described'}"${productVisualDesc}
 
 POSTS:
 ${JSON.stringify(posts.map(p => ({ n: p.post_number, format: p.format, hook: p.hook, visual: p.visual_suggestion })), null, 2)}
