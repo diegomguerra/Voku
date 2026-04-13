@@ -5,7 +5,7 @@ const Hero = () => {
   return (
     <section className="min-h-screen pt-20 grid grid-cols-1 lg:grid-cols-2">
       {/* Left - Light side */}
-      <div className="flex flex-col justify-center px-8 md:px-16 lg:px-20 py-20">
+      <div className="flex flex-col justify-center px-6 md:px-16 lg:px-20 py-12 md:py-20">
         <p
           
           
@@ -45,7 +45,7 @@ const Hero = () => {
 
       {/* Right - Dark side */}
       <div className="surface-dark flex flex-col">
-        <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-20 py-20">
+        <div className="flex-1 flex flex-col justify-center px-6 md:px-16 lg:px-20 py-12 md:py-20">
           <p
             
             
@@ -73,7 +73,7 @@ const Hero = () => {
         </div>
 
         {/* Bottom green card */}
-        <div className="surface-lime px-8 md:px-16 lg:px-20 py-12">
+        <div className="surface-lime px-6 md:px-16 lg:px-20 py-12">
           <h3 className="text-lg md:text-xl font-bold leading-tight max-w-md mb-3">
             Parece escrito por alguém que conhece sua marca há anos.
           </h3>

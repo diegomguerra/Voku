@@ -46,10 +46,10 @@ const Process = () => {
               marca.
             </p>
 
-            <div className="flex gap-8">
+            <div className="flex flex-wrap gap-6 md:gap-8">
               {stats.map((stat) => (
                 <div key={stat.value}>
-                  <p className="text-3xl md:text-4xl font-bold text-accent">{stat.value}</p>
+                  <p className="text-2xl md:text-4xl font-bold text-accent">{stat.value}</p>
                   <p className="text-xs text-surface-dark-foreground/40 mt-1">{stat.label}</p>
                 </div>
               ))}
